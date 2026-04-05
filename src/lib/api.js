@@ -31,12 +31,16 @@ export async function fetchSets() {
   if (!res.ok) throw new Error(`Failed to fetch sets: ${res.status}`);
 
   const json = await res.json();
-  const entries = [];
+  const seen = {};
   for (const set of json.data) {
     if (set.ptcgoCode) {
-      entries.push([set.ptcgoCode, set.id]);
+      const existing = seen[set.ptcgoCode];
+      if (!existing || set.id.length < existing.length) {
+        seen[set.ptcgoCode] = set.id;
+      }
     }
   }
+  const entries = Object.entries(seen);
 
   cacheSet('bb:sets', entries);
   return new Map(entries);
@@ -63,16 +67,55 @@ export async function fetchCard(setId, number) {
 }
 
 /**
+ * Search for a card by name, returning the first result.
+ * @param {string} name - e.g. "Charizard"
+ * @returns {Promise<object>}
+ */
+export async function searchCardByName(name) {
+  const cacheKey = `bb:name:${name}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&pageSize=1`);
+  if (!res.ok) throw new Error(`Failed to search for card "${name}": ${res.status}`);
+
+  const json = await res.json();
+  if (!json.data || json.data.length === 0) {
+    throw new Error(`No results found for card name: "${name}"`);
+  }
+
+  cacheSet(cacheKey, json.data[0]);
+  return json.data[0];
+}
+
+/**
  * Resolve a card from ptcgoCode + number using the set map.
+ * Falls back to name search if set-based lookup fails and name is provided.
  * @param {string} ptcgoCode - e.g. "SVI"
  * @param {string} number - e.g. "86"
  * @param {Map<string, string>} setMap - ptcgoCode → setId
+ * @param {string} [name] - card name for fallback search
  * @returns {Promise<object>}
  */
-export async function resolveCard(ptcgoCode, number, setMap) {
-  const setId = setMap.get(ptcgoCode);
-  if (!setId) {
-    throw new Error(`Unknown set code: ${ptcgoCode}`);
+export async function resolveCard(ptcgoCode, number, setMap, name) {
+  let originalError;
+  try {
+    const setId = setMap.get(ptcgoCode);
+    if (!setId) {
+      throw new Error(`Unknown set code: ${ptcgoCode}`);
+    }
+    return await fetchCard(setId, number);
+  } catch (err) {
+    originalError = err;
   }
-  return fetchCard(setId, number);
+
+  if (name) {
+    try {
+      return await searchCardByName(name);
+    } catch {
+      // fallback also failed — fall through to re-throw original
+    }
+  }
+
+  throw originalError;
 }

@@ -1,51 +1,51 @@
 export const SAMPLE_DECKLIST = `Pokémon: 2
-1 Gardevoir ex SVI 86
-1 Ralts SIT 67
+1 Dragapult ex TWM 130
+1 Dreepy TWM 128
 
 Trainer: 1
-1 Nest Ball SVI 181
+1 Buddy-Buddy Poffin TEF 144
 
 Energy: 1
-1 Psychic Energy SVE 5
+1 Grass Energy SVE 1
 
 Total Cards: 4`;
 
 const MOCK_SETS = {
   data: [
-    { id: 'sv1', name: 'Scarlet & Violet', ptcgoCode: 'SVI' },
-    { id: 'sit', name: 'Silver Tempest', ptcgoCode: 'SIT' },
+    { id: 'sv6', name: 'Twilight Masquerade', ptcgoCode: 'TWM' },
+    { id: 'sv5', name: 'Temporal Forces', ptcgoCode: 'TEF' },
     { id: 'sve', name: 'Scarlet & Violet Energies', ptcgoCode: 'SVE' },
   ],
 };
 
 const MOCK_CARDS = {
-  'sv1-86': {
-    id: 'sv1-86',
-    name: 'Gardevoir ex',
-    images: { small: 'https://images.pokemontcg.io/sv1/86.png' },
-    set: { id: 'sv1', ptcgoCode: 'SVI' },
-    number: '86',
+  'sv6-130': {
+    id: 'sv6-130',
+    name: 'Dragapult ex',
+    images: { small: 'https://images.pokemontcg.io/sv6/130.png' },
+    set: { id: 'sv6', ptcgoCode: 'TWM' },
+    number: '130',
   },
-  'sit-67': {
-    id: 'sit-67',
-    name: 'Ralts',
-    images: { small: 'https://images.pokemontcg.io/sit/67.png' },
-    set: { id: 'sit', ptcgoCode: 'SIT' },
-    number: '67',
+  'sv6-128': {
+    id: 'sv6-128',
+    name: 'Dreepy',
+    images: { small: 'https://images.pokemontcg.io/sv6/128.png' },
+    set: { id: 'sv6', ptcgoCode: 'TWM' },
+    number: '128',
   },
-  'sv1-181': {
-    id: 'sv1-181',
-    name: 'Nest Ball',
-    images: { small: 'https://images.pokemontcg.io/sv1/181.png' },
-    set: { id: 'sv1', ptcgoCode: 'SVI' },
-    number: '181',
+  'sv5-144': {
+    id: 'sv5-144',
+    name: 'Buddy-Buddy Poffin',
+    images: { small: 'https://images.pokemontcg.io/sv5/144.png' },
+    set: { id: 'sv5', ptcgoCode: 'TEF' },
+    number: '144',
   },
-  'sve-5': {
-    id: 'sve-5',
-    name: 'Psychic Energy',
-    images: { small: 'https://images.pokemontcg.io/sve/5.png' },
+  'sve-1': {
+    id: 'sve-1',
+    name: 'Grass Energy',
+    images: { small: 'https://images.pokemontcg.io/sve/1.png' },
     set: { id: 'sve', ptcgoCode: 'SVE' },
-    number: '5',
+    number: '1',
   },
 };
 

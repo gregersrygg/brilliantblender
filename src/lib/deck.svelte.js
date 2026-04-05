@@ -41,7 +41,7 @@ export function createDeck() {
       for (const card of section.cards) {
         if (card.error) continue;
         promises.push(
-          resolveCard(card.setCode, card.number, setMap)
+          resolveCard(card.setCode, card.number, setMap, card.name)
             .then((data) => {
               card.image = data.images?.small || null;
               card.cardLoading = false;
