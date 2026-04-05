@@ -73,3 +73,47 @@ export async function mockApi(page) {
     }
   });
 }
+
+// --- M3: Print mock data ---
+
+const MOCK_PRINTS_BY_NAME = {
+  'Dragapult ex': [
+    {
+      id: 'sv6-130',
+      name: 'Dragapult ex',
+      number: '130',
+      supertype: 'Pokémon',
+      subtypes: ['Stage 2', 'ex'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
+      images: { small: 'https://images.pokemontcg.io/sv6/130.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+    },
+    {
+      id: 'sv6-215',
+      name: 'Dragapult ex',
+      number: '215',
+      supertype: 'Pokémon',
+      subtypes: ['Stage 2', 'ex'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
+      images: { small: 'https://images.pokemontcg.io/sv6/215.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+    },
+  ],
+};
+
+export { MOCK_PRINTS_BY_NAME };
+
+export async function mockPrints(page) {
+  await page.route('**/v2/cards?*', (route) => {
+    const url = new URL(route.request().url());
+    const q = url.searchParams.get('q') ?? '';
+    const match = q.match(/name:"([^"]+)"/);
+    const name = match ? match[1] : null;
+    const prints = name ? (MOCK_PRINTS_BY_NAME[name] ?? []) : [];
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: prints, totalCount: prints.length }),
+    });
+  });
+}
