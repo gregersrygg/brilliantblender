@@ -11,6 +11,12 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
   },
   projects: [
-    { name: 'chromium', use: { browserName: 'chromium' } },
+    {
+      name: 'chromium',
+      use: {
+        browserName: 'chromium',
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
+    },
   ],
 });

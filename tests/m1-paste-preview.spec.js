@@ -36,4 +36,34 @@ test.describe('M1: Paste & Preview', () => {
     const badges = page.locator('[data-testid="card-tile"] .qty-badge');
     await expect(badges.first()).toHaveText('1');
   });
+
+  test('exports decklist that matches the original input', async ({ page }) => {
+    await mockApi(page);
+    await page.goto('/');
+    await page.getByRole('textbox', { name: /paste/i }).fill(SAMPLE_DECKLIST);
+    await page.getByRole('button', { name: /load deck/i }).click();
+
+    // Wait for cards to load
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(4);
+
+    // Click export
+    await page.getByRole('button', { name: /export/i }).click();
+
+    // Read clipboard
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+
+    const expected = `Pokémon: 2
+1 Gardevoir ex SVI 86
+1 Ralts SIT 67
+
+Trainer: 1
+1 Nest Ball SVI 181
+
+Energy: 1
+1 Psychic Energy SVE 5
+
+Total Cards: 4`;
+
+    expect(clipboardText).toBe(expected);
+  });
 });

@@ -1,6 +1,7 @@
 <script>
   import DeckInput from './lib/DeckInput.svelte';
   import DeckView from './lib/DeckView.svelte';
+  import ExportButton from './lib/ExportButton.svelte';
   import { createDeck } from './lib/deck.svelte.js';
 
   const deckState = createDeck();
@@ -19,6 +20,9 @@
       <button onclick={() => deckState.reset()}>Try Again</button>
     </div>
   {:else if deckState.deck}
+    <div class="deck-toolbar">
+      <ExportButton onexport={() => deckState.exportDeck()} />
+    </div>
     <DeckView sections={deckState.deck.sections} />
   {:else}
     <DeckInput onload={handleLoad} />
@@ -44,6 +48,12 @@
   .error-banner p {
     margin: 0 0 12px;
     color: var(--error);
+  }
+
+  .deck-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
   }
 
   .error-banner button {
