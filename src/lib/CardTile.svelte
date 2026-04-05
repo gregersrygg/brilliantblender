@@ -1,8 +1,8 @@
 <script>
-  let { card } = $props();
+  let { card, onincrement, ondecrement, warning = null } = $props();
 </script>
 
-<div class="card-tile" data-testid="card-tile">
+<div class="card-tile" class:card-warning={warning} data-testid="card-tile">
   {#if card.cardLoading}
     <div class="skeleton"></div>
   {:else if card.cardError}
@@ -19,6 +19,24 @@
   {#if !card.cardError}
     <div class="card-label">{card.name} {card.setCode} {card.number}</div>
   {/if}
+  {#if !card.cardLoading && !card.cardError}
+    <div class="qty-controls">
+      <button
+        class="qty-btn"
+        data-testid="decrement"
+        onclick={() => ondecrement(card)}
+        disabled={card.qty === 0}
+      >−</button>
+      <button
+        class="qty-btn"
+        data-testid="increment"
+        onclick={() => onincrement(card)}
+      >+</button>
+    </div>
+  {/if}
+  {#if warning}
+    <div class="warning-text">{warning}</div>
+  {/if}
 </div>
 
 <style>
@@ -27,6 +45,12 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+  }
+
+  .card-warning {
+    border: 2px solid var(--error);
+    border-radius: 8px;
+    padding: 4px;
   }
 
   .card-image-wrapper {
@@ -61,6 +85,34 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
+  }
+
+  .qty-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .qty-btn {
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg, #fff);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+
+  .qty-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .warning-text {
+    font-size: 10px;
+    color: var(--error);
+    text-align: center;
   }
 
   .skeleton {

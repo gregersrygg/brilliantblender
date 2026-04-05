@@ -22,8 +22,14 @@
   {:else if deckState.deck}
     <div class="deck-toolbar">
       <ExportButton onexport={() => deckState.exportDeck()} />
+      <span class="deck-total" class:invalid={deckState.deckTotal !== 60}>{deckState.deckTotal} / 60</span>
     </div>
-    <DeckView sections={deckState.deck.sections} />
+    <DeckView
+      sections={deckState.deck.sections}
+      onincrement={deckState.incrementCard}
+      ondecrement={deckState.decrementCard}
+      warnings={deckState.getWarnings()}
+    />
   {:else}
     <DeckInput onload={handleLoad} />
   {/if}
@@ -54,6 +60,18 @@
     display: flex;
     gap: 8px;
     margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .deck-total {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .deck-total.invalid {
+    color: var(--error);
+    font-weight: 600;
   }
 
   .error-banner button {

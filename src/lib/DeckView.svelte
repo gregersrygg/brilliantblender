@@ -1,16 +1,23 @@
 <script>
   import CardTile from './CardTile.svelte';
 
-  let { sections } = $props();
+  let { sections, onincrement, ondecrement, warnings } = $props();
 </script>
 
 <div class="deck-view">
   {#each sections as section}
+    {@const visibleCards = section.cards.filter(c => c.qty > 0 || c.error)}
+    {@const sectionCount = section.cards.filter(c => !c.error && c.qty > 0).reduce((sum, c) => sum + c.qty, 0)}
     <section class="deck-section">
-      <h2>{section.name} <span class="section-count">({section.count})</span></h2>
+      <h2>{section.name} <span class="section-count">({sectionCount})</span></h2>
       <div class="card-grid">
-        {#each section.cards as card}
-          <CardTile {card} />
+        {#each visibleCards as card}
+          <CardTile
+            {card}
+            {onincrement}
+            {ondecrement}
+            warning={warnings.get(card.name) ?? null}
+          />
         {/each}
       </div>
     </section>

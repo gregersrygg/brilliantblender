@@ -44,6 +44,8 @@ export function createDeck() {
           resolveCard(card.setCode, card.number, setMap, card.name)
             .then((data) => {
               card.image = data.images?.small || null;
+              card.isBasicEnergy = data.supertype === 'Energy' && (data.subtypes ?? []).includes('Basic');
+              card.isAceSpec = (data.subtypes ?? []).includes('ACE SPEC');
               card.cardLoading = false;
             })
             .catch((e) => {
@@ -58,18 +60,70 @@ export function createDeck() {
     loading = false;
   }
 
+  function incrementCard(card) {
+    card.qty++;
+  }
+
+  function decrementCard(card) {
+    if (card.qty > 0) card.qty--;
+  }
+
+  function getWarnings() {
+    if (!deck) return new Map();
+
+    // Count qty by name (skip error/loading cards)
+    const byName = new Map();
+    for (const section of deck.sections) {
+      for (const card of section.cards) {
+        if (card.error || card.cardLoading) continue;
+        byName.set(card.name, (byName.get(card.name) ?? 0) + card.qty);
+      }
+    }
+
+    // Count ace specs
+    let aceSpecTotal = 0;
+    for (const section of deck.sections) {
+      for (const card of section.cards) {
+        if (card.isAceSpec) aceSpecTotal += card.qty;
+      }
+    }
+
+    const warnings = new Map();
+    for (const section of deck.sections) {
+      for (const card of section.cards) {
+        if (card.error || card.isBasicEnergy) continue;
+        if (card.isAceSpec && aceSpecTotal > 1) {
+          warnings.set(card.name, `Only 1 Ace Spec allowed (you have ${aceSpecTotal})`);
+        } else if (!card.isAceSpec) {
+          const total = byName.get(card.name) ?? 0;
+          if (total > 4) {
+            warnings.set(card.name, `Max 4 copies of "${card.name}" (you have ${total})`);
+          }
+        }
+      }
+    }
+    return warnings;
+  }
+
   function exportDeck() {
     if (!deck) return '';
     const lines = [];
     for (const section of deck.sections) {
-      lines.push(`${section.name}: ${section.count}`);
+      const liveCount = section.cards
+        .filter(c => !c.error && c.qty > 0)
+        .reduce((sum, c) => sum + c.qty, 0);
+      if (liveCount === 0) continue;
+      lines.push(`${section.name}: ${liveCount}`);
       for (const card of section.cards) {
+        if (!card.error && card.qty === 0) continue;
         if (card.error && !card.setCode) continue;
         lines.push(`${card.qty} ${card.name} ${card.setCode} ${card.number}`);
       }
       lines.push('');
     }
-    lines.push(`Total Cards: ${deck.totalCount}`);
+    const total = deck.sections.reduce((sum, s) =>
+      sum + s.cards.filter(c => !c.error).reduce((cs, c) => cs + c.qty, 0), 0);
+    lines.push(`Total Cards: ${total}`);
     return lines.join('\n');
   }
 
@@ -83,8 +137,16 @@ export function createDeck() {
     get deck() { return deck; },
     get loading() { return loading; },
     get error() { return error; },
+    get deckTotal() {
+      if (!deck) return 0;
+      return deck.sections.reduce((sum, s) =>
+        sum + s.cards.filter(c => !c.error).reduce((cs, c) => cs + c.qty, 0), 0);
+    },
     loadDeck,
     exportDeck,
     reset,
+    incrementCard,
+    decrementCard,
+    getWarnings,
   };
 }
