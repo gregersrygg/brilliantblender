@@ -16,18 +16,18 @@
 
 <style>
   .export-button {
-    padding: 10px 24px;
-    font-size: 16px;
-    font-weight: 500;
-    border: 1px solid var(--border);
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
     border-radius: 8px;
-    background: var(--bg);
-    color: var(--text-h);
+    background: var(--accent);
+    color: white;
     cursor: pointer;
+    transition: background 150ms ease;
   }
 
   .export-button:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    background: var(--accent-hover);
   }
 </style>
