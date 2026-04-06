@@ -20,6 +20,10 @@
           onclick={() => onpick(card)}
         >
           <img src={card.image} alt={card.name} loading="lazy" />
+          <div class="pick-overlay" aria-hidden="true">
+            <span class="pick-icon">⇄</span>
+            <span class="pick-label">Swap Print</span>
+          </div>
         </button>
       {:else}
         <img src={card.image} alt={card.name} loading="lazy" />
@@ -82,6 +86,7 @@
     background: none;
     cursor: pointer;
     border-radius: 6px;
+    position: relative;
   }
 
   .pick-trigger:focus-visible {
@@ -93,6 +98,38 @@
     width: 100%;
     border-radius: 6px;
     display: block;
+  }
+
+  .pick-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    background: rgba(30, 27, 75, 0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+
+  .pick-trigger:hover .pick-overlay {
+    opacity: 1;
+  }
+
+  .pick-icon {
+    font-size: 22px;
+    color: white;
+  }
+
+  .pick-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
   .qty-badge {
