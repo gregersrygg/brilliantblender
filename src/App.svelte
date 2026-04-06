@@ -5,6 +5,7 @@
   import PrintPicker from './lib/PrintPicker.svelte';
   import ConfirmDialog from './lib/ConfirmDialog.svelte';
   import { createDeck } from './lib/deck.svelte.js';
+  import logoUrl from './assets/logo.svg';
 
   const deckState = createDeck();
   let pickerCard = $state(null); // { name, setCode, number } | null
@@ -49,7 +50,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <div class="logo-mark" aria-hidden="true">✦</div>
+    <img src={logoUrl} alt="Brilliant Blender" class="logo-img" />
     <span class="wordmark">brilliant blender</span>
   </div>
   {#if deckState.deck}
@@ -83,6 +84,7 @@
       ondecrement={deckState.decrementCard}
       warnings={deckState.getWarnings()}
       onpick={handlePick}
+      onremove={deckState.removeCard}
     />
   {:else}
     <DeckInput onload={handleLoad} />
@@ -108,45 +110,39 @@
 
 <style>
   .app-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     padding: 14px 0;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-    gap: 10px;
   }
 
   .brand {
+    grid-column: 2;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
-  .logo-mark {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 14px;
+  .logo-img {
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
   }
 
   .wordmark {
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 800;
     color: var(--text-h);
-    letter-spacing: -0.3px;
+    letter-spacing: -0.5px;
   }
 
   .header-actions {
+    grid-column: 3;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
   }
 

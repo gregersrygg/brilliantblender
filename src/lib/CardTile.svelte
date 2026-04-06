@@ -1,5 +1,5 @@
 <script>
-  let { card, onincrement, ondecrement, warning = null, onpick = null } = $props();
+  let { card, onincrement, ondecrement, warning = null, onpick = null, onremove = null } = $props();
 </script>
 
 <div class="card-tile" class:card-warning={warning} data-testid="card-tile">
@@ -7,6 +7,9 @@
     <div class="skeleton"></div>
   {:else if card.cardError}
     <div class="error-card">
+      {#if onremove}
+        <button class="remove-btn" onclick={() => onremove(card)} aria-label="Remove {card.name}">×</button>
+      {/if}
       <span class="warning-icon">&#x26A0;</span>
       <span class="card-name">{card.name}</span>
     </div>
@@ -208,6 +211,30 @@
     justify-content: center;
     gap: 8px;
     padding: 8px;
+    position: relative;
+  }
+
+  .remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    color: white;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .remove-btn:hover {
+    background: var(--error);
   }
 
   .warning-icon {

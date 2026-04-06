@@ -76,7 +76,7 @@ export async function searchCardByName(name) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const res = await fetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&pageSize=1`);
+  const res = await fetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=1`);
   if (!res.ok) throw new Error(`Failed to search for card "${name}": ${res.status}`);
 
   const json = await res.json();

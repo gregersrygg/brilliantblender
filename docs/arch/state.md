@@ -20,6 +20,7 @@ Svelte 5 runes pattern. `createDeck()` returns a reactive object. Instantiated o
 | `decrementCard` | `(card) → void` | `card.qty--` (min 0) |
 | `exportDeck` | `() → string` | Serialize to PTCGL text format |
 | `getWarnings` | `() → Map<name, message>` | Returns rule violations: >4 copies, >1 ACE SPEC |
+| `removeCard` | `(card) → void` | Remove a specific card object from its section (used for error cards) |
 | `applyPrintPicker` | `(cardName, prints) → void` | Replace all cards with that name (see below) |
 | `reset` | `() → void` | Clear all state |
 

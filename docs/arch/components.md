@@ -27,7 +27,7 @@ Textarea with placeholder + "Load Deck" button. Button disabled when textarea is
 
 ## `DeckView.svelte`
 
-**Props:** `{ sections, onincrement, ondecrement, warnings: Map<name, string>, onpick: fn|null }`
+**Props:** `{ sections, onincrement, ondecrement, warnings: Map<name, string>, onpick: fn|null, onremove: fn|null }`
 
 Renders one `<section>` per deck section with a header (`name (count)`) and a CSS grid of `CardTile` components. Passes `onpick` only to Pokémon section tiles (`section.name === 'Pokémon'`); Trainer/Energy tiles receive `onpick={null}` (not clickable).
 
@@ -37,7 +37,7 @@ Visible cards: `section.cards.filter(c => c.qty > 0 || c.error)` — zero-qty ca
 
 ## `CardTile.svelte`
 
-**Props:** `{ card, onincrement, ondecrement, warning: string|null, onpick: fn|null }`
+**Props:** `{ card, onincrement, ondecrement, warning: string|null, onpick: fn|null, onremove: fn|null }`
 
 Three render states:
 1. **Loading** (`card.cardLoading`) — skeleton placeholder with pulse animation, aspect ratio 245/342
@@ -45,6 +45,8 @@ Three render states:
 3. **Loaded** — card image, qty badge (top-left overlay), +/− buttons below, optional warning text
 
 When `onpick` is provided, the image is wrapped in `<button class="pick-trigger">` calling `onpick(card)`. Otherwise a plain `<img>`. DeckView controls which cards get `onpick`.
+
+When `onremove` is provided, error-state tiles show a `×` button (top-right corner) that calls `onremove(card)` to remove the card from the deck entirely.
 
 **data-testid attributes:** `card-tile`, `increment`, `decrement`
 

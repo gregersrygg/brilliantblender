@@ -128,6 +128,17 @@ export function createDeck() {
     return lines.join('\n');
   }
 
+  function removeCard(card) {
+    if (!deck) return;
+    for (const section of deck.sections) {
+      const idx = section.cards.indexOf(card);
+      if (idx !== -1) {
+        section.cards.splice(idx, 1);
+        break;
+      }
+    }
+  }
+
   function reset() {
     deck = null;
     loading = false;
@@ -175,6 +186,7 @@ export function createDeck() {
     reset,
     incrementCard,
     decrementCard,
+    removeCard,
     getWarnings,
     applyPrintPicker,
   };
