@@ -119,3 +119,24 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
 
   throw originalError;
 }
+
+/**
+ * Fetch all known English prints for a card name, ordered by set release date.
+ * @param {string} name - exact card name, e.g. "Dragapult ex"
+ * @returns {Promise<Array>}
+ */
+export async function fetchPrintsByName(name) {
+  const cacheKey = `bb:prints:${name}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch(
+    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=set.releaseDate&pageSize=250`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
+
+  const json = await res.json();
+  const prints = json.data ?? [];
+  cacheSet(cacheKey, prints);
+  return prints;
+}
