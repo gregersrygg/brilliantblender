@@ -181,6 +181,10 @@
         <div class="picker-loading">Loading prints…</div>
       {:else if fetchError}
         <div class="picker-fetch-error">{fetchError}</div>
+      {:else if pickerPrints.length === 0}
+        <div class="picker-no-results">
+          No Standard-legal prints found for "{cardName}". All known prints use regulation marks outside the current rotation ({LEGAL_REGULATION_MARKS.join(', ')}).
+        </div>
       {:else}
         <ul class="print-list">
           {#each pickerPrints as print}
@@ -723,6 +727,14 @@
   .picker-fetch-error {
     padding: 16px;
     color: var(--error);
+  }
+
+  .picker-no-results {
+    padding: 24px 16px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0.7;
+    line-height: 1.5;
   }
 
   /* ── Mobile layout ── */
