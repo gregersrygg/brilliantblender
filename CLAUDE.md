@@ -28,3 +28,11 @@ Playwright is used for all feature tests.
 npx playwright test                        # run all tests
 npx playwright test tests/filename.spec.js # run a single file
 ```
+
+## Architecture Reference
+
+See [`docs/architecture.md`](docs/architecture.md) for the full architecture reference: file responsibilities, data model, component prop interfaces, API functions, cache keys, and test infrastructure. Read this before starting any task — it is detailed enough to avoid reading source files for orientation.
+
+## Keeping Docs Up to Date
+
+**Part of every task and milestone:** after completing implementation, update `docs/architecture.md` to reflect any changes to files, components, functions, props, data shapes, or milestone status. The doc should always match the current code.
