@@ -2,12 +2,38 @@
   import DeckInput from './lib/DeckInput.svelte';
   import DeckView from './lib/DeckView.svelte';
   import ExportButton from './lib/ExportButton.svelte';
+  import PrintPicker from './lib/PrintPicker.svelte';
   import { createDeck } from './lib/deck.svelte.js';
 
   const deckState = createDeck();
+  let pickerCard = $state(null); // { name, setCode, number } | null
 
   function handleLoad(text) {
     deckState.loadDeck(text);
+  }
+
+  function handlePick(card) {
+    pickerCard = { name: card.name, setCode: card.setCode, number: card.number };
+  }
+
+  function getPickerDeckCards(cardName) {
+    if (!deckState.deck) return [];
+    const result = [];
+    for (const section of deckState.deck.sections) {
+      for (const card of section.cards) {
+        if (card.name === cardName && !card.error) {
+          result.push({ setCode: card.setCode, number: card.number, qty: card.qty });
+        }
+      }
+    }
+    return result;
+  }
+
+  function handlePickerClose(prints) {
+    if (prints !== null && pickerCard) {
+      deckState.applyPrintPicker(pickerCard.name, prints);
+    }
+    pickerCard = null;
   }
 </script>
 
@@ -29,9 +55,20 @@
       onincrement={deckState.incrementCard}
       ondecrement={deckState.decrementCard}
       warnings={deckState.getWarnings()}
+      onpick={handlePick}
     />
   {:else}
     <DeckInput onload={handleLoad} />
+  {/if}
+
+  {#if pickerCard}
+    <PrintPicker
+      cardName={pickerCard.name}
+      clickedSetCode={pickerCard.setCode}
+      clickedNumber={pickerCard.number}
+      initialPrints={getPickerDeckCards(pickerCard.name)}
+      onclose={handlePickerClose}
+    />
   {/if}
 </main>
 
