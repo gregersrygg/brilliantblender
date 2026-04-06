@@ -11,6 +11,7 @@ Each card in the deck has this shape (after loading):
   setCode: string,       // ptcgoCode e.g. "TWM"
   number: string,        // card number e.g. "130"
   image: string|null,    // small image URL from API (null while loading)
+  setId: string|null,    // API set id e.g. "sv6" (null while loading; used for robust print matching)
   cardLoading: boolean,  // true while API fetch is in flight
   cardError: string|null,// error message if fetch failed
   isBasicEnergy: boolean,// true for Basic Energy cards (no 4-copy limit)

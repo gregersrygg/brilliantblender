@@ -21,6 +21,9 @@
           />
         {/each}
       </div>
+      {#if section.name !== 'Pokémon'}
+        <p class="no-swap-note">ℹ Swap Print is only available for Pokémon cards.</p>
+      {/if}
     </section>
   {/each}
 </div>
@@ -50,5 +53,12 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
+  }
+
+  .no-swap-note {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--text);
+    opacity: 0.6;
   }
 </style>

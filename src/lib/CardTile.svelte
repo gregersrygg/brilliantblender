@@ -143,6 +143,7 @@
     padding: 2px 7px;
     border-radius: 10px;
     line-height: 1.2;
+    z-index: 1;
   }
 
   .card-label {

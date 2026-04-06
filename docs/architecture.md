@@ -22,7 +22,8 @@ src/
     CardTile.svelte        Individual card: image, qty badge, +/− controls
     ExportButton.svelte    Copy-to-clipboard export button
     ConfirmDialog.svelte   "Start over?" confirmation dialog (used by App.svelte)
-    PrintPicker.svelte     Slide-in panel: alternate prints, qty per print
+    config.js              App-wide constants (LEGAL_REGULATION_MARKS — update annually)
+    PrintPicker.svelte     Full-screen modal: alternate prints with regulation filtering, large image detail panel
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST

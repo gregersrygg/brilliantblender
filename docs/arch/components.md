@@ -13,7 +13,7 @@ Also manages `PrintPicker` visibility.
 - `deckState` — result of `createDeck()` (see [state.md](state.md))
 - `pickerCard: { name, setCode, number } | null` — which card's Print Picker is open; `null` = closed
 
-**Key function:** `getPickerDeckCards(cardName)` — collects `[{ setCode, number, qty }]` for all deck entries with that name (feeds `initialPrints` into PrintPicker, including entries at qty=0).
+**Key function:** `getPickerDeckCards(cardName)` — collects `[{ setCode, number, qty, setId }]` for all deck entries with that name (feeds `initialPrints` into PrintPicker, including entries at qty=0). `setId` is the API set id used for robust matching when `ptcgoCode` is ambiguous.
 
 ---
 
@@ -54,19 +54,25 @@ When `onpick` is provided, the image is wrapped in `<button class="pick-trigger"
 
 **Props:** `{ cardName, clickedSetCode, clickedNumber, initialPrints, onclose }`
 
-- `initialPrints`: `[{ setCode, number, qty }]` — current deck quantities per print of this card name
-- `clickedSetCode` / `clickedNumber` — which print was clicked (highlighted with `.current` class)
+- `initialPrints`: `[{ setCode, number, qty, setId }]` — current deck quantities per print of this card name
+- `clickedSetCode` / `clickedNumber` — which print was clicked (pre-selected in detail panel, highlighted with `.current`)
 - `onclose(prints)` — called with the picker's full print array on Done; called with `null` on Cancel/backdrop click
 
-**On mount:** calls `fetchPrintsByName(cardName)`, merges with `initialPrints` to build local `pickerPrints` state. Each entry: `{ setCode, number, setName, image, legalities, isBasicEnergy, isAceSpec, qty }`.
+**On mount:** calls `fetchPrintsByName(cardName)`, filters to Standard-legal prints only, then merges with `initialPrints`.
+
+**Regulation filtering:** Only prints with `regulationMark` in `LEGAL_REGULATION_MARKS` (from `config.js`) are shown. Exception: older prints that are **functional reprints** of a legal card (same HP, same attacks by name/cost/damage/text, same abilities by name/text) are also included.
+
+**Each `pickerPrint` entry:** `{ setCode, setId, number, setName, image, largeImage, legalities, isBasicEnergy, isAceSpec, regulationMark, hp, supertype, attacks, abilities, qty }`.
+
+**Qty matching:** uses `setId` (API set id) for matching when available; falls back to `setCode` (ptcgoCode). Handles edge cases where PTCGL code ≠ API ptcgoCode.
 
 **Validation on Done:** total qty across all prints > 4 (and no print `isBasicEnergy`) → shows `data-testid="picker-error"`, blocks close.
 
-**Layout:** fixed panel, right rail on desktop (`width: min(420px, 100vw)`, `height: 100dvh`), bottom sheet on mobile (`@media max-width: 600px`, `height: 80dvh`, rounded top corners). Backdrop covers the rest of the screen; clicking it cancels.
+**Layout:** Full-screen modal (`inset: 0`). Two columns on desktop: left list (380px, scrollable) + right detail panel (flex-1). Clicking a list item sets `selectedPrint` and shows the large card image, HP, abilities, attacks, and set info in the detail panel. Mobile (≤700px): tab bar to switch between "Prints" list and "Details" panel.
 
 **data-testid attributes:** `print-picker`, `print-option` (one `<li>` per print), `print-increment`, `print-decrement`, `print-qty`, `picker-error`
 
-**`.current` class:** applied to the `print-option` whose `setCode + number` matches `clickedSetCode + clickedNumber`.
+**Classes on `print-option`:** `.current` = matches `clickedSetCode + clickedNumber`; `.selected` = currently shown in detail panel.
 
 ---
 

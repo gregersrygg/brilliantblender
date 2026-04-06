@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { fetchPrintsByName } from './api.js';
+  import { LEGAL_REGULATION_MARKS } from './config.js';
 
   let { cardName, clickedSetCode, clickedNumber, initialPrints, onclose } = $props();
 
@@ -8,31 +9,112 @@
   let loading = $state(true);
   let fetchError = $state(null);
   let validationError = $state(null);
+  let selectedPrint = $state(null);
+  let mobileTab = $state('list'); // 'list' | 'detail'
+
+  function normalizeAttacks(attacks) {
+    if (!attacks || attacks.length === 0) return '[]';
+    return JSON.stringify(
+      [...attacks]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({
+          name: a.name,
+          damage: a.damage ?? '',
+          cost: [...(a.cost ?? [])].sort().join(','),
+          text: a.text ?? '',
+        }))
+    );
+  }
+
+  function normalizeAbilities(abilities) {
+    if (!abilities || abilities.length === 0) return '[]';
+    return JSON.stringify(
+      [...abilities]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(a => ({ name: a.name, text: a.text ?? '' }))
+    );
+  }
+
+  function isFunctionalReprint(card, legalPrints) {
+    if (legalPrints.length === 0) return false;
+    return legalPrints.some(
+      legal =>
+        card.hp === legal.hp &&
+        normalizeAttacks(card.attacks) === normalizeAttacks(legal.attacks) &&
+        normalizeAbilities(card.abilities) === normalizeAbilities(legal.abilities)
+    );
+  }
+
+  function legalityBadge(legalities) {
+    if (legalities?.standard === 'legal') return 'Standard';
+    if (legalities?.expanded === 'legal') return 'Expanded';
+    return 'Unlimited';
+  }
+
+  function matchQty(p) {
+    const existing = initialPrints.find(ip => {
+      const numberMatch = ip.number === p.number;
+      if (!numberMatch) return false;
+      if (ip.setId && p.setId) return ip.setId === p.setId;
+      return ip.setCode === p.setCode;
+    });
+    return existing ? existing.qty : 0;
+  }
 
   onMount(async () => {
     try {
       const apiPrints = await fetchPrintsByName(cardName);
-      pickerPrints = apiPrints.map(p => {
-        const existing = initialPrints.find(
-          ip => ip.setCode === p.set.ptcgoCode && ip.number === p.number
-        );
-        return {
-          setCode: p.set.ptcgoCode,
-          number: p.number,
-          setName: p.set.name,
-          image: p.images?.small ?? null,
-          legalities: p.legalities ?? {},
-          isBasicEnergy: p.supertype === 'Energy' && (p.subtypes ?? []).includes('Basic'),
-          isAceSpec: (p.subtypes ?? []).includes('ACE SPEC'),
-          qty: existing ? existing.qty : 0,
-        };
-      });
+
+      // Separate legal prints from others
+      const rawLegal = apiPrints.filter(p => LEGAL_REGULATION_MARKS.includes(p.regulationMark));
+      const rawOthers = apiPrints.filter(p => !LEGAL_REGULATION_MARKS.includes(p.regulationMark));
+
+      // Build normalised keys for legal prints to detect functional reprints
+      const legalForComparison = rawLegal.map(p => ({
+        hp: p.hp,
+        attacks: p.attacks,
+        abilities: p.abilities,
+      }));
+
+      const allowed = [
+        ...rawLegal,
+        ...rawOthers.filter(p => isFunctionalReprint(p, legalForComparison)),
+      ];
+
+      pickerPrints = allowed.map(p => ({
+        setCode: p.set.ptcgoCode ?? '',
+        setId: p.set.id ?? '',
+        number: p.number,
+        setName: p.set.name,
+        image: p.images?.small ?? null,
+        largeImage: p.images?.large ?? null,
+        legalities: p.legalities ?? {},
+        isBasicEnergy: p.supertype === 'Energy' && (p.subtypes ?? []).includes('Basic'),
+        isAceSpec: (p.subtypes ?? []).includes('ACE SPEC'),
+        regulationMark: p.regulationMark ?? null,
+        hp: p.hp ?? null,
+        supertype: p.supertype ?? null,
+        attacks: p.attacks ?? [],
+        abilities: p.abilities ?? [],
+        qty: matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number }),
+      }));
+
+      // Pre-select the clicked card
+      selectedPrint =
+        pickerPrints.find(p => p.setCode === clickedSetCode && p.number === clickedNumber) ??
+        pickerPrints[0] ??
+        null;
     } catch (e) {
       fetchError = e.message;
     } finally {
       loading = false;
     }
   });
+
+  function selectPrint(print) {
+    selectedPrint = print;
+    mobileTab = 'detail';
+  }
 
   function increment(print) {
     print.qty++;
@@ -60,10 +142,11 @@
     onclose(null);
   }
 
-  function legalityBadge(legalities) {
-    if (legalities.standard === 'legal') return 'Standard';
-    if (legalities.expanded === 'legal') return 'Expanded';
-    return 'Unlimited';
+  function energyCostDisplay(cost) {
+    if (!cost || cost.length === 0) return '';
+    const symbols = { Fire: '🔥', Water: '💧', Grass: '🌿', Lightning: '⚡', Psychic: '🔮',
+      Fighting: '✊', Darkness: '🌑', Metal: '⚙️', Dragon: '🐲', Fairy: '🌸', Colorless: '⬜' };
+    return cost.map(c => symbols[c] ?? c).join('');
   }
 </script>
 
@@ -74,45 +157,144 @@
     <button class="close-btn" aria-label="Cancel" onclick={handleCancel}>✕</button>
   </header>
 
-  {#if loading}
-    <div class="picker-loading">Loading prints…</div>
-  {:else if fetchError}
-    <div class="picker-fetch-error">{fetchError}</div>
-  {:else}
-    <ul class="print-list">
-      {#each pickerPrints as print}
-        {@const isCurrent = print.setCode === clickedSetCode && print.number === clickedNumber}
-        <li
-          class="print-option"
-          class:current={isCurrent}
-          data-testid="print-option"
-        >
-          {#if print.image}
-            <img class="print-thumb" src={print.image} alt="{cardName} {print.setCode} {print.number}" loading="lazy" />
-          {/if}
-          <div class="print-info">
-            <span class="print-set-name">{print.setName}</span>
-            <span class="print-set-code">{print.setCode} {print.number}</span>
-            <span class="legality-badge">{legalityBadge(print.legalities)}</span>
+  <!-- Mobile tab bar -->
+  <div class="mobile-tabs" role="tablist">
+    <button
+      class="mobile-tab"
+      class:active={mobileTab === 'list'}
+      role="tab"
+      onclick={() => (mobileTab = 'list')}
+    >Prints</button>
+    <button
+      class="mobile-tab"
+      class:active={mobileTab === 'detail'}
+      role="tab"
+      onclick={() => (mobileTab = 'detail')}
+      disabled={!selectedPrint}
+    >Details</button>
+  </div>
+
+  <div class="picker-body">
+    <!-- Left: print list -->
+    <div class="print-list-col" class:hidden-mobile={mobileTab !== 'list'}>
+      {#if loading}
+        <div class="picker-loading">Loading prints…</div>
+      {:else if fetchError}
+        <div class="picker-fetch-error">{fetchError}</div>
+      {:else}
+        <ul class="print-list">
+          {#each pickerPrints as print}
+            {@const isCurrent = print.setCode === clickedSetCode && print.number === clickedNumber}
+            {@const isSelected = selectedPrint === print}
+            <li
+              class="print-option"
+              class:current={isCurrent}
+              class:selected={isSelected}
+              data-testid="print-option"
+            >
+              <button class="print-image-btn" onclick={() => selectPrint(print)} aria-label="View {print.setName} {print.number}">
+                {#if print.image}
+                  <img class="print-thumb" src={print.image} alt="{cardName} {print.setCode} {print.number}" loading="lazy" />
+                {:else}
+                  <div class="print-thumb-placeholder"></div>
+                {/if}
+              </button>
+              <div class="print-info">
+                <span class="print-set-name">{print.setName}</span>
+                <span class="print-set-code">{print.setCode} {print.number}</span>
+                <div class="print-badges">
+                  <span class="legality-badge">{legalityBadge(print.legalities)}</span>
+                  {#if print.regulationMark}
+                    <span class="reg-badge">{print.regulationMark}</span>
+                  {/if}
+                </div>
+              </div>
+              <div class="print-qty-controls">
+                <button
+                  class="qty-btn"
+                  data-testid="print-decrement"
+                  onclick={() => decrement(print)}
+                  disabled={print.qty === 0}
+                >−</button>
+                <span class="print-qty" data-testid="print-qty">{print.qty}</span>
+                <button
+                  class="qty-btn"
+                  data-testid="print-increment"
+                  onclick={() => increment(print)}
+                >+</button>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
+
+    <!-- Right: card detail panel -->
+    <div class="detail-panel" class:hidden-mobile={mobileTab !== 'detail'}>
+      {#if selectedPrint}
+        <div class="detail-scroll">
+          <div class="detail-image-wrap">
+            {#if selectedPrint.largeImage}
+              <img class="detail-card-img" src={selectedPrint.largeImage} alt="{cardName} {selectedPrint.setCode} {selectedPrint.number}" loading="lazy" />
+            {:else if selectedPrint.image}
+              <img class="detail-card-img" src={selectedPrint.image} alt="{cardName}" loading="lazy" />
+            {/if}
           </div>
-          <div class="print-qty-controls">
-            <button
-              class="qty-btn"
-              data-testid="print-decrement"
-              onclick={() => decrement(print)}
-              disabled={print.qty === 0}
-            >−</button>
-            <span class="print-qty" data-testid="print-qty">{print.qty}</span>
-            <button
-              class="qty-btn"
-              data-testid="print-increment"
-              onclick={() => increment(print)}
-            >+</button>
+          <div class="detail-info">
+            <div class="detail-header-row">
+              <span class="detail-name">{cardName}</span>
+              {#if selectedPrint.hp}
+                <span class="detail-hp">HP {selectedPrint.hp}</span>
+              {/if}
+            </div>
+            {#if selectedPrint.supertype}
+              <span class="detail-supertype">{selectedPrint.supertype}</span>
+            {/if}
+            {#if selectedPrint.abilities && selectedPrint.abilities.length > 0}
+              <div class="detail-section">
+                {#each selectedPrint.abilities as ability}
+                  <div class="ability-block">
+                    <span class="ability-type">{ability.type ?? 'Ability'}</span>
+                    <span class="ability-name">{ability.name}</span>
+                    {#if ability.text}
+                      <p class="ability-text">{ability.text}</p>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            {#if selectedPrint.attacks && selectedPrint.attacks.length > 0}
+              <div class="detail-section">
+                {#each selectedPrint.attacks as attack}
+                  <div class="attack-block">
+                    <div class="attack-header">
+                      <span class="attack-cost">{energyCostDisplay(attack.cost)}</span>
+                      <span class="attack-name">{attack.name}</span>
+                      {#if attack.damage}
+                        <span class="attack-damage">{attack.damage}</span>
+                      {/if}
+                    </div>
+                    {#if attack.text}
+                      <p class="attack-text">{attack.text}</p>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            <div class="detail-meta">
+              <span class="detail-set">{selectedPrint.setName} · {selectedPrint.setCode} {selectedPrint.number}</span>
+              {#if selectedPrint.regulationMark}
+                <span class="reg-badge">{selectedPrint.regulationMark}</span>
+              {/if}
+              <span class="legality-badge">{legalityBadge(selectedPrint.legalities)}</span>
+            </div>
           </div>
-        </li>
-      {/each}
-    </ul>
-  {/if}
+        </div>
+      {:else}
+        <div class="detail-empty">Select a print to see details</div>
+      {/if}
+    </div>
+  </div>
 
   {#if validationError}
     <div class="picker-error" data-testid="picker-error" role="alert">{validationError}</div>
@@ -128,43 +310,26 @@
   .picker-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 100;
   }
 
   .print-picker {
     position: fixed;
-    top: 0;
-    right: 0;
-    height: 100dvh;
-    width: min(420px, 100vw);
+    inset: 0;
     background: var(--bg);
-    border-left: 1px solid var(--border);
     z-index: 101;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  @media (max-width: 600px) {
-    .print-picker {
-      top: auto;
-      bottom: 0;
-      right: 0;
-      left: 0;
-      width: 100vw;
-      height: 80dvh;
-      border-left: none;
-      border-top: 1px solid var(--border);
-      border-radius: 16px 16px 0 0;
-    }
-  }
-
+  /* ── Header ── */
   .picker-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
@@ -186,6 +351,28 @@
     line-height: 1;
   }
 
+  /* ── Mobile tab bar (hidden on desktop) ── */
+  .mobile-tabs {
+    display: none;
+  }
+
+  /* ── Body: two-column on desktop ── */
+  .picker-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Left: print list ── */
+  .print-list-col {
+    width: 380px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .print-list {
     list-style: none;
     margin: 0;
@@ -194,33 +381,60 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .print-option {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     padding: 8px;
     border: 2px solid var(--border);
     border-radius: 8px;
+    transition: border-color 100ms ease;
   }
 
   .print-option.current {
     border-color: var(--accent);
   }
 
-  .print-thumb {
-    width: 56px;
+  .print-option.selected {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-color: var(--accent);
+  }
+
+  .print-image-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
     border-radius: 4px;
     flex-shrink: 0;
+  }
+
+  .print-image-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .print-thumb {
+    width: 72px;
+    border-radius: 4px;
+    display: block;
+  }
+
+  .print-thumb-placeholder {
+    width: 72px;
+    aspect-ratio: 245 / 342;
+    background: var(--skeleton);
+    border-radius: 4px;
   }
 
   .print-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
   }
 
@@ -238,12 +452,28 @@
     color: var(--text-h);
   }
 
+  .print-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
   .legality-badge {
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 10px;
     border: 1px solid var(--border);
     color: var(--text);
+    align-self: flex-start;
+  }
+
+  .reg-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
     align-self: flex-start;
   }
 
@@ -279,6 +509,170 @@
     color: var(--text-h);
   }
 
+  /* ── Right: detail panel ── */
+  .detail-panel {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .detail-scroll {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .detail-image-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 20px 20px 12px;
+    background: color-mix(in srgb, var(--border) 30%, transparent);
+  }
+
+  .detail-card-img {
+    max-height: 50vh;
+    max-width: 100%;
+    width: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  }
+
+  .detail-info {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .detail-header-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .detail-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-h);
+  }
+
+  .detail-hp {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .detail-supertype {
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.7;
+    margin-top: -6px;
+  }
+
+  .detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .ability-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ability-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+  }
+
+  .ability-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-h);
+  }
+
+  .ability-text {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .attack-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .attack-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .attack-cost {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .attack-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-h);
+    flex: 1;
+  }
+
+  .attack-damage {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-h);
+  }
+
+  .attack-text {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .detail-set {
+    font-size: 11px;
+    color: var(--text);
+    opacity: 0.7;
+    flex: 1;
+  }
+
+  .detail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 14px;
+    color: var(--text);
+    opacity: 0.5;
+  }
+
+  /* ── Footer ── */
   .picker-error {
     margin: 0 16px 8px;
     padding: 8px 12px;
@@ -329,5 +723,54 @@
   .picker-fetch-error {
     padding: 16px;
     color: var(--error);
+  }
+
+  /* ── Mobile layout ── */
+  @media (max-width: 700px) {
+    .mobile-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .mobile-tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 150ms ease, border-color 150ms ease;
+    }
+
+    .mobile-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .mobile-tab:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .print-list-col {
+      width: 100%;
+      border-right: none;
+    }
+
+    .detail-panel {
+      width: 100%;
+    }
+
+    .hidden-mobile {
+      display: none;
+    }
+
+    .detail-card-img {
+      max-height: 45vw;
+    }
   }
 </style>

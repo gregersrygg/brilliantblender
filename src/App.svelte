@@ -32,7 +32,7 @@
     for (const section of deckState.deck.sections) {
       for (const card of section.cards) {
         if (card.name === cardName && !card.error) {
-          result.push({ setCode: card.setCode, number: card.number, qty: card.qty });
+          result.push({ setCode: card.setCode, number: card.number, qty: card.qty, setId: card.setId ?? null });
         }
       }
     }

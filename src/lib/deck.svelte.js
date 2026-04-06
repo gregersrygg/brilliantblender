@@ -44,6 +44,7 @@ export function createDeck() {
           resolveCard(card.setCode, card.number, setMap, card.name)
             .then((data) => {
               card.image = data.images?.small || null;
+              card.setId = data.set?.id ?? null;
               card.isBasicEnergy = data.supertype === 'Energy' && (data.subtypes ?? []).includes('Basic');
               card.isAceSpec = (data.subtypes ?? []).includes('ACE SPEC');
               card.cardLoading = false;
