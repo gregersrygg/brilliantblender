@@ -51,7 +51,7 @@
 <header class="app-header">
   <div class="brand">
     <img src={logoUrl} alt="Brilliant Blender" class="logo-img" />
-    <span class="wordmark">brilliant blender</span>
+    <span class="wordmark">Brilliant Blender</span>
   </div>
   {#if deckState.deck}
     <div class="header-actions">
@@ -126,13 +126,13 @@
   }
 
   .logo-img {
-    width: 44px;
-    height: 44px;
+    width: 80px;
+    height: 80px;
     flex-shrink: 0;
   }
 
   .wordmark {
-    font-size: 22px;
+    font-size: 28px;
     font-weight: 800;
     color: var(--text-h);
     letter-spacing: -0.5px;

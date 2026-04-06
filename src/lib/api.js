@@ -110,6 +110,28 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
   }
 
   if (name) {
+    // For basic energy names, prefer SVE (Scarlet & Violet Energies) regular art
+    // before the general newest-first fallback which can return special/gold prints.
+    if (/\bEnergy$/i.test(name)) {
+      try {
+        const cacheKey = `bb:energy-sve:${name}`;
+        const cached = cacheGet(cacheKey);
+        if (cached) return cached;
+        const res = await fetch(
+          `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}" set.id:sve&orderBy=number&pageSize=1`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data?.length > 0) {
+            cacheSet(cacheKey, json.data[0]);
+            return json.data[0];
+          }
+        }
+      } catch {
+        // fall through to general search
+      }
+    }
+
     try {
       return await searchCardByName(name);
     } catch {
