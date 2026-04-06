@@ -21,6 +21,7 @@ src/
     DeckView.svelte        Section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
     ExportButton.svelte    Copy-to-clipboard export button
+    ConfirmDialog.svelte   "Start over?" confirmation dialog (used by App.svelte)
     PrintPicker.svelte     Slide-in panel: alternate prints, qty per print
 
 tests/
@@ -67,4 +68,4 @@ Used across all components. Light + dark mode via `@media (prefers-color-scheme:
 | M1: Paste & Preview | ✅ Complete |
 | M2: Quantity Editing | ✅ Complete |
 | M3: Print Substitution | ✅ Complete |
-| M4: Polish & Deploy | ⬜ Not started |
+| M4: Polish & Deploy | ✅ Complete |

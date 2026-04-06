@@ -78,6 +78,14 @@ Button labelled "Export Decklist". On click: calls `onexport()`, copies result t
 
 ---
 
+## `ConfirmDialog.svelte`
+
+**Props:** `{ onconfirm: () → void, oncancel: () → void }`
+
+Full-screen backdrop + centered dialog. Heading: "Start over?". Body: "Your current deck will be lost." Two buttons: Cancel (calls `oncancel`) and Confirm (calls `onconfirm`). Clicking the backdrop calls `oncancel`. Uses `role="alertdialog"` with `aria-modal="true"` and `aria-labelledby="dialog-title"`.
+
+---
+
 ## `parser.js` — `parseDeck(text)`
 
 `parseDeck(text) → { sections: Section[], totalCount: number }`
