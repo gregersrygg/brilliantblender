@@ -4,6 +4,7 @@
 </script>
 
 <div class="deck-input">
+  <p class="subtitle">Paste a decklist from Limitless, PTCGL, or RK9. See your cards, swap prints, and export a tournament-ready list.</p>
   <label for="deck-textarea" class="sr-only">Paste your decklist</label>
   <textarea
     id="deck-textarea"
@@ -62,6 +63,13 @@
   button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--subtle, var(--text));
+    line-height: 1.6;
   }
 
   .sr-only {
