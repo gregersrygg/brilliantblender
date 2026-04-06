@@ -133,6 +133,33 @@ export function createDeck() {
     error = null;
   }
 
+  function applyPrintPicker(cardName, prints) {
+    // prints: [{ setCode, number, qty, image, isBasicEnergy, isAceSpec }]
+    if (!deck) return;
+    for (const section of deck.sections) {
+      const idx = section.cards.findIndex(c => c.name === cardName);
+      if (idx === -1) continue;
+      // Remove all cards with this name
+      section.cards = section.cards.filter(c => c.name !== cardName);
+      // Re-insert prints with qty > 0 at the original position
+      const newCards = prints
+        .filter(p => p.qty > 0)
+        .map(p => ({
+          qty: p.qty,
+          name: cardName,
+          setCode: p.setCode,
+          number: p.number,
+          image: p.image,
+          cardLoading: false,
+          cardError: null,
+          isBasicEnergy: p.isBasicEnergy ?? false,
+          isAceSpec: p.isAceSpec ?? false,
+        }));
+      section.cards.splice(idx, 0, ...newCards);
+      break;
+    }
+  }
+
   return {
     get deck() { return deck; },
     get loading() { return loading; },
@@ -148,5 +175,6 @@ export function createDeck() {
     incrementCard,
     decrementCard,
     getWarnings,
+    applyPrintPicker,
   };
 }
