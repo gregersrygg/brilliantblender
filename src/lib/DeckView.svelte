@@ -1,7 +1,7 @@
 <script>
   import CardTile from './CardTile.svelte';
 
-  let { sections, onincrement, ondecrement, warnings } = $props();
+  let { sections, onincrement, ondecrement, warnings, onpick = null } = $props();
 </script>
 
 <div class="deck-view">
@@ -17,6 +17,7 @@
             {onincrement}
             {ondecrement}
             warning={warnings.get(card.name) ?? null}
+            onpick={section.name === 'Pokémon' ? onpick : null}
           />
         {/each}
       </div>

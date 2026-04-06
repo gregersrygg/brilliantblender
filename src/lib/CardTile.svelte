@@ -1,5 +1,5 @@
 <script>
-  let { card, onincrement, ondecrement, warning = null } = $props();
+  let { card, onincrement, ondecrement, warning = null, onpick = null } = $props();
 </script>
 
 <div class="card-tile" class:card-warning={warning} data-testid="card-tile">
@@ -13,7 +13,17 @@
   {:else}
     <div class="card-image-wrapper">
       <span class="qty-badge">{card.qty}</span>
-      <img src={card.image} alt={card.name} loading="lazy" />
+      {#if onpick}
+        <button
+          class="pick-trigger"
+          aria-label="Choose alternate print for {card.name}"
+          onclick={() => onpick(card)}
+        >
+          <img src={card.image} alt={card.name} loading="lazy" />
+        </button>
+      {:else}
+        <img src={card.image} alt={card.name} loading="lazy" />
+      {/if}
     </div>
   {/if}
   {#if !card.cardError}
@@ -59,6 +69,27 @@
   }
 
   .card-image-wrapper img {
+    width: 100%;
+    border-radius: 6px;
+    display: block;
+  }
+
+  .pick-trigger {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+
+  .pick-trigger:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .pick-trigger img {
     width: 100%;
     border-radius: 6px;
     display: block;
