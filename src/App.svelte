@@ -6,7 +6,6 @@
   import ConfirmDialog from './lib/ConfirmDialog.svelte';
   import CardSearch from './lib/CardSearch.svelte';
   import { createDeck } from './lib/deck.svelte.js';
-  import logoUrl from './assets/logo.svg';
 
   const deckState = createDeck();
   let pickerCard = $state(null); // { name, setCode, number } | null
@@ -51,7 +50,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <img src={logoUrl} alt="Brilliant Blender" class="logo-img" />
+    <img src="/logo.svg" alt="Brilliant Blender" class="logo-img" />
     <span class="wordmark">Brilliant Blender</span>
   </div>
   {#if deckState.deck}
