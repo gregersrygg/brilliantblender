@@ -15,6 +15,7 @@
   let loading = $state(false);
   let open = $state(false);
   let debounceTimer;
+  let requestId = 0;
 
   function onInput(e) {
     query = e.target.value;
@@ -25,9 +26,12 @@
       return;
     }
     debounceTimer = setTimeout(async () => {
+      const id = ++requestId;
+      results = [];
       loading = true;
       open = true;
       const all = await searchCards(query);
+      if (id !== requestId) return;
       results = all.filter(isLegalCard);
       loading = false;
     }, 300);

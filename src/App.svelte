@@ -72,6 +72,11 @@
       <button onclick={() => deckState.reset()}>Try Again</button>
     </div>
   {:else if deckState.deck}
+    {#if deckState.loading}
+      <div class="deck-loading" role="status" aria-label="Loading cards…">
+        <div class="deck-loading-bar"></div>
+      </div>
+    {/if}
     {#if parseErrorCount > 0 && !dismissedParseWarning}
       <div class="parse-warning" role="alert" data-testid="parse-warning">
         {parseErrorCount} line(s) couldn't be parsed and were skipped. Expected format:
@@ -200,6 +205,27 @@
     background: var(--accent);
     color: white;
     cursor: pointer;
+  }
+
+  .deck-loading {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .deck-loading-bar {
+    height: 100%;
+    width: 40%;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: loading-slide 1.2s ease-in-out infinite;
+  }
+
+  @keyframes loading-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
   }
 
   .parse-warning {
