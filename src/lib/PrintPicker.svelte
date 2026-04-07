@@ -75,6 +75,7 @@
         const isLegal =
           LEGAL_REGULATION_MARKS.includes(mark) ||
           isFunctionalReprint(p, legalForComparison);
+        const qty = matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number });
         return {
           setCode: p.set.ptcgoCode ?? '',
           setId: p.set.id ?? '',
@@ -91,9 +92,9 @@
           supertype: p.supertype ?? null,
           attacks: p.attacks ?? [],
           abilities: p.abilities ?? [],
-          qty: matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number }),
+          qty,
         };
-      });
+      }).filter(p => p.isLegal || p.qty > 0);
 
       // Pre-select the clicked card
       selectedPrint =

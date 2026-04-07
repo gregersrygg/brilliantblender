@@ -1,5 +1,12 @@
 <script>
   import { searchCards } from './api.js';
+  import { LEGAL_REGULATION_MARKS } from './config.js';
+
+  function isLegalCard(card) {
+    // Basic energy is always legal regardless of regulation mark
+    if (card.supertype === 'Energy' && (card.subtypes ?? []).includes('Basic')) return true;
+    return LEGAL_REGULATION_MARKS.includes(card.regulationMark);
+  }
 
   let { onadd } = $props();
 
@@ -20,7 +27,8 @@
     debounceTimer = setTimeout(async () => {
       loading = true;
       open = true;
-      results = await searchCards(query);
+      const all = await searchCards(query);
+      results = all.filter(isLegalCard);
       loading = false;
     }, 300);
   }
