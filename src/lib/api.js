@@ -163,14 +163,17 @@ export async function fetchNewestLegalPrint(name, legalMarks) {
   if (cached) return cached;
 
   const res = await fetch(
-    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=20`
+    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=30`
   );
   if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
 
   const json = await res.json();
-  const result = (json.data ?? []).find(
-    p => legalMarks.includes(p.regulationMark) && !ALT_ART_RARITIES.has(p.rarity)
-  );
+  const result = (json.data ?? []).find(p => {
+    if (!legalMarks.includes(p.regulationMark)) return false;
+    if (ALT_ART_RARITIES.has(p.rarity)) return false;
+    const num = parseInt(p.number, 10);
+    return !isNaN(num) && num <= (p.set?.printedTotal ?? 0);
+  });
   if (!result) throw new Error(`No legal print found for "${name}"`);
 
   cacheSet(cacheKey, result);
