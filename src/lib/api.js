@@ -142,6 +142,41 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
   throw originalError;
 }
 
+const ALT_ART_RARITIES = new Set([
+  'Illustration Rare',
+  'Special Illustration Rare',
+  'Hyper Rare',
+  'Rainbow Rare',
+]);
+
+/**
+ * Fetch the newest Standard-legal, non-alt-art print for a Trainer or special Energy.
+ * Used to normalise deck imports so trainer/energy cards always resolve to the most
+ * recent printable version regardless of which set code appeared in the import string.
+ * @param {string} name
+ * @param {string[]} legalMarks - regulation marks considered Standard-legal
+ * @returns {Promise<object>}
+ */
+export async function fetchNewestLegalPrint(name, legalMarks) {
+  const cacheKey = `bb:legal-print:${name}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch(
+    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=20`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
+
+  const json = await res.json();
+  const result = (json.data ?? []).find(
+    p => legalMarks.includes(p.regulationMark) && !ALT_ART_RARITIES.has(p.rarity)
+  );
+  if (!result) throw new Error(`No legal print found for "${name}"`);
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
 /**
  * Search cards by name prefix, returning up to 20 results ordered by name.
  * @param {string} query - partial card name, e.g. "dragapult"

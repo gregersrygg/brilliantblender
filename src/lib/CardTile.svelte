@@ -37,7 +37,13 @@
     </div>
   {/if}
   {#if !card.cardError}
-    <div class="card-label">{card.setCode} {card.number}</div>
+    <div class="card-label">
+      {#if card.supertype === 'Trainer' || (card.supertype === 'Energy' && !card.isBasicEnergy)}
+        {card.name}
+      {:else}
+        {card.setCode} {card.number}
+      {/if}
+    </div>
   {/if}
   {#if !card.cardLoading && !card.cardError}
     <div class="qty-controls">

@@ -1,6 +1,6 @@
 // src/lib/deck.svelte.js
 import { parseDeck } from './parser.js';
-import { fetchSets, resolveCard } from './api.js';
+import { fetchSets, resolveCard, fetchNewestLegalPrint } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
 
 /**
@@ -43,12 +43,26 @@ export function createDeck() {
         if (card.error) continue;
         promises.push(
           resolveCard(card.setCode, card.number, setMap, card.name)
-            .then((data) => {
-              card.image = data.images?.small || null;
-              card.setId = data.set?.id ?? null;
-              card.isBasicEnergy = data.supertype === 'Energy' && (data.subtypes ?? []).includes('Basic');
-              card.isAceSpec = (data.subtypes ?? []).includes('ACE SPEC');
-              const mark = data.regulationMark ?? null;
+            .then(async (data) => {
+              let d = data;
+              const isNonBasicNonPokemon =
+                data.supertype === 'Trainer' ||
+                (data.supertype === 'Energy' && !(data.subtypes ?? []).includes('Basic'));
+              if (isNonBasicNonPokemon) {
+                try {
+                  d = await fetchNewestLegalPrint(data.name, LEGAL_REGULATION_MARKS);
+                  card.setCode = d.set?.ptcgoCode ?? card.setCode;
+                  card.number = d.number;
+                } catch {
+                  d = data; // no legal reprint — keep original
+                }
+              }
+              card.image = d.images?.small || null;
+              card.setId = d.set?.id ?? null;
+              card.supertype = d.supertype ?? null;
+              card.isBasicEnergy = d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic');
+              card.isAceSpec = (d.subtypes ?? []).includes('ACE SPEC');
+              const mark = d.regulationMark ?? null;
               card.regulationMark = mark;
               card.isRotating = mark !== null && !LEGAL_REGULATION_MARKS.includes(mark);
               card.cardLoading = false;
@@ -160,6 +174,7 @@ export function createDeck() {
       number: apiCard.number,
       image: apiCard.images?.small ?? null,
       setId: apiCard.set?.id ?? null,
+      supertype: apiCard.supertype ?? null,
       cardLoading: false,
       cardError: null,
       isBasicEnergy: apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic'),
