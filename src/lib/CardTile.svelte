@@ -2,7 +2,11 @@
   let { card, onincrement, ondecrement, warning = null, onpick = null, onremove = null } = $props();
 </script>
 
-<div class="card-tile" class:card-warning={warning} data-testid="card-tile">
+<div
+  class="card-tile"
+  class:card-warning={warning || (card.isRotating && card.qty > 0)}
+  data-testid="card-tile"
+>
   {#if card.cardLoading}
     <div class="skeleton"></div>
   {:else if card.cardError}
@@ -15,7 +19,6 @@
     </div>
   {:else}
     <div class="card-image-wrapper">
-      <span class="qty-badge">{card.qty}</span>
       {#if onpick}
         <button
           class="pick-trigger"
@@ -34,7 +37,7 @@
     </div>
   {/if}
   {#if !card.cardError}
-    <div class="card-label">{card.name} {card.setCode} {card.number}</div>
+    <div class="card-label">{card.setCode} {card.number}</div>
   {/if}
   {#if !card.cardLoading && !card.cardError}
     <div class="qty-controls">
@@ -44,6 +47,7 @@
         onclick={() => ondecrement(card)}
         disabled={card.qty === 0}
       >−</button>
+      <span class="qty-display" data-testid="qty-display">{card.qty}</span>
       <button
         class="qty-btn"
         data-testid="increment"
@@ -51,7 +55,9 @@
       >+</button>
     </div>
   {/if}
-  {#if warning}
+  {#if card.isRotating && card.qty > 0}
+    <div class="warning-text">Not Standard-legal</div>
+  {:else if warning}
     <div class="warning-text">{warning}</div>
   {/if}
 </div>
@@ -135,20 +141,6 @@
     text-transform: uppercase;
   }
 
-  .qty-badge {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 10px;
-    line-height: 1.2;
-    z-index: 1;
-  }
-
   .card-label {
     font-size: 11px;
     color: var(--text);
@@ -157,10 +149,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
+    opacity: 0.7;
   }
 
   .qty-controls {
     display: flex;
+    align-items: center;
     gap: 6px;
   }
 
@@ -179,6 +173,14 @@
   .qty-btn:disabled {
     opacity: 0.35;
     cursor: default;
+  }
+
+  .qty-display {
+    font-size: 15px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+    color: var(--text-h);
   }
 
   .warning-text {

@@ -4,6 +4,7 @@
   import ExportButton from './lib/ExportButton.svelte';
   import PrintPicker from './lib/PrintPicker.svelte';
   import ConfirmDialog from './lib/ConfirmDialog.svelte';
+  import CardSearch from './lib/CardSearch.svelte';
   import { createDeck } from './lib/deck.svelte.js';
   import logoUrl from './assets/logo.svg';
 
@@ -78,6 +79,7 @@
         <button onclick={() => (dismissedParseWarning = true)} aria-label="Dismiss">✕</button>
       </div>
     {/if}
+    <CardSearch onadd={deckState.addCard} />
     <DeckView
       sections={deckState.deck.sections}
       onincrement={deckState.incrementCard}

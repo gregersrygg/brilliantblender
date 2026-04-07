@@ -1,6 +1,7 @@
 // src/lib/deck.svelte.js
 import { parseDeck } from './parser.js';
 import { fetchSets, resolveCard } from './api.js';
+import { LEGAL_REGULATION_MARKS } from './config.js';
 
 /**
  * Create a reactive deck state manager.
@@ -47,6 +48,9 @@ export function createDeck() {
               card.setId = data.set?.id ?? null;
               card.isBasicEnergy = data.supertype === 'Energy' && (data.subtypes ?? []).includes('Basic');
               card.isAceSpec = (data.subtypes ?? []).includes('ACE SPEC');
+              const mark = data.regulationMark ?? null;
+              card.regulationMark = mark;
+              card.isRotating = mark !== null && !LEGAL_REGULATION_MARKS.includes(mark);
               card.cardLoading = false;
             })
             .catch((e) => {
@@ -128,6 +132,43 @@ export function createDeck() {
     return lines.join('\n');
   }
 
+  function addCard(apiCard) {
+    if (!deck) return;
+    const supertypeMap = { 'Pokémon': 'Pokémon', 'Trainer': 'Trainer', 'Energy': 'Energy' };
+    const sectionName = supertypeMap[apiCard.supertype] ?? 'Trainer';
+
+    let section = deck.sections.find(s => s.name === sectionName);
+    if (!section) {
+      section = { name: sectionName, cards: [] };
+      deck.sections.push(section);
+    }
+
+    // Increment existing print if already present
+    const existing = section.cards.find(
+      c => c.setCode === (apiCard.set?.ptcgoCode ?? '') && c.number === apiCard.number
+    );
+    if (existing) {
+      existing.qty++;
+      return;
+    }
+
+    const mark = apiCard.regulationMark ?? null;
+    section.cards.push({
+      qty: 1,
+      name: apiCard.name,
+      setCode: apiCard.set?.ptcgoCode ?? '',
+      number: apiCard.number,
+      image: apiCard.images?.small ?? null,
+      setId: apiCard.set?.id ?? null,
+      cardLoading: false,
+      cardError: null,
+      isBasicEnergy: apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic'),
+      isAceSpec: (apiCard.subtypes ?? []).includes('ACE SPEC'),
+      regulationMark: mark,
+      isRotating: mark !== null && !LEGAL_REGULATION_MARKS.includes(mark),
+    });
+  }
+
   function removeCard(card) {
     if (!deck) return;
     for (const section of deck.sections) {
@@ -162,10 +203,13 @@ export function createDeck() {
           setCode: p.setCode,
           number: p.number,
           image: p.image,
+          setId: p.setId ?? null,
           cardLoading: false,
           cardError: null,
           isBasicEnergy: p.isBasicEnergy ?? false,
           isAceSpec: p.isAceSpec ?? false,
+          regulationMark: p.regulationMark ?? null,
+          isRotating: p.regulationMark ? !LEGAL_REGULATION_MARKS.includes(p.regulationMark) : false,
         }));
       section.cards.splice(idx, 0, ...newCards);
       break;
@@ -186,6 +230,7 @@ export function createDeck() {
     reset,
     incrementCard,
     decrementCard,
+    addCard,
     removeCard,
     getWarnings,
     applyPrintPicker,

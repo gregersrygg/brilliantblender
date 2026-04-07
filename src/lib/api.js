@@ -143,6 +143,21 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
 }
 
 /**
+ * Search cards by name prefix, returning up to 20 results ordered by name.
+ * @param {string} query - partial card name, e.g. "dragapult"
+ * @returns {Promise<Array>}
+ */
+export async function searchCards(query) {
+  if (!query || query.length < 2) return [];
+  const res = await fetch(
+    `${API_BASE}/cards?q=name:${encodeURIComponent(query)}*&orderBy=name&pageSize=20`
+  );
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.data ?? [];
+}
+
+/**
  * Fetch all known English prints for a card name, ordered by set release date.
  * @param {string} name - exact card name, e.g. "Dragapult ex"
  * @returns {Promise<Array>}

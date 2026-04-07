@@ -65,39 +65,35 @@
     try {
       const apiPrints = await fetchPrintsByName(cardName);
 
-      // Separate legal prints from others
-      const rawLegal = apiPrints.filter(p => LEGAL_REGULATION_MARKS.includes(p.regulationMark));
-      const rawOthers = apiPrints.filter(p => !LEGAL_REGULATION_MARKS.includes(p.regulationMark));
+      // Build legal print list for functional-reprint detection
+      const legalForComparison = apiPrints
+        .filter(p => LEGAL_REGULATION_MARKS.includes(p.regulationMark))
+        .map(p => ({ hp: p.hp, attacks: p.attacks, abilities: p.abilities }));
 
-      // Build normalised keys for legal prints to detect functional reprints
-      const legalForComparison = rawLegal.map(p => ({
-        hp: p.hp,
-        attacks: p.attacks,
-        abilities: p.abilities,
-      }));
-
-      const allowed = [
-        ...rawLegal,
-        ...rawOthers.filter(p => isFunctionalReprint(p, legalForComparison)),
-      ];
-
-      pickerPrints = allowed.map(p => ({
-        setCode: p.set.ptcgoCode ?? '',
-        setId: p.set.id ?? '',
-        number: p.number,
-        setName: p.set.name,
-        image: p.images?.small ?? null,
-        largeImage: p.images?.large ?? null,
-        legalities: p.legalities ?? {},
-        isBasicEnergy: p.supertype === 'Energy' && (p.subtypes ?? []).includes('Basic'),
-        isAceSpec: (p.subtypes ?? []).includes('ACE SPEC'),
-        regulationMark: p.regulationMark ?? null,
-        hp: p.hp ?? null,
-        supertype: p.supertype ?? null,
-        attacks: p.attacks ?? [],
-        abilities: p.abilities ?? [],
-        qty: matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number }),
-      }));
+      pickerPrints = apiPrints.map(p => {
+        const mark = p.regulationMark ?? null;
+        const isLegal =
+          LEGAL_REGULATION_MARKS.includes(mark) ||
+          isFunctionalReprint(p, legalForComparison);
+        return {
+          setCode: p.set.ptcgoCode ?? '',
+          setId: p.set.id ?? '',
+          number: p.number,
+          setName: p.set.name,
+          image: p.images?.small ?? null,
+          largeImage: p.images?.large ?? null,
+          legalities: p.legalities ?? {},
+          isBasicEnergy: p.supertype === 'Energy' && (p.subtypes ?? []).includes('Basic'),
+          isAceSpec: (p.subtypes ?? []).includes('ACE SPEC'),
+          regulationMark: mark,
+          isLegal,
+          hp: p.hp ?? null,
+          supertype: p.supertype ?? null,
+          attacks: p.attacks ?? [],
+          abilities: p.abilities ?? [],
+          qty: matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number }),
+        };
+      });
 
       // Pre-select the clicked card
       selectedPrint =
@@ -181,10 +177,6 @@
         <div class="picker-loading">Loading prints…</div>
       {:else if fetchError}
         <div class="picker-fetch-error">{fetchError}</div>
-      {:else if pickerPrints.length === 0}
-        <div class="picker-no-results">
-          No Standard-legal prints found for "{cardName}". All known prints use regulation marks outside the current rotation ({LEGAL_REGULATION_MARKS.join(', ')}).
-        </div>
       {:else}
         <ul class="print-list">
           {#each pickerPrints as print}
@@ -194,6 +186,7 @@
               class="print-option"
               class:current={isCurrent}
               class:selected={isSelected}
+              class:illegal={!print.isLegal}
               data-testid="print-option"
             >
               <button class="print-image-btn" onclick={() => selectPrint(print)} aria-label="View {print.setName} {print.number}">
@@ -209,7 +202,10 @@
                 <div class="print-badges">
                   <span class="legality-badge">{legalityBadge(print.legalities)}</span>
                   {#if print.regulationMark}
-                    <span class="reg-badge">{print.regulationMark}</span>
+                    <span class="reg-badge" class:reg-badge-illegal={!print.isLegal}>{print.regulationMark}</span>
+                  {/if}
+                  {#if !print.isLegal}
+                    <span class="illegal-badge">Not Standard-legal</span>
                   {/if}
                 </div>
               </div>
@@ -407,6 +403,15 @@
     border-color: var(--accent);
   }
 
+  .print-option.illegal {
+    opacity: 0.55;
+  }
+
+  .print-option.illegal.selected,
+  .print-option.illegal.current {
+    opacity: 1;
+  }
+
   .print-image-btn {
     padding: 0;
     border: none;
@@ -478,6 +483,19 @@
     background: var(--accent);
     color: white;
     font-weight: 700;
+    align-self: flex-start;
+  }
+
+  .reg-badge-illegal {
+    background: var(--error);
+  }
+
+  .illegal-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--error);
+    color: var(--error);
     align-self: flex-start;
   }
 
