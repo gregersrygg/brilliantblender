@@ -149,9 +149,27 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
  */
 export async function searchCards(query) {
   if (!query || query.length < 2) return [];
-  const res = await fetch(
-    `${API_BASE}/cards?q=name:${encodeURIComponent(query)}*&orderBy=name&pageSize=20`
-  );
+
+  const terms = query
+    .trim()
+    .split(/\s+/)
+    .map(word => {
+      const w = word.toLowerCase();
+      // Strip trailing 's' from long words so "marnies" → "marnie" aligns with
+      // the API's apostrophe-splitting tokeniser ("Marnie's" → token "marnie").
+      // Guard: word must be ≥6 chars and not end in double-s (e.g. "boss").
+      if (w.length >= 6 && w.endsWith('s') && w[w.length - 2] !== 's') {
+        return w.slice(0, -1);
+      }
+      return w;
+    });
+
+  // Multi-term AND query: name:word1* name:word2* — fixes spaces and apostrophes
+  const q = terms.map(t => `name:${t}*`).join(' ');
+  // Preserve * as wildcard (encodeURIComponent would otherwise encode it as %2A)
+  const encoded = encodeURIComponent(q).replace(/%2A/gi, '*');
+
+  const res = await fetch(`${API_BASE}/cards?q=${encoded}&orderBy=name&pageSize=20`);
   if (!res.ok) return [];
   const json = await res.json();
   return json.data ?? [];
