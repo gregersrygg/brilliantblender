@@ -71,9 +71,9 @@
         </filter>
       </defs>
       <rect x="4" y="4" width="72" height="72" rx="18" fill="url(#bb-bg)"/>
-      <path d="M17 20l2.2 5.8L25 28l-5.8 2.2L17 36l-2.2-5.8L9 28l5.8-2.2L17 20z" fill="#ffffff" opacity="0.9"/>
-      <path d="M63 14l1.4 3.6L68 19l-3.6 1.4L63 24l-1.4-3.6L58 19l3.6-1.4L63 14z" fill="#ffffff" opacity="0.75"/>
-      <path d="M61 56l1.8 4.8L67.5 63l-4.7 1.8L61 69.5l-1.8-4.7L54.5 63l4.7-2.2L61 56z" fill="#ffffff" opacity="0.75"/>
+      <path class="sparkle sparkle-1" d="M17 20l2.2 5.8L25 28l-5.8 2.2L17 36l-2.2-5.8L9 28l5.8-2.2L17 20z" fill="#ffffff" opacity="0.9"/>
+      <path class="sparkle sparkle-2" d="M63 14l1.4 3.6L68 19l-3.6 1.4L63 24l-1.4-3.6L58 19l3.6-1.4L63 14z" fill="#ffffff" opacity="0.75"/>
+      <path class="sparkle sparkle-3" d="M61 56l1.8 4.8L67.5 63l-4.7 1.8L61 69.5l-1.8-4.7L54.5 63l4.7-2.2L61 56z" fill="#ffffff" opacity="0.75"/>
       <g filter="url(#bb-shadow)">
         <rect x="27" y="16" width="26" height="6" rx="3" fill="#dbe4f0"/>
         <rect x="31" y="13" width="18" height="5" rx="2.5" fill="#f8fafc"/>
@@ -181,12 +181,30 @@
   }
 
   .logo-img.blending :global(.blade) {
-    transform-origin: 40px 40px;
-    animation: blade-spin 0.5s linear infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: blade-spin 0.4s linear infinite;
   }
 
   .logo-img.blending :global(.liquid) {
-    animation: liquid-pulse 1s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: liquid-pulse 0.8s ease-in-out infinite;
+  }
+
+  .logo-img.blending :global(.sparkle) {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .logo-img.blending :global(.sparkle-1) {
+    animation: sparkle-dance 1.4s ease-in-out infinite 0s;
+  }
+  .logo-img.blending :global(.sparkle-2) {
+    animation: sparkle-dance 1.4s ease-in-out infinite 0.45s;
+  }
+  .logo-img.blending :global(.sparkle-3) {
+    animation: sparkle-dance 1.4s ease-in-out infinite 0.9s;
   }
 
   @keyframes blade-spin {
@@ -194,8 +212,16 @@
   }
 
   @keyframes liquid-pulse {
-    0%, 100% { opacity: 0.9; }
-    50%       { opacity: 0.4; }
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50%       { opacity: 0.3; transform: scale(0.85); }
+  }
+
+  @keyframes sparkle-dance {
+    0%   { opacity: 0.9; transform: scale(1)    translate(0px,  0px) rotate(0deg); }
+    25%  { opacity: 0.2; transform: scale(0.5)  translate(2px, -3px) rotate(45deg); }
+    50%  { opacity: 1;   transform: scale(1.3)  translate(-2px, 1px) rotate(0deg); }
+    75%  { opacity: 0.3; transform: scale(0.6)  translate(1px,  3px) rotate(-30deg); }
+    100% { opacity: 0.9; transform: scale(1)    translate(0px,  0px) rotate(0deg); }
   }
 
   .wordmark {
