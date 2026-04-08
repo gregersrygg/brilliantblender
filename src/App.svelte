@@ -50,7 +50,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <img src="/logo.svg" alt="Brilliant Blender" class="logo-img" />
+    <img src="{import.meta.env.BASE_URL}logo.svg" alt="Brilliant Blender" class="logo-img" />
     <span class="wordmark">Brilliant Blender</span>
   </div>
   {#if deckState.deck}
