@@ -189,7 +189,7 @@
     margin: 0;
     padding: 4px;
     z-index: 200;
-    max-height: 340px;
+    max-height: 520px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -211,16 +211,16 @@
   }
 
   .result-thumb {
-    width: 36px;
-    border-radius: 3px;
+    width: 120px;
+    border-radius: 6px;
     flex-shrink: 0;
   }
 
   .result-thumb-placeholder {
-    width: 36px;
+    width: 120px;
     aspect-ratio: 245 / 342;
     background: var(--skeleton);
-    border-radius: 3px;
+    border-radius: 6px;
     flex-shrink: 0;
   }
 
