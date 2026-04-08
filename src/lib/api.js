@@ -1,4 +1,9 @@
 const API_BASE = 'https://api.pokemontcg.io/v2';
+const API_KEY = import.meta.env.VITE_POKEMONTCG_API_KEY;
+
+function apiFetch(url) {
+  return fetch(url, API_KEY ? { headers: { 'X-Api-Key': API_KEY } } : undefined);
+}
 
 function cacheGet(key) {
   try {
@@ -27,7 +32,7 @@ export async function fetchSets() {
     return new Map(cached);
   }
 
-  const res = await fetch(`${API_BASE}/sets?pageSize=250`);
+  const res = await apiFetch(`${API_BASE}/sets?pageSize=250`);
   if (!res.ok) throw new Error(`Failed to fetch sets: ${res.status}`);
 
   const json = await res.json();
@@ -58,7 +63,7 @@ export async function fetchCard(setId, number) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const res = await fetch(`${API_BASE}/cards/${cardId}`);
+  const res = await apiFetch(`${API_BASE}/cards/${cardId}`);
   if (!res.ok) throw new Error(`Failed to fetch card ${cardId}: ${res.status}`);
 
   const json = await res.json();
@@ -76,7 +81,7 @@ export async function searchCardByName(name) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const res = await fetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=1`);
+  const res = await apiFetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=1`);
   if (!res.ok) throw new Error(`Failed to search for card "${name}": ${res.status}`);
 
   const json = await res.json();
@@ -207,7 +212,7 @@ export async function searchCards(query) {
   // Preserve * as wildcard (encodeURIComponent would otherwise encode it as %2A)
   const encoded = encodeURIComponent(q).replace(/%2A/gi, '*');
 
-  const res = await fetch(`${API_BASE}/cards?q=${encoded}&orderBy=-set.releaseDate&pageSize=20`);
+  const res = await apiFetch(`${API_BASE}/cards?q=${encoded}&orderBy=-set.releaseDate&pageSize=20`);
   if (!res.ok) return [];
   const json = await res.json();
   return json.data ?? [];
