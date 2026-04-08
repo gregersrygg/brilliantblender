@@ -1,3 +1,13 @@
+export const PSYDUCK_DECKLIST = `Pokémon: 1
+1 Psyduck BS 53
+
+Total Cards: 1`;
+
+export const DUNSPARCE_DECKLIST = `Pokémon: 1
+1 Dunsparce TWM 100
+
+Total Cards: 1`;
+
 export const SAMPLE_DECKLIST = `Pokémon: 2
 1 Dragapult ex TWM 130
 1 Dreepy TWM 128
@@ -47,6 +57,13 @@ const MOCK_CARDS = {
     set: { id: 'sve', ptcgoCode: 'SVE' },
     number: '1',
   },
+  'sv6-100': {
+    id: 'sv6-100',
+    name: 'Dunsparce',
+    images: { small: 'https://images.pokemontcg.io/sv6/100.png' },
+    set: { id: 'sv6', ptcgoCode: 'TWM' },
+    number: '100',
+  },
 };
 
 export async function mockApi(page) {
@@ -87,6 +104,10 @@ const MOCK_PRINTS_BY_NAME = {
       set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
       images: { small: 'https://images.pokemontcg.io/sv6/130.png' },
       legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'J',
+      hp: 320,
+      attacks: [{ name: 'Phantom Dive', damage: '200', cost: ['Psychic', 'Colorless'], text: '' }],
+      abilities: [],
     },
     {
       id: 'sv6-215',
@@ -97,6 +118,75 @@ const MOCK_PRINTS_BY_NAME = {
       set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
       images: { small: 'https://images.pokemontcg.io/sv6/215.png' },
       legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'J',
+      hp: 320,
+      attacks: [{ name: 'Phantom Dive', damage: '200', cost: ['Psychic', 'Colorless'], text: '' }],
+      abilities: [],
+    },
+  ],
+
+  // Simulates API returning a contaminated result (wrong name alongside correct name).
+  // The client-side filter in fetchPrintsByName should strip "Misty's Psyduck".
+  'Psyduck': [
+    {
+      id: 'base1-53',
+      name: 'Psyduck',
+      number: '53',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'base1', ptcgoCode: 'BS', name: 'Base Set' },
+      images: { small: 'https://images.pokemontcg.io/base1/53.png' },
+      legalities: { unlimited: 'legal' },
+      regulationMark: null,
+      hp: 50,
+      attacks: [{ name: 'Headache', damage: '10', cost: ['Colorless'], text: '' }],
+      abilities: [],
+    },
+    {
+      id: 'gym1-56',
+      name: "Misty's Psyduck",
+      number: '56',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'gym1', ptcgoCode: 'GYM', name: "Gym Heroes" },
+      images: { small: 'https://images.pokemontcg.io/gym1/56.png' },
+      legalities: { unlimited: 'legal' },
+      regulationMark: null,
+      hp: 40,
+      attacks: [{ name: 'Amnesia', damage: '10', cost: ['Colorless'], text: '' }],
+      abilities: [],
+    },
+  ],
+
+  // Simulates a Pokémon with same name but different card text across prints.
+  'Dunsparce': [
+    {
+      id: 'sv6-100',
+      name: 'Dunsparce',
+      number: '100',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
+      images: { small: 'https://images.pokemontcg.io/sv6/100.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'J',
+      hp: 60,
+      attacks: [{ name: 'Parting Scratch', damage: '20', cost: ['Colorless'], text: '' }],
+      abilities: [],
+    },
+    {
+      id: 'sv6-101',
+      name: 'Dunsparce',
+      number: '101',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
+      images: { small: 'https://images.pokemontcg.io/sv6/101.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'J',
+      hp: 70,
+      attacks: [{ name: 'Body Slam', damage: '30', cost: ['Colorless', 'Colorless'], text: 'Flip a coin.' }],
+      abilities: [],
     },
   ],
 };

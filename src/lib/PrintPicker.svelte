@@ -6,6 +6,9 @@
   let { cardName, clickedSetCode, clickedNumber, initialPrints, onclose } = $props();
 
   let pickerPrints = $state([]);
+  const samePrints = $derived(pickerPrints.filter(p => p.sameText));
+  const diffPrints = $derived(pickerPrints.filter(p => !p.sameText));
+  const showGroups = $derived(samePrints.length > 0 && diffPrints.length > 0);
   let loading = $state(true);
   let fetchError = $state(null);
   let validationError = $state(null);
@@ -70,12 +73,25 @@
         .filter(p => LEGAL_REGULATION_MARKS.includes(p.regulationMark))
         .map(p => ({ hp: p.hp, attacks: p.attacks, abilities: p.abilities }));
 
+      // Reference card: the one that was clicked, used to group same/different text
+      const refCard = apiPrints.find(
+        p => (p.set.ptcgoCode ?? '') === clickedSetCode && p.number === clickedNumber
+      );
+      const refFingerprint = refCard
+        ? { hp: refCard.hp, attacks: refCard.attacks, abilities: refCard.abilities }
+        : null;
+
       pickerPrints = apiPrints.map(p => {
         const mark = p.regulationMark ?? null;
         const isLegal =
           LEGAL_REGULATION_MARKS.includes(mark) ||
           isFunctionalReprint(p, legalForComparison);
         const qty = matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number });
+        const sameText = refFingerprint
+          ? p.hp === refFingerprint.hp &&
+            normalizeAttacks(p.attacks) === normalizeAttacks(refFingerprint.attacks) &&
+            normalizeAbilities(p.abilities) === normalizeAbilities(refFingerprint.abilities)
+          : true;
         return {
           setCode: p.set.ptcgoCode ?? '',
           setId: p.set.id ?? '',
@@ -93,6 +109,7 @@
           attacks: p.attacks ?? [],
           abilities: p.abilities ?? [],
           qty,
+          sameText,
         };
       }).filter(p => p.isLegal || p.qty > 0);
 
@@ -180,7 +197,59 @@
         <div class="picker-fetch-error">{fetchError}</div>
       {:else}
         <ul class="print-list">
-          {#each pickerPrints as print}
+          {#if showGroups}
+            <li class="group-header" data-testid="group-header-same">Same card text</li>
+          {/if}
+          {#each samePrints as print}
+            {@const isCurrent = print.setCode === clickedSetCode && print.number === clickedNumber}
+            {@const isSelected = selectedPrint === print}
+            <li
+              class="print-option"
+              class:current={isCurrent}
+              class:selected={isSelected}
+              class:illegal={!print.isLegal}
+              data-testid="print-option"
+            >
+              <button class="print-image-btn" onclick={() => selectPrint(print)} aria-label="View {print.setName} {print.number}">
+                {#if print.image}
+                  <img class="print-thumb" src={print.image} alt="{cardName} {print.setCode} {print.number}" loading="lazy" />
+                {:else}
+                  <div class="print-thumb-placeholder"></div>
+                {/if}
+              </button>
+              <div class="print-info">
+                <span class="print-set-name">{print.setName}</span>
+                <span class="print-set-code">{print.setCode} {print.number}</span>
+                <div class="print-badges">
+                  <span class="legality-badge">{legalityBadge(print.legalities)}</span>
+                  {#if print.regulationMark}
+                    <span class="reg-badge" class:reg-badge-illegal={!print.isLegal}>{print.regulationMark}</span>
+                  {/if}
+                  {#if !print.isLegal}
+                    <span class="illegal-badge">Not Standard-legal</span>
+                  {/if}
+                </div>
+              </div>
+              <div class="print-qty-controls">
+                <button
+                  class="qty-btn"
+                  data-testid="print-decrement"
+                  onclick={() => decrement(print)}
+                  disabled={print.qty === 0}
+                >−</button>
+                <span class="print-qty" data-testid="print-qty">{print.qty}</span>
+                <button
+                  class="qty-btn"
+                  data-testid="print-increment"
+                  onclick={() => increment(print)}
+                >+</button>
+              </div>
+            </li>
+          {/each}
+          {#if showGroups}
+            <li class="group-header" data-testid="group-header-diff">Different card text</li>
+          {/if}
+          {#each diffPrints as print}
             {@const isCurrent = print.setCode === clickedSetCode && print.number === clickedNumber}
             {@const isSelected = selectedPrint === print}
             <li
@@ -383,6 +452,17 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .group-header {
+    font-size: 0.7rem;
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #888);
+    padding: 6px 4px 2px;
+    margin-top: 4px;
+    list-style: none;
+    border-bottom: 1px solid var(--border);
   }
 
   .print-option {

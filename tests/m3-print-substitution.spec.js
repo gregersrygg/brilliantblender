@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SAMPLE_DECKLIST, mockApi, mockPrints } from './helpers.js';
+import { SAMPLE_DECKLIST, PSYDUCK_DECKLIST, DUNSPARCE_DECKLIST, mockApi, mockPrints } from './helpers.js';
 
 async function loadSampleDeck(page) {
   await mockApi(page);
@@ -86,6 +86,48 @@ test.describe('M3: Print Substitution', () => {
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboardText).toContain('TWM 215');
     expect(clipboardText).not.toContain('TWM 130');
+  });
+
+  test('print picker excludes cards with a different name (no "Misty\'s Psyduck" when swapping Psyduck)', async ({ page }) => {
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await page.getByRole('textbox', { name: /paste/i }).fill(PSYDUCK_DECKLIST);
+    await page.getByRole('button', { name: /load deck/i }).click();
+    await expect(page.locator('[data-testid="card-tile"] img[alt="Psyduck"]')).toBeVisible();
+    await page.locator('[data-testid="card-tile"] img[alt="Psyduck"]').click();
+    const picker = page.locator('[data-testid="print-picker"]');
+    await expect(picker).toBeVisible();
+    const options = picker.locator('[data-testid="print-option"]');
+    await expect(options).toHaveCount(1);
+    await expect(options.nth(0)).not.toContainText("Misty's");
+  });
+
+  test('print picker shows group headers when prints have different card text', async ({ page }) => {
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await page.getByRole('textbox', { name: /paste/i }).fill(DUNSPARCE_DECKLIST);
+    await page.getByRole('button', { name: /load deck/i }).click();
+    await expect(page.locator('[data-testid="card-tile"] img[alt="Dunsparce"]')).toBeVisible();
+    await page.locator('[data-testid="card-tile"] img[alt="Dunsparce"]').click();
+    const picker = page.locator('[data-testid="print-picker"]');
+    await expect(picker).toBeVisible();
+    await expect(picker.locator('[data-testid="group-header-same"]')).toBeVisible();
+    await expect(picker.locator('[data-testid="group-header-diff"]')).toBeVisible();
+    // Same-text header appears before different-text header
+    const headers = picker.locator('[data-testid="group-header-same"], [data-testid="group-header-diff"]');
+    await expect(headers.nth(0)).toHaveAttribute('data-testid', 'group-header-same');
+    await expect(headers.nth(1)).toHaveAttribute('data-testid', 'group-header-diff');
+  });
+
+  test('print picker does not show group headers when all prints have same card text', async ({ page }) => {
+    await loadSampleDeck(page);
+    await page.locator('[data-testid="card-tile"] img[alt="Dragapult ex"]').click();
+    const picker = page.locator('[data-testid="print-picker"]');
+    await expect(picker).toBeVisible();
+    await expect(picker.locator('[data-testid="group-header-same"]')).not.toBeVisible();
+    await expect(picker.locator('[data-testid="group-header-diff"]')).not.toBeVisible();
   });
 
 });

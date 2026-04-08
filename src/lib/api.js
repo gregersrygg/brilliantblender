@@ -229,7 +229,7 @@ export async function fetchPrintsByName(name) {
   if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
 
   const json = await res.json();
-  const prints = json.data ?? [];
+  const prints = (json.data ?? []).filter(p => p.name === name);
   cacheSet(cacheKey, prints);
   return prints;
 }
