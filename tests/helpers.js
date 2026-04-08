@@ -193,17 +193,67 @@ const MOCK_PRINTS_BY_NAME = {
 
 export { MOCK_PRINTS_BY_NAME };
 
+// Mock card search results: query string (partial) → array of cards
+const MOCK_SEARCH_RESULTS = {
+  'psyduck': [
+    {
+      id: 'me2pt5-39',
+      name: 'Psyduck',
+      number: '39',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'me2pt5', ptcgoCode: 'ASC', name: 'Ascended Heroes' },
+      images: { small: 'https://images.pokemontcg.io/me2pt5/39.png' },
+      legalities: { standard: 'legal' },
+      regulationMark: 'I',
+    },
+    {
+      id: 'sv10-45',
+      name: "Misty's Psyduck",
+      number: '45',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'sv10', ptcgoCode: 'DRI', name: 'Destined Rivals' },
+      images: { small: 'https://images.pokemontcg.io/sv10/45.png' },
+      legalities: { standard: 'legal' },
+      regulationMark: 'I',
+    },
+  ],
+};
+
 export async function mockPrints(page) {
   await page.route('**/v2/cards?*', (route) => {
     const url = new URL(route.request().url());
     const q = url.searchParams.get('q') ?? '';
-    const match = q.match(/name:"([^"]+)"/);
-    const name = match ? match[1] : null;
-    const prints = name ? (MOCK_PRINTS_BY_NAME[name] ?? []) : [];
+
+    // Exact-name print lookup: name:"Card Name"
+    const exactMatch = q.match(/name:"([^"]+)"/);
+    if (exactMatch) {
+      const name = exactMatch[1];
+      const prints = MOCK_PRINTS_BY_NAME[name] ?? [];
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: prints, totalCount: prints.length }),
+      });
+    }
+
+    // Wildcard search: name:term*
+    const wildcardMatch = q.match(/name:(\w+)\*/);
+    if (wildcardMatch) {
+      const term = wildcardMatch[1].toLowerCase();
+      const results = MOCK_SEARCH_RESULTS[term] ?? [];
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: results, totalCount: results.length }),
+      });
+    }
+
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ data: prints, totalCount: prints.length }),
+      body: JSON.stringify({ data: [], totalCount: 0 }),
     });
   });
 }

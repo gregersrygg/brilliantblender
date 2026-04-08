@@ -207,7 +207,7 @@ export async function searchCards(query) {
   // Preserve * as wildcard (encodeURIComponent would otherwise encode it as %2A)
   const encoded = encodeURIComponent(q).replace(/%2A/gi, '*');
 
-  const res = await fetch(`${API_BASE}/cards?q=${encoded}&orderBy=name&pageSize=20`);
+  const res = await fetch(`${API_BASE}/cards?q=${encoded}&orderBy=-set.releaseDate&pageSize=20`);
   if (!res.ok) return [];
   const json = await res.json();
   return json.data ?? [];
