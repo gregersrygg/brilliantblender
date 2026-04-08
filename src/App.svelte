@@ -97,6 +97,10 @@
   {/if}
 </main>
 
+<footer>
+  <p>Brilliant Blender is an independent fan tool and is not affiliated with, endorsed by, or sponsored by The Pokémon Company International, Inc., Game Freak, Inc., or Nintendo Co., Ltd. Pokémon and all related names, logos, and imagery are trademarks of their respective owners.</p>
+</footer>
+
 {#if showConfirm}
   <ConfirmDialog
     onconfirm={() => { deckState.reset(); showConfirm = false; }}
@@ -159,6 +163,21 @@
     color: var(--accent);
     padding: 4px 10px;
     border-radius: 20px;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 11px;
+    color: var(--text-d, #888);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.5;
   }
 
   .deck-total.invalid {
