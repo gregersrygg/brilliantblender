@@ -50,7 +50,46 @@
 
 <header class="app-header">
   <div class="brand">
-    <img src="{import.meta.env.BASE_URL}logo.svg" alt="Brilliant Blender" class="logo-img" />
+    <svg class="logo-img" class:blending={deckState.loading}
+      width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+      role="img" aria-label="Brilliant Blender logo">
+      <defs>
+        <linearGradient id="bb-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#23c4ff"/>
+          <stop offset="100%" stop-color="#7a4dff"/>
+        </linearGradient>
+        <linearGradient id="bb-glass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#d9f3ff" stop-opacity="0.75"/>
+        </linearGradient>
+        <linearGradient id="bb-base" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#253046"/>
+          <stop offset="100%" stop-color="#111827"/>
+        </linearGradient>
+        <filter id="bb-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+      <rect x="4" y="4" width="72" height="72" rx="18" fill="url(#bb-bg)"/>
+      <path d="M17 20l2.2 5.8L25 28l-5.8 2.2L17 36l-2.2-5.8L9 28l5.8-2.2L17 20z" fill="#ffffff" opacity="0.9"/>
+      <path d="M63 14l1.4 3.6L68 19l-3.6 1.4L63 24l-1.4-3.6L58 19l3.6-1.4L63 14z" fill="#ffffff" opacity="0.75"/>
+      <path d="M61 56l1.8 4.8L67.5 63l-4.7 1.8L61 69.5l-1.8-4.7L54.5 63l4.7-2.2L61 56z" fill="#ffffff" opacity="0.75"/>
+      <g filter="url(#bb-shadow)">
+        <rect x="27" y="16" width="26" height="6" rx="3" fill="#dbe4f0"/>
+        <rect x="31" y="13" width="18" height="5" rx="2.5" fill="#f8fafc"/>
+        <path d="M29 22h22l-3.5 22a4 4 0 0 1-4 3.4h-7a4 4 0 0 1-4-3.4L29 22z" fill="url(#bb-glass)" stroke="#ffffff" stroke-opacity="0.7" stroke-width="1.2"/>
+        <path class="liquid" d="M34 35c4-4 11-4 14 0 1.3 1.6.8 4-1.5 5.2-2.1 1.1-5.5 1.4-8.6.9-4.7-.7-6.3-3.6-3.9-6.1z" fill="#7dd3fc" opacity="0.9"/>
+        <path d="M36 33c2.6-1.7 6.9-1.7 9.2.5" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+        <path class="blade" d="M40 38.5l3.5-2.2-1 3.6 3.4 1.2-3.8.7-1 3.7-1-3.7-3.8-.7 3.4-1.2-1-3.6 3.3 2.2z" fill="#ffffff" opacity="0.9"/>
+        <rect x="24" y="47" width="32" height="17" rx="8.5" fill="url(#bb-base)"/>
+        <circle cx="40" cy="55.5" r="5.2" fill="#0f172a" stroke="#93c5fd" stroke-width="1.2"/>
+        <circle cx="40" cy="55.5" r="1.6" fill="#e5e7eb"/>
+        <path d="M40 55.5l2.6-2.1" stroke="#e5e7eb" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="30" cy="55.5" r="2.2" fill="#22d3ee"/>
+        <circle cx="50" cy="55.5" r="2.2" fill="#a78bfa"/>
+      </g>
+      <rect x="4" y="4" width="72" height="72" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.22"/>
+    </svg>
     <span class="wordmark">Brilliant Blender</span>
   </div>
   {#if deckState.deck}
@@ -139,6 +178,24 @@
     width: 80px;
     height: 80px;
     flex-shrink: 0;
+  }
+
+  .logo-img.blending :global(.blade) {
+    transform-origin: 40px 40px;
+    animation: blade-spin 0.5s linear infinite;
+  }
+
+  .logo-img.blending :global(.liquid) {
+    animation: liquid-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes blade-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes liquid-pulse {
+    0%, 100% { opacity: 0.9; }
+    50%       { opacity: 0.4; }
   }
 
   .wordmark {
