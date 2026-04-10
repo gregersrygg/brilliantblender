@@ -11,7 +11,7 @@ test('Test 1: increment updates qty badge and deck total', async ({ page }) => {
   const firstTile = page.locator('[data-testid="card-tile"]').first();
   await firstTile.locator('[data-testid="increment"]').click();
 
-  await expect(firstTile.locator('.qty-badge')).toHaveText('2');
+  await expect(firstTile.locator('[data-testid="qty-display"]')).toHaveText('2');
   await expect(page.locator('.deck-total')).toHaveText('5 / 60');
 });
 

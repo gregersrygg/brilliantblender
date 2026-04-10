@@ -33,7 +33,7 @@ test.describe('M1: Paste & Preview', () => {
     await expect(cardImages).toHaveCount(4);
 
     // Quantity badges visible
-    const badges = page.locator('[data-testid="card-tile"] .qty-badge');
+    const badges = page.locator('[data-testid="card-tile"] [data-testid="qty-display"]');
     await expect(badges.first()).toHaveText('1');
   });
 
@@ -64,7 +64,7 @@ Energy: 1
 
 Total Cards: 4`;
 
-    expect(clipboardText).toBe(expected);
+    expect(clipboardText.replace(/\r\n/g, '\n')).toBe(expected.replace(/\r\n/g, '\n'));
   });
 
   test('shows warning state for unrecognized card lines', async ({ page }) => {
