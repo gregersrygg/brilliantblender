@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { fetchPrintsByName } from './api.js';
+  import { fetchPrintsByName, getPtcgoCode } from './api.js';
   import { LEGAL_REGULATION_MARKS } from './config.js';
 
   let { cardName, clickedSetCode, clickedNumber, initialPrints, onclose } = $props();
@@ -75,7 +75,7 @@
 
       // Reference card: the one that was clicked, used to group same/different text
       const refCard = apiPrints.find(
-        p => (p.set.ptcgoCode ?? '') === clickedSetCode && p.number === clickedNumber
+        p => (p.set.ptcgoCode ?? getPtcgoCode(p.set.id) ?? '') === clickedSetCode && p.number === clickedNumber
       );
       const refFingerprint = refCard
         ? { hp: refCard.hp, attacks: refCard.attacks, abilities: refCard.abilities }
@@ -86,14 +86,15 @@
         const isLegal =
           LEGAL_REGULATION_MARKS.includes(mark) ||
           isFunctionalReprint(p, legalForComparison);
-        const qty = matchQty({ setCode: p.set.ptcgoCode ?? '', setId: p.set.id ?? '', number: p.number });
+        const resolvedCode = p.set.ptcgoCode ?? getPtcgoCode(p.set.id) ?? '';
+        const qty = matchQty({ setCode: resolvedCode, setId: p.set.id ?? '', number: p.number });
         const sameText = refFingerprint
           ? p.hp === refFingerprint.hp &&
             normalizeAttacks(p.attacks) === normalizeAttacks(refFingerprint.attacks) &&
             normalizeAbilities(p.abilities) === normalizeAbilities(refFingerprint.abilities)
           : true;
         return {
-          setCode: p.set.ptcgoCode ?? '',
+          setCode: resolvedCode,
           setId: p.set.id ?? '',
           number: p.number,
           setName: p.set.name,

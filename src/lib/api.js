@@ -94,6 +94,20 @@ export async function searchCardByName(name) {
 }
 
 /**
+ * Reverse-lookup: given a setId (e.g. "sve"), return the ptcgoCode (e.g. "SVE")
+ * from the cached sets data.  Returns null when the cache is empty or no match.
+ * @param {string} setId
+ * @returns {string|null}
+ */
+export function getPtcgoCode(setId) {
+  if (!setId) return null;
+  const cached = cacheGet('bb:sets');
+  if (!cached) return null;
+  const entry = cached.find(([, id]) => id === setId);
+  return entry ? entry[0] : null;
+}
+
+/**
  * Resolve a card from ptcgoCode + number using the set map.
  * Falls back to name search if set-based lookup fails and name is provided.
  * @param {string} ptcgoCode - e.g. "SVI"

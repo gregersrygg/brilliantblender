@@ -1,6 +1,6 @@
 // src/lib/deck.svelte.js
 import { parseDeck } from './parser.js';
-import { fetchSets, resolveCard, fetchNewestLegalPrint } from './api.js';
+import { fetchSets, resolveCard, fetchNewestLegalPrint, getPtcgoCode } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
 
 /**
@@ -157,9 +157,11 @@ export function createDeck() {
       deck.sections.push(section);
     }
 
+    const resolvedSetCode = apiCard.set?.ptcgoCode ?? getPtcgoCode(apiCard.set?.id) ?? '';
+
     // Increment existing print if already present
     const existing = section.cards.find(
-      c => c.setCode === (apiCard.set?.ptcgoCode ?? '') && c.number === apiCard.number
+      c => c.setCode === resolvedSetCode && c.number === apiCard.number
     );
     if (existing) {
       existing.qty++;
@@ -170,7 +172,7 @@ export function createDeck() {
     section.cards.push({
       qty: 1,
       name: apiCard.name,
-      setCode: apiCard.set?.ptcgoCode ?? '',
+      setCode: resolvedSetCode,
       number: apiCard.number,
       image: apiCard.images?.small ?? null,
       setId: apiCard.set?.id ?? null,
