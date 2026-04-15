@@ -2,6 +2,7 @@
 import { parseDeck } from './parser.js';
 import { fetchSets, resolveCard, fetchNewestLegalPrint, fetchBasicEnergyFromSve, getPtcgoCode } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
+import { sortDeck } from './sort.js';
 
 const BASIC_ENERGY_NAME_RE = /^Basic \{([A-Z])\} Energy$/;
 const BASIC_ENERGY_API_NAMES = {
@@ -40,6 +41,7 @@ export function createDeck() {
       }
     }
     deck = parsed;
+    sortDeck(deck);
 
     let setMap;
     try {
@@ -69,6 +71,9 @@ export function createDeck() {
                 card.supertype = 'Energy';
                 card.isBasicEnergy = true;
                 card.isAceSpec = false;
+                card.types = d.types ?? null;
+                card.subtypes = d.subtypes ?? [];
+                card.evolvesFrom = d.evolvesFrom ?? null;
                 card.regulationMark = d.regulationMark ?? null;
                 card.isRotating = false;
                 card.cardLoading = false;
@@ -102,6 +107,9 @@ export function createDeck() {
               card.supertype = d.supertype ?? null;
               card.isBasicEnergy = card.isBasicEnergy || (d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic'));
               card.isAceSpec = (d.subtypes ?? []).includes('ACE SPEC');
+              card.types = d.types ?? null;
+              card.subtypes = d.subtypes ?? [];
+              card.evolvesFrom = d.evolvesFrom ?? null;
               const mark = d.regulationMark ?? null;
               card.regulationMark = mark;
               card.isRotating = mark !== null && !LEGAL_REGULATION_MARKS.includes(mark);
@@ -116,6 +124,7 @@ export function createDeck() {
     }
 
     await Promise.all(promises);
+    sortDeck(deck);
     loading = false;
   }
 
@@ -221,9 +230,13 @@ export function createDeck() {
       cardError: null,
       isBasicEnergy: apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic'),
       isAceSpec: (apiCard.subtypes ?? []).includes('ACE SPEC'),
+      types: apiCard.types ?? null,
+      subtypes: apiCard.subtypes ?? [],
+      evolvesFrom: apiCard.evolvesFrom ?? null,
       regulationMark: mark,
       isRotating: mark !== null && !LEGAL_REGULATION_MARKS.includes(mark),
     });
+    sortDeck(deck);
   }
 
   function removeCard(card) {
@@ -249,6 +262,12 @@ export function createDeck() {
     for (const section of deck.sections) {
       const idx = section.cards.findIndex(c => c.name === cardName);
       if (idx === -1) continue;
+      // All prints of the same name share supertype/types/subtypes — capture before removal.
+      const source = section.cards[idx];
+      const supertype = source.supertype ?? null;
+      const types = source.types ?? null;
+      const subtypes = source.subtypes ?? [];
+      const evolvesFrom = source.evolvesFrom ?? null;
       // Remove all cards with this name
       section.cards = section.cards.filter(c => c.name !== cardName);
       // Re-insert prints with qty > 0 at the original position
@@ -261,16 +280,21 @@ export function createDeck() {
           number: p.number,
           image: p.image,
           setId: p.setId ?? null,
+          supertype,
           cardLoading: false,
           cardError: null,
           isBasicEnergy: p.isBasicEnergy ?? false,
           isAceSpec: p.isAceSpec ?? false,
+          types,
+          subtypes,
+          evolvesFrom,
           regulationMark: p.regulationMark ?? null,
           isRotating: p.regulationMark ? !LEGAL_REGULATION_MARKS.includes(p.regulationMark) : false,
         }));
       section.cards.splice(idx, 0, ...newCards);
       break;
     }
+    sortDeck(deck);
   }
 
   return {

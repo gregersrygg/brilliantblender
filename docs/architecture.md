@@ -16,6 +16,7 @@ src/
   lib/
     parser.js              Pure function: PTCGL text → deck structure
     api.js                 API client: pokemontcg.io v2, sessionStorage cache
+    sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
     DeckView.svelte        Section headers + card grid
