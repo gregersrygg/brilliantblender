@@ -1,7 +1,20 @@
 // src/lib/deck.svelte.js
 import { parseDeck } from './parser.js';
-import { fetchSets, resolveCard, fetchNewestLegalPrint, getPtcgoCode } from './api.js';
+import { fetchSets, resolveCard, fetchNewestLegalPrint, fetchBasicEnergyFromSve, getPtcgoCode } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
+
+const BASIC_ENERGY_NAME_RE = /^Basic \{([A-Z])\} Energy$/;
+const BASIC_ENERGY_API_NAMES = {
+  G: 'Grass Energy',
+  R: 'Fire Energy',
+  W: 'Water Energy',
+  L: 'Lightning Energy',
+  P: 'Psychic Energy',
+  F: 'Fighting Energy',
+  D: 'Darkness Energy',
+  M: 'Metal Energy',
+  Y: 'Fairy Energy',
+};
 
 /**
  * Create a reactive deck state manager.
@@ -23,6 +36,7 @@ export function createDeck() {
         card.image = null;
         card.cardLoading = !card.error;
         card.cardError = card.error ? 'Unrecognized card line' : null;
+        card.isBasicEnergy = BASIC_ENERGY_NAME_RE.test(card.name);
       }
     }
     deck = parsed;
@@ -41,6 +55,32 @@ export function createDeck() {
     for (const section of deck.sections) {
       for (const card of section.cards) {
         if (card.error) continue;
+
+        const basicMatch = card.name.match(BASIC_ENERGY_NAME_RE);
+        const basicApiName = basicMatch ? BASIC_ENERGY_API_NAMES[basicMatch[1]] : null;
+        if (basicApiName) {
+          promises.push(
+            fetchBasicEnergyFromSve(basicApiName)
+              .then((d) => {
+                card.image = d.images?.small ?? null;
+                card.setCode = d.set?.ptcgoCode ?? card.setCode;
+                card.number = d.number;
+                card.setId = d.set?.id ?? null;
+                card.supertype = 'Energy';
+                card.isBasicEnergy = true;
+                card.isAceSpec = false;
+                card.regulationMark = d.regulationMark ?? null;
+                card.isRotating = false;
+                card.cardLoading = false;
+              })
+              .catch((e) => {
+                card.cardError = e.message;
+                card.cardLoading = false;
+              })
+          );
+          continue;
+        }
+
         promises.push(
           resolveCard(card.setCode, card.number, setMap, card.name)
             .then(async (data) => {
@@ -60,7 +100,7 @@ export function createDeck() {
               card.image = d.images?.small || null;
               card.setId = d.set?.id ?? null;
               card.supertype = d.supertype ?? null;
-              card.isBasicEnergy = d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic');
+              card.isBasicEnergy = card.isBasicEnergy || (d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic'));
               card.isAceSpec = (d.subtypes ?? []).includes('ACE SPEC');
               const mark = d.regulationMark ?? null;
               card.regulationMark = mark;

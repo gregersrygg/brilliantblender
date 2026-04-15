@@ -44,6 +44,6 @@ Cards render progressively as each fetch resolves (skeleton → image).
 
 ## `getWarnings()` rules
 
-- Basic Energy cards are excluded from all warnings
+- Basic Energy cards are excluded from all warnings. PTCGL `Basic {X} Energy` lines are detected by name pattern at parse time (`isBasicEnergy = true`) and resolved directly via `fetchBasicEnergyFromSve()` using a curly-brace symbol → API name map (`{G}` → Grass Energy, etc.) — bypassing the normal `setCode`/`number` lookup, since PTCGL set codes like `MEE` don't correspond to a fetchable API card.
 - Non-ACE SPEC card with total qty by name > 4 → `"Max 4 copies of {name} (you have {n})"`
 - ACE SPEC cards with total ACE SPEC qty > 1 → `"Only 1 Ace Spec allowed (you have {n})"`

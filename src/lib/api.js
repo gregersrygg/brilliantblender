@@ -200,6 +200,28 @@ export async function fetchNewestLegalPrint(name, legalMarks) {
 }
 
 /**
+ * Fetch the canonical SVE basic energy card by its API name (e.g. "Grass Energy").
+ * @param {string} apiName
+ * @returns {Promise<object>}
+ */
+export async function fetchBasicEnergyFromSve(apiName) {
+  const cacheKey = `bb:basic-energy:${apiName}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const res = await apiFetch(
+    `${API_BASE}/cards?q=name:"${encodeURIComponent(apiName)}" set.id:sve&orderBy=number&pageSize=1`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch basic energy "${apiName}": ${res.status}`);
+
+  const json = await res.json();
+  if (!json.data?.length) throw new Error(`No SVE print found for "${apiName}"`);
+
+  cacheSet(cacheKey, json.data[0]);
+  return json.data[0];
+}
+
+/**
  * Search cards by name prefix, returning up to 20 results ordered by name.
  * @param {string} query - partial card name, e.g. "dragapult"
  * @returns {Promise<Array>}

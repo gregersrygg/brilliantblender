@@ -166,3 +166,50 @@ test('Test 7: basic energy has no qty warning even when exceeding 4', async ({ p
 
   await expect(page.locator('.card-warning')).toHaveCount(0);
 });
+
+test('Test 8: PTCGL "Basic {X} Energy" line resolves to SVE and has no qty warning', async ({ page }) => {
+  // No MEE in the set list — resolution must go through the SVE basic-energy path.
+  await page.route('**/v2/sets*', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [{ id: 'sve', name: 'Scarlet & Violet Energies', ptcgoCode: 'SVE' }],
+      }),
+    });
+  });
+  // SVE basic-energy lookup keyed by translated name "Grass Energy".
+  await page.route('**/v2/cards*', (route) => {
+    const url = new URL(route.request().url());
+    const q = url.searchParams.get('q') ?? '';
+    if (q.includes('name:"Grass Energy"') && q.includes('set.id:sve')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            id: 'sve-1',
+            name: 'Grass Energy',
+            supertype: 'Energy',
+            subtypes: ['Basic'],
+            images: { small: 'https://images.pokemontcg.io/sve/1.png' },
+            set: { id: 'sve', ptcgoCode: 'SVE' },
+            number: '1',
+          }],
+          totalCount: 1,
+        }),
+      });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
+  });
+
+  await page.goto('/');
+  await page.getByRole('textbox', { name: /paste/i }).fill('Energy: 7\n7 Basic {G} Energy MEE 1');
+  await page.getByRole('button', { name: /load deck/i }).click();
+
+  // Card resolves to a real image (no error icon).
+  await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+  await expect(page.locator('[data-testid="card-tile"] .error-card')).toHaveCount(0);
+  // Basic energy is exempt from the 4-copy rule.
+  await expect(page.locator('.card-warning')).toHaveCount(0);
+});
