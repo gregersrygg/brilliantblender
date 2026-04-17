@@ -13,9 +13,14 @@ src/
   main.js                  Entry point — mounts App.svelte
   app.css                  Global CSS variables and resets
   App.svelte               Top-level: flow control, picker state
+  data/
+    cards.json             Build-time snapshot: Standard-legal cards keyed by API ID
+    sets.json              Build-time snapshot: [[ptcgoCode, setId], ...] entries
+    snapshot-meta.json     Metadata: generatedAt, regulationMarks, cardCount
   lib/
     parser.js              Pure function: PTCGL text → deck structure
-    api.js                 API client: pokemontcg.io v2, sessionStorage cache
+    api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
+    snapshot.js            In-memory access to bundled card/set snapshot data
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
@@ -25,6 +30,9 @@ src/
     ConfirmDialog.svelte   "Start over?" confirmation dialog (used by App.svelte)
     config.js              App-wide constants (LEGAL_REGULATION_MARKS — update annually)
     PrintPicker.svelte     Full-screen modal: alternate prints with regulation filtering, large image detail panel
+
+scripts/
+  build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST

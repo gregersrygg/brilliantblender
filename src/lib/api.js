@@ -1,3 +1,12 @@
+import {
+  getSnapshotSetMap,
+  getSnapshotCard,
+  getSnapshotBasicEnergy,
+  findSnapshotPrint,
+  getSnapshotPrintsByName,
+  searchSnapshot,
+} from './snapshot.js';
+
 const API_BASE = 'https://api.pokemontcg.io/v2';
 const API_KEY = import.meta.env.VITE_POKEMONTCG_API_KEY;
 
@@ -32,6 +41,12 @@ export async function fetchSets() {
     return new Map(cached);
   }
 
+  const snapshotMap = getSnapshotSetMap();
+  if (snapshotMap.size > 0) {
+    cacheSet('bb:sets', [...snapshotMap.entries()]);
+    return snapshotMap;
+  }
+
   const res = await apiFetch(`${API_BASE}/sets?pageSize=250`);
   if (!res.ok) throw new Error(`Failed to fetch sets: ${res.status}`);
 
@@ -62,6 +77,12 @@ export async function fetchCard(setId, number) {
   const cacheKey = `bb:card:${cardId}`;
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
+
+  const snapshot = getSnapshotCard(setId, number);
+  if (snapshot) {
+    cacheSet(cacheKey, snapshot);
+    return snapshot;
+  }
 
   const res = await apiFetch(`${API_BASE}/cards/${cardId}`);
   if (!res.ok) throw new Error(`Failed to fetch card ${cardId}: ${res.status}`);
@@ -181,6 +202,12 @@ export async function fetchNewestLegalPrint(name, legalMarks) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
+  const snapshot = findSnapshotPrint(name, legalMarks);
+  if (snapshot) {
+    cacheSet(cacheKey, snapshot);
+    return snapshot;
+  }
+
   const res = await fetch(
     `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=30`
   );
@@ -209,6 +236,12 @@ export async function fetchBasicEnergyFromSve(apiName) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
+  const snapshot = getSnapshotBasicEnergy(apiName);
+  if (snapshot) {
+    cacheSet(cacheKey, snapshot);
+    return snapshot;
+  }
+
   const res = await apiFetch(
     `${API_BASE}/cards?q=name:"${encodeURIComponent(apiName)}" set.id:sve&orderBy=number&pageSize=1`
   );
@@ -229,23 +262,21 @@ export async function fetchBasicEnergyFromSve(apiName) {
 export async function searchCards(query) {
   if (!query || query.length < 2) return [];
 
+  const snapshotResults = searchSnapshot(query);
+  if (snapshotResults.length > 0) return snapshotResults;
+
   const terms = query
     .trim()
     .split(/\s+/)
     .map(word => {
       const w = word.toLowerCase();
-      // Strip trailing 's' from long words so "marnies" → "marnie" aligns with
-      // the API's apostrophe-splitting tokeniser ("Marnie's" → token "marnie").
-      // Guard: word must be ≥6 chars and not end in double-s (e.g. "boss").
       if (w.length >= 6 && w.endsWith('s') && w[w.length - 2] !== 's') {
         return w.slice(0, -1);
       }
       return w;
     });
 
-  // Multi-term AND query: name:word1* name:word2* — fixes spaces and apostrophes
   const q = terms.map(t => `name:${t}*`).join(' ');
-  // Preserve * as wildcard (encodeURIComponent would otherwise encode it as %2A)
   const encoded = encodeURIComponent(q).replace(/%2A/gi, '*');
 
   const res = await apiFetch(`${API_BASE}/cards?q=${encoded}&orderBy=-set.releaseDate&pageSize=20`);
@@ -264,13 +295,23 @@ export async function fetchPrintsByName(name) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
+  const snapshotPrints = getSnapshotPrintsByName(name);
+
   const res = await fetch(
     `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=set.releaseDate&pageSize=250`
-  );
-  if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
+  ).catch(() => null);
 
-  const json = await res.json();
-  const prints = (json.data ?? []).filter(p => p.name === name);
-  cacheSet(cacheKey, prints);
-  return prints;
+  if (res?.ok) {
+    const json = await res.json();
+    const prints = (json.data ?? []).filter(p => p.name === name);
+    cacheSet(cacheKey, prints);
+    return prints;
+  }
+
+  if (snapshotPrints.length > 0) {
+    cacheSet(cacheKey, snapshotPrints);
+    return snapshotPrints;
+  }
+
+  throw new Error(`Failed to fetch prints for "${name}"`);
 }
