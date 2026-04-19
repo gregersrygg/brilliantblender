@@ -296,22 +296,18 @@ export async function fetchPrintsByName(name) {
   if (cached) return cached;
 
   const snapshotPrints = getSnapshotPrintsByName(name);
-
-  const res = await fetch(
-    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=set.releaseDate&pageSize=250`
-  ).catch(() => null);
-
-  if (res?.ok) {
-    const json = await res.json();
-    const prints = (json.data ?? []).filter(p => p.name === name);
-    cacheSet(cacheKey, prints);
-    return prints;
-  }
-
   if (snapshotPrints.length > 0) {
     cacheSet(cacheKey, snapshotPrints);
     return snapshotPrints;
   }
 
-  throw new Error(`Failed to fetch prints for "${name}"`);
+  const res = await fetch(
+    `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=set.releaseDate&pageSize=250`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
+
+  const json = await res.json();
+  const prints = (json.data ?? []).filter(p => p.name === name);
+  cacheSet(cacheKey, prints);
+  return prints;
 }

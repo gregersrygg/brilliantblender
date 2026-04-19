@@ -54,17 +54,22 @@ export function getSnapshotPrintsByName(name) {
     .sort((a, b) => (a.set?.releaseDate ?? '').localeCompare(b.set?.releaseDate ?? ''));
 }
 
+function stripSymbols(str) {
+  return str.replace(/[^a-z0-9 ]/g, '');
+}
+
 export function searchSnapshot(query) {
   if (DISABLED) return [];
   if (!query || query.length < 2) return [];
-  const lower = query.toLowerCase();
-  const terms = lower.split(/\s+/);
+  const normalizedQuery = stripSymbols(query.toLowerCase());
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
   const seen = new Set();
   const results = [];
   for (const card of Object.values(cardsData)) {
     if (seen.has(card.id)) continue;
-    const nameLower = card.name.toLowerCase();
-    if (terms.every(t => nameLower.includes(t))) {
+    const normalizedName = stripSymbols(card.name.toLowerCase());
+    if (terms.every(t => normalizedName.includes(t))) {
       seen.add(card.id);
       results.push(card);
       if (results.length >= 20) break;
