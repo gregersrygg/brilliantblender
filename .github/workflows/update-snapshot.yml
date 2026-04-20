@@ -19,8 +19,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run snapshot
-        env:
-          VITE_POKEMONTCG_API_KEY: ${{ secrets.API_KEY }}
       - name: Commit and push if changed
         run: |
           git diff --quiet src/data/ && echo "No changes" && exit 0
