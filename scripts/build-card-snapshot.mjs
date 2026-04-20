@@ -103,7 +103,6 @@ async function main() {
   writeFileSync(resolve(dataDir, 'sets.json'), JSON.stringify(setEntries));
   writeFileSync(resolve(dataDir, 'cards.json'), JSON.stringify(cardsById));
   writeFileSync(resolve(dataDir, 'snapshot-meta.json'), JSON.stringify({
-    generatedAt: new Date().toISOString(),
     regulationMarks: LEGAL_MARKS,
     cardCount,
   }, null, 2));
