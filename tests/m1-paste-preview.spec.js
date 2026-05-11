@@ -131,6 +131,18 @@ Total Cards: 3`;
     await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
   });
 
+  test('loads cards with hyphenated set codes like PR-SV', async ({ page }) => {
+    await mockApi(page);
+    await page.goto('/');
+    await page.getByRole('textbox', { name: /paste/i }).fill(
+      'Pokémon: 2\n1 Flutter Mane PR-SV 97\n1 Pecharunt PR-SV 149'
+    );
+    await page.getByRole('button', { name: /load deck/i }).click();
+
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(2);
+    await expect(page.locator('[data-testid="card-tile"] .warning-icon')).toHaveCount(0);
+  });
+
   test('shows skeleton placeholders while cards are loading', async ({ page }) => {
     // Delay API responses to observe skeletons
     await page.route('**/v2/sets*', async (route) => {
