@@ -1,5 +1,5 @@
 const SECTION_RE = /^(Pokémon|Pokemon|Trainer|Energy)\s*:\s*(\d+)\s*$/i;
-const CARD_RE = /^(\d+)\s+(.+?)\s+([A-Za-z]{2,6})\s+(\d+)\s*$/;
+const CARD_RE = /^(\d+)\s+(.+?)\s+([A-Za-z]{2,6}(?:-[A-Za-z0-9]{1,3})?)\s+(\d+)\s*$/;
 const TOTAL_RE = /^Total Cards\s*:\s*\d+\s*$/i;
 
 /**
