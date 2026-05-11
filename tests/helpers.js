@@ -25,6 +25,7 @@ const MOCK_SETS = {
     { id: 'sv6', name: 'Twilight Masquerade', ptcgoCode: 'TWM' },
     { id: 'sv5', name: 'Temporal Forces', ptcgoCode: 'TEF' },
     { id: 'sve', name: 'Scarlet & Violet Energies', ptcgoCode: 'SVE' },
+    { id: 'svp', name: 'Scarlet & Violet Promos', ptcgoCode: 'PR-SV' },
   ],
 };
 
@@ -63,6 +64,20 @@ const MOCK_CARDS = {
     images: { small: 'https://images.pokemontcg.io/sv6/100.png' },
     set: { id: 'sv6', ptcgoCode: 'TWM' },
     number: '100',
+  },
+  'svp-97': {
+    id: 'svp-97',
+    name: 'Flutter Mane',
+    images: { small: 'https://images.pokemontcg.io/svp/97.png' },
+    set: { id: 'svp', ptcgoCode: 'PR-SV' },
+    number: '97',
+  },
+  'svp-149': {
+    id: 'svp-149',
+    name: 'Pecharunt',
+    images: { small: 'https://images.pokemontcg.io/svp/149.png' },
+    set: { id: 'svp', ptcgoCode: 'PR-SV' },
+    number: '149',
   },
 };
 
