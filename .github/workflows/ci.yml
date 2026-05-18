@@ -18,7 +18,47 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+      - name: Run Playwright tests
+        id: playwright
+        run: npx playwright test
+        continue-on-error: true
+      - name: Test summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('playwright-results.json')) return;
+            const { stats, suites = [] } = JSON.parse(fs.readFileSync('playwright-results.json', 'utf8'));
+            const { expected, unexpected, skipped, flaky, duration } = stats;
+            const icon = unexpected > 0 ? '❌' : '✅';
+            const failed = [];
+            function walk(suite) {
+              for (const s of suite.suites || []) walk(s);
+              for (const spec of suite.specs || [])
+                if (spec.tests?.some(t => t.status === 'unexpected')) failed.push(spec.title);
+            }
+            suites.forEach(walk);
+            let md = `## ${icon} Playwright Tests\n\n| | |\n|---|---|\n`;
+            md += `| ✅ Passed | ${expected} |\n`;
+            md += `| ❌ Failed | ${unexpected} |\n`;
+            if (flaky)   md += `| ⚠️ Flaky | ${flaky} |\n`;
+            if (skipped) md += `| ⏭️ Skipped | ${skipped} |\n`;
+            md += `| ⏱️ Duration | ${(duration / 1000).toFixed(1)}s |\n`;
+            if (failed.length) {
+              md += `\n### Failed Tests\n\n` + failed.map(t => `- ${t}`).join('\n') + '\n';
+            }
+            await core.summary.addRaw(md).write();
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - name: Fail if tests failed
+        if: steps.playwright.outcome == 'failure'
+        run: exit 1
       - run: npm run build
         env:
           VITE_POKEMONTCG_API_KEY: ${{ secrets.API_KEY }}
