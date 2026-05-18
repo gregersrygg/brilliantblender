@@ -140,6 +140,8 @@ const MOCK_CARDS = {
 };
 
 export async function mockApi(page) {
+  await mockPrints(page);
+
   await page.route('**/v2/sets*', (route) => {
     route.fulfill({
       status: 200,

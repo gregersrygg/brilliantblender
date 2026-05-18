@@ -1,6 +1,6 @@
 // tests/m1-paste-preview.spec.js
 import { test, expect } from '@playwright/test';
-import { SAMPLE_DECKLIST, mockApi, mockPrints } from './helpers.js';
+import { SAMPLE_DECKLIST, mockApi } from './helpers.js';
 
 test.describe('M1: Paste & Preview', () => {
   test('shows textarea and Load Deck button on initial load', async ({ page }) => {
@@ -39,7 +39,6 @@ test.describe('M1: Paste & Preview', () => {
 
   test('exports decklist that matches the original input', async ({ page }) => {
     await mockApi(page);
-    await mockPrints(page);
     await page.goto('/');
     await page.getByRole('textbox', { name: /paste/i }).fill(SAMPLE_DECKLIST);
     await page.getByRole('button', { name: /load deck/i }).click();
