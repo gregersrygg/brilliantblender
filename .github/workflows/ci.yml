@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - run: npm run build
+        env:
+          VITE_POKEMONTCG_API_KEY: ${{ secrets.API_KEY }}
+      - if: github.event_name == 'workflow_call'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
