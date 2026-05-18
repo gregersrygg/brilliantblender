@@ -57,7 +57,7 @@ test.describe('M1: Paste & Preview', () => {
 1 Dreepy TWM 128
 
 Trainer: 1
-1 Buddy-Buddy Poffin TEF 144
+1 Buddy-Buddy Poffin ASC 184
 
 Energy: 1
 1 Grass Energy SVE 1

@@ -112,7 +112,7 @@ export function createDeck() {
               card.evolvesFrom = d.evolvesFrom ?? null;
               const mark = d.regulationMark ?? null;
               card.regulationMark = mark;
-              card.isRotating = mark !== null && !LEGAL_REGULATION_MARKS.includes(mark);
+              card.isRotating = !card.isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark);
               card.cardLoading = false;
             })
             .catch((e) => {
@@ -218,6 +218,7 @@ export function createDeck() {
     }
 
     const mark = apiCard.regulationMark ?? null;
+    const isBasicEnergy = apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic');
     section.cards.push({
       qty: 1,
       name: apiCard.name,
@@ -228,13 +229,13 @@ export function createDeck() {
       supertype: apiCard.supertype ?? null,
       cardLoading: false,
       cardError: null,
-      isBasicEnergy: apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic'),
+      isBasicEnergy,
       isAceSpec: (apiCard.subtypes ?? []).includes('ACE SPEC'),
       types: apiCard.types ?? null,
       subtypes: apiCard.subtypes ?? [],
       evolvesFrom: apiCard.evolvesFrom ?? null,
       regulationMark: mark,
-      isRotating: mark !== null && !LEGAL_REGULATION_MARKS.includes(mark),
+      isRotating: !isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark),
     });
     sortDeck(deck);
   }
@@ -289,7 +290,7 @@ export function createDeck() {
           subtypes,
           evolvesFrom,
           regulationMark: p.regulationMark ?? null,
-          isRotating: p.regulationMark ? !LEGAL_REGULATION_MARKS.includes(p.regulationMark) : false,
+          isRotating: !(p.isBasicEnergy ?? false) && !LEGAL_REGULATION_MARKS.includes(p.regulationMark ?? null),
         }));
       section.cards.splice(idx, 0, ...newCards);
       break;

@@ -9,6 +9,7 @@ All tests use Playwright. Config: `playwright.config.js` (runs against `localhos
 | `tests/m1-paste-preview.spec.js` | Paste, load, card grid, export, error lines, fallback search, skeletons |
 | `tests/m2-quantity-editing.spec.js` | +/− controls, deck total, section counts, warnings, export |
 | `tests/m3-print-substitution.spec.js` | Print Picker open/close, print list, current highlight, qty controls, >4 validation, export |
+| `tests/legality-warning.spec.js` | Cards with null regulation marks show "Not Standard-legal" warning; basic energy exempt |
 
 ## `tests/helpers.js`
 
@@ -23,6 +24,14 @@ All tests use Playwright. Config: `playwright.config.js` (runs against `localhos
 Total Cards: 4
 ```
 
+### Legality test decklists
+
+| Constant | Contents |
+|---|---|
+| `NULL_MARK_POKEMON_DECKLIST` | 1 Psyduck BS 53 (regulationMark: null) |
+| `NULL_MARK_TRAINER_DECKLIST` | 1 Computer Search BS 71 (regulationMark: null) |
+| `MIXED_LEGALITY_DECKLIST` | 1 Dragapult ex TWM 130 (legal) + 1 Psyduck BS 53 (null mark) |
+
 ### `mockApi(page)`
 
 Call before `page.goto('/')`. Registers:
@@ -31,27 +40,34 @@ Call before `page.goto('/')`. Registers:
 
 ### `mockPrints(page)`
 
-Call in addition to `mockApi` for M3 tests. Registers:
+Call in addition to `mockApi` for M3 and legality tests. Registers:
 - `**/v2/cards?*` → parses `q=name:"..."`, returns `MOCK_PRINTS_BY_NAME[name]` or `[]`
 
 ### Mock data
 
-**`MOCK_SETS`** — three sets:
+**`MOCK_SETS`** — five sets:
 
 | ptcgoCode | setId | Name |
 |---|---|---|
 | TWM | sv6 | Twilight Masquerade |
 | TEF | sv5 | Temporal Forces |
 | SVE | sve | Scarlet & Violet Energies |
+| PR-SV | svp | Scarlet & Violet Promos |
+| BS | base1 | Base Set |
 
-**`MOCK_CARDS`** — four cards (keyed by `{setId}-{number}`):
+**`MOCK_CARDS`** — keyed by `{setId}-{number}`, each with `supertype`, `subtypes`, `regulationMark`:
 
-| Key | Card |
-|---|---|
-| sv6-130 | Dragapult ex (Pokémon) |
-| sv6-128 | Dreepy (Pokémon) |
-| sv5-144 | Buddy-Buddy Poffin (Trainer) |
-| sve-1 | Grass Energy (Energy) |
+| Key | Card | regulationMark |
+|---|---|---|
+| sv6-130 | Dragapult ex (Pokémon) | J |
+| sv6-128 | Dreepy (Pokémon) | J |
+| sv5-144 | Buddy-Buddy Poffin (Trainer) | H |
+| sve-1 | Grass Energy (Energy, Basic) | null |
+| sv6-100 | Dunsparce (Pokémon) | J |
+| svp-97 | Flutter Mane (Pokémon) | H |
+| svp-149 | Pecharunt (Pokémon) | I |
+| base1-53 | Psyduck (Pokémon) | null |
+| base1-71 | Computer Search (Trainer) | null |
 
 **`MOCK_PRINTS_BY_NAME`** — alternate prints for M3:
 

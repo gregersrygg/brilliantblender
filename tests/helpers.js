@@ -1,3 +1,19 @@
+export const NULL_MARK_POKEMON_DECKLIST = `Pokémon: 1
+1 Psyduck BS 53
+
+Total Cards: 1`;
+
+export const NULL_MARK_TRAINER_DECKLIST = `Trainer: 1
+1 Computer Search BS 71
+
+Total Cards: 1`;
+
+export const MIXED_LEGALITY_DECKLIST = `Pokémon: 2
+1 Dragapult ex TWM 130
+1 Psyduck BS 53
+
+Total Cards: 2`;
+
 export const PSYDUCK_DECKLIST = `Pokémon: 1
 1 Psyduck BS 53
 
@@ -26,6 +42,7 @@ const MOCK_SETS = {
     { id: 'sv5', name: 'Temporal Forces', ptcgoCode: 'TEF' },
     { id: 'sve', name: 'Scarlet & Violet Energies', ptcgoCode: 'SVE' },
     { id: 'svp', name: 'Scarlet & Violet Promos', ptcgoCode: 'PR-SV' },
+    { id: 'base1', name: 'Base Set', ptcgoCode: 'BS' },
   ],
 };
 
@@ -33,51 +50,92 @@ const MOCK_CARDS = {
   'sv6-130': {
     id: 'sv6-130',
     name: 'Dragapult ex',
+    supertype: 'Pokémon',
+    subtypes: ['Stage 2', 'ex'],
     images: { small: 'https://images.pokemontcg.io/sv6/130.png' },
     set: { id: 'sv6', ptcgoCode: 'TWM' },
     number: '130',
+    regulationMark: 'J',
   },
   'sv6-128': {
     id: 'sv6-128',
     name: 'Dreepy',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
     images: { small: 'https://images.pokemontcg.io/sv6/128.png' },
     set: { id: 'sv6', ptcgoCode: 'TWM' },
     number: '128',
+    regulationMark: 'J',
   },
   'sv5-144': {
     id: 'sv5-144',
     name: 'Buddy-Buddy Poffin',
+    supertype: 'Trainer',
+    subtypes: ['Item'],
     images: { small: 'https://images.pokemontcg.io/sv5/144.png' },
     set: { id: 'sv5', ptcgoCode: 'TEF' },
     number: '144',
+    regulationMark: 'H',
   },
   'sve-1': {
     id: 'sve-1',
     name: 'Grass Energy',
+    supertype: 'Energy',
+    subtypes: ['Basic'],
     images: { small: 'https://images.pokemontcg.io/sve/1.png' },
     set: { id: 'sve', ptcgoCode: 'SVE' },
     number: '1',
+    regulationMark: null,
   },
   'sv6-100': {
     id: 'sv6-100',
     name: 'Dunsparce',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
     images: { small: 'https://images.pokemontcg.io/sv6/100.png' },
     set: { id: 'sv6', ptcgoCode: 'TWM' },
     number: '100',
+    regulationMark: 'J',
   },
   'svp-97': {
     id: 'svp-97',
     name: 'Flutter Mane',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
     images: { small: 'https://images.pokemontcg.io/svp/97.png' },
     set: { id: 'svp', ptcgoCode: 'PR-SV' },
     number: '97',
+    regulationMark: 'H',
   },
   'svp-149': {
     id: 'svp-149',
     name: 'Pecharunt',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
     images: { small: 'https://images.pokemontcg.io/svp/149.png' },
     set: { id: 'svp', ptcgoCode: 'PR-SV' },
     number: '149',
+    regulationMark: 'I',
+  },
+  'base1-53': {
+    id: 'base1-53',
+    name: 'Psyduck',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
+    images: { small: 'https://images.pokemontcg.io/base1/53.png' },
+    set: { id: 'base1', ptcgoCode: 'BS' },
+    number: '53',
+    regulationMark: null,
+  },
+  'base1-71': {
+    id: 'base1-71',
+    name: 'Computer Search',
+    supertype: 'Trainer',
+    subtypes: ['Item'],
+    images: { small: 'https://images.pokemontcg.io/base1/71.png' },
+    set: { id: 'base1', ptcgoCode: 'BS' },
+    number: '71',
+    regulationMark: null,
   },
 };
 
