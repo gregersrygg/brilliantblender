@@ -167,6 +167,22 @@ export async function mockApi(page) {
 // --- M3: Print mock data ---
 
 const MOCK_PRINTS_BY_NAME = {
+  'Buddy-Buddy Poffin': [
+    {
+      id: 'me2pt5-184',
+      name: 'Buddy-Buddy Poffin',
+      number: '184',
+      supertype: 'Trainer',
+      subtypes: ['Item'],
+      set: { id: 'me2pt5', ptcgoCode: 'ASC', name: 'Ascended Heroes', printedTotal: 217 },
+      images: { small: 'https://images.scrydex.com/pokemon/me2pt5-184/small' },
+      legalities: { standard: 'Legal', unlimited: 'Legal', expanded: 'Legal' },
+      regulationMark: 'H',
+      rarity: 'Common',
+      rules: [],
+    },
+  ],
+
   'Dragapult ex': [
     {
       id: 'sv6-130',
