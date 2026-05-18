@@ -2,6 +2,9 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  reporter: process.env.CI
+    ? [['github'], ['json', { outputFile: 'playwright-results.json' }], ['html', { open: 'never' }]]
+    : 'list',
   webServer: {
     command: 'VITE_DISABLE_SNAPSHOT=true npm run dev',
     port: 5173,

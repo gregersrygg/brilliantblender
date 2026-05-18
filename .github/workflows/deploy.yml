@@ -16,22 +16,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-      - run: npm run build
-        env:
-          VITE_POKEMONTCG_API_KEY: ${{ secrets.API_KEY }}
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
 
   deploy:
     needs: build
