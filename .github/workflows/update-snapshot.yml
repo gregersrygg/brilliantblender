@@ -3,7 +3,7 @@ name: Update card snapshot
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 1' # Every Monday at 06:00 UTC
+    - cron: '0 23 * * *' # Every night at 23:00 UTC
 
 permissions:
   contents: write
