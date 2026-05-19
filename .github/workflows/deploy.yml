@@ -18,6 +18,8 @@ jobs:
   build:
     uses: ./.github/workflows/ci.yml
     secrets: inherit
+    with:
+      upload_pages_artifact: true
 
   deploy:
     needs: build
