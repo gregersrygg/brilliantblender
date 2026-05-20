@@ -118,7 +118,7 @@
     {#if parseErrorCount > 0 && !dismissedParseWarning}
       <div class="parse-warning" role="alert" data-testid="parse-warning">
         {parseErrorCount} line(s) couldn't be parsed and were skipped. Expected format:
-        <code>4 Gardevoir ex SVI 86</code>
+        <code>4 Dreepy PRE 71</code>
         <button onclick={() => (dismissedParseWarning = true)} aria-label="Dismiss">✕</button>
       </div>
     {/if}

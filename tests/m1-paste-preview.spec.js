@@ -3,15 +3,15 @@ import { test, expect } from '@playwright/test';
 import { SAMPLE_DECKLIST, mockApi } from './helpers.js';
 
 test.describe('M1: Paste & Preview', () => {
-  test('shows textarea and Load Deck button on initial load', async ({ page }) => {
+  test('shows textarea and a start-from-scratch button on initial load', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('textbox', { name: /paste/i })).toBeVisible();
-    const loadButton = page.getByRole('button', { name: /load deck/i });
-    await expect(loadButton).toBeVisible();
-    await expect(loadButton).toBeDisabled();
+    const startButton = page.getByRole('button', { name: /start from scratch/i });
+    await expect(startButton).toBeVisible();
+    await expect(startButton).toBeEnabled();
   });
 
-  test('enables Load Deck button when textarea has content', async ({ page }) => {
+  test('button switches to Load Deck when textarea has content', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', { name: /paste/i }).fill('some text');
     await expect(page.getByRole('button', { name: /load deck/i })).toBeEnabled();

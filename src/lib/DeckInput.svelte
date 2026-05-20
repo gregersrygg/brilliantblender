@@ -10,11 +10,11 @@
     id="deck-textarea"
     aria-label="Paste your decklist"
     bind:value={text}
-    placeholder={"Pokémon: 4\n4 Gardevoir ex SVI 86\n\nTrainer: 4\n4 Nest Ball SVI 181\n\nEnergy: 4\n4 Psychic Energy SVE 5"}
+    placeholder={"Pokémon: 4\n4 Dreepy PRE 71\n\nTrainer: 4\n4 Poké Pad POR 81\n\nEnergy: 4\n4 Psychic Energy SVE 5"}
     rows="12"
   ></textarea>
-  <button disabled={text.trim() === ''} onclick={() => onload(text)}>
-    Load Deck
+  <button onclick={() => onload(text)}>
+    {text.trim() === '' ? 'Start from scratch' : 'Load Deck'}
   </button>
 </div>
 
@@ -56,13 +56,8 @@
     cursor: pointer;
   }
 
-  button:hover:not(:disabled) {
+  button:hover {
     background: var(--accent-hover);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .subtitle {
