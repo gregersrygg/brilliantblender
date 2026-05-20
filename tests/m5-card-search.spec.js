@@ -28,4 +28,12 @@ test.describe('M5: Card Search', () => {
     await expect(results.nth(1).locator('.result-name')).toHaveText("Misty's Psyduck");
   });
 
+  test('searching without accents matches accented card names (issue #6)', async ({ page }) => {
+    await loadDeck(page);
+    await page.getByPlaceholder(/search cards/i).fill('poke');
+    const results = page.locator('.search-result');
+    await expect(results).toHaveCount(1);
+    await expect(results.nth(0).locator('.result-name')).toHaveText('Poké Pad');
+  });
+
 });

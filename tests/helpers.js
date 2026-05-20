@@ -310,6 +310,19 @@ const MOCK_SEARCH_RESULTS = {
       regulationMark: 'I',
     },
   ],
+  'poke': [
+    {
+      id: 'sv6-187',
+      name: 'Poké Pad',
+      number: '187',
+      supertype: 'Trainer',
+      subtypes: ['Item'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade' },
+      images: { small: 'https://images.pokemontcg.io/sv6/187.png' },
+      legalities: { standard: 'legal' },
+      regulationMark: 'H',
+    },
+  ],
 };
 
 export async function mockPrints(page) {
