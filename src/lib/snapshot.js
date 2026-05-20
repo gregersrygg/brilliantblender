@@ -55,7 +55,10 @@ export function getSnapshotPrintsByName(name) {
 }
 
 function stripSymbols(str) {
-  return str.replace(/[^a-z0-9 ]/g, '');
+  return str
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9 ]/g, '');
 }
 
 export function searchSnapshot(query) {

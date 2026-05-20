@@ -56,7 +56,7 @@ Tries API first (for completeness — includes older non-Standard prints), falls
 
 ### `searchCards(query) → Promise<cardObject[]>`
 
-Searches snapshot first for instant results. Falls back to API wildcard search if no snapshot matches. Returns up to 20 cards sorted newest-first.
+Searches snapshot first for instant results. Falls back to API wildcard search if no snapshot matches. Returns up to 20 cards sorted newest-first. Snapshot matching is diacritic-insensitive: the query and each card name are NFD-normalized and combining marks stripped, so `poke` matches `Poké Pad`.
 
 ## Snapshot module — `src/lib/snapshot.js`
 
