@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import DeckInput from './lib/DeckInput.svelte';
   import DeckView from './lib/DeckView.svelte';
   import ExportButton from './lib/ExportButton.svelte';
@@ -7,10 +8,30 @@
   import CardSearch from './lib/CardSearch.svelte';
   import { createDeck } from './lib/deck.svelte.js';
 
+  const DECK_HASH_PREFIX = '#deck=';
+
   const deckState = createDeck();
   let pickerCard = $state(null); // { name, setCode, number } | null
   let showConfirm = $state(false);
   let dismissedParseWarning = $state(false);
+
+  onMount(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith(DECK_HASH_PREFIX)) return;
+
+    let decoded = '';
+    try {
+      decoded = decodeURIComponent(hash.slice(DECK_HASH_PREFIX.length));
+    } catch {
+      // Malformed percent-encoding — fall through and just strip the hash.
+    }
+
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    if (decoded.trim()) {
+      handleLoad(decoded);
+    }
+  });
 
   let parseErrorCount = $derived(
     deckState.deck
