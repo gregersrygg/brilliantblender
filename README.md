@@ -12,6 +12,21 @@ Paste a Pokémon TCG decklist, see your cards, swap prints, and export a tournam
 - Search and add cards by name
 - Export the final list in tournament-legal PTCGL format
 
+## Linking to a deck from another site
+
+Append a URL-encoded PTCGL decklist as the `#deck=` hash:
+
+```javascript
+const deckText = `Pokémon: 1
+1 Dragapult ex TWM 130
+
+Total Cards: 1`;
+
+const url = 'https://gregers.no/#deck=' + encodeURIComponent(deckText);
+```
+
+The hash is stripped from the address bar after the deck loads. Typical 60-card decks encode to ~600–1,200 chars.
+
 ## Local development
 
 Requires Node 24 (see `.nvmrc`).

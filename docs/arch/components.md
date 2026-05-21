@@ -9,6 +9,8 @@ Top-level flow controller. Three render states:
 
 Also manages `PrintPicker` visibility.
 
+**On mount:** if `window.location.hash` starts with `#deck=`, decodes the rest with `decodeURIComponent`, strips the hash via `history.replaceState`, and forwards the decoded text to `deckState.loadDeck()`. Malformed encoding falls through to the empty state with the hash still stripped. This is the entry point for cross-site deep links (see README "Linking to a deck from another site").
+
 **Internal state:**
 - `deckState` — result of `createDeck()` (see [state.md](state.md))
 - `pickerCard: { name, setCode, number } | null` — which card's Print Picker is open; `null` = closed
