@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.SNAPSHOT_PUSH_TOKEN }}
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
