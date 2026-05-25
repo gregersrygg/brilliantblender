@@ -1,66 +1,176 @@
 #!/usr/bin/env node
+// Post-step guard for the set-legality agent. Reads the current
+// src/data/set-legality.json and refuses to let bad data reach main.
+//
+// The validator is deliberately strict: every check is its own function so a
+// future contributor can read the file top-to-bottom and see exactly what gets
+// enforced and why.
+
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = resolve(__dirname, '../src/data');
-const targetPath = resolve(dataDir, 'set-legality.json');
+const repoRoot = resolve(__dirname, '..');
+const targetPath = resolve(repoRoot, 'src/data/set-legality.json');
 
-const ALLOWED_HOSTS = ['press.pokemon.com', 'community.pokemon.com', 'www.pokemon.com', 'pokemon.com'];
-const DATE_RE = /^\d{4}[-/]\d{2}[-/]\d{2}$/;
+export const ALLOWED_HOSTS = ['press.pokemon.com'];
+export const ALLOWED_PATH = 'src/data/set-legality.json';
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+const SET_ID_RE = /^[a-z0-9]+(pt\d+)?$/i;
 
-function fail(msg) {
-  console.error(`validate-legality: ${msg}`);
-  process.exit(1);
+class ValidationError extends Error {}
+
+function fail(message) {
+  throw new ValidationError(message);
 }
 
-const next = JSON.parse(readFileSync(targetPath, 'utf8'));
-if (next === null || typeof next !== 'object' || Array.isArray(next)) {
-  fail('set-legality.json must be a JSON object');
-}
-
-for (const [setId, entry] of Object.entries(next)) {
-  if (!/^[a-z0-9]+(pt\d+)?$/i.test(setId)) fail(`invalid setId: ${setId}`);
-  if (!entry || typeof entry !== 'object') fail(`${setId}: entry must be an object`);
-  const { name, releaseDate, isSpecialSet, legalFrom, sourceUrl, fetchedAt } = entry;
-  if (typeof name !== 'string' || !name.trim()) fail(`${setId}: name required`);
-  if (typeof releaseDate !== 'string' || !DATE_RE.test(releaseDate)) fail(`${setId}: releaseDate must be YYYY-MM-DD or YYYY/MM/DD`);
-  if (typeof isSpecialSet !== 'boolean') fail(`${setId}: isSpecialSet must be boolean`);
-  if (typeof legalFrom !== 'string' || !DATE_RE.test(legalFrom)) fail(`${setId}: legalFrom must be YYYY-MM-DD or YYYY/MM/DD`);
-  if (typeof sourceUrl !== 'string') fail(`${setId}: sourceUrl required`);
-  let host;
-  try { host = new URL(sourceUrl).hostname; } catch { fail(`${setId}: sourceUrl not a valid URL`); }
-  if (!ALLOWED_HOSTS.includes(host)) fail(`${setId}: sourceUrl host ${host} not in allowed list`);
-  if (typeof fetchedAt !== 'string' || !ISO_RE.test(fetchedAt)) fail(`${setId}: fetchedAt must be ISO 8601 UTC`);
-
-  const rd = releaseDate.replaceAll('/', '-');
-  const lf = legalFrom.replaceAll('/', '-');
-  if (lf < rd) fail(`${setId}: legalFrom (${lf}) precedes releaseDate (${rd})`);
-}
-
-// Refuse removals: every key in the previous committed version must still exist.
-try {
-  const prev = execSync('git show HEAD:src/data/set-legality.json', { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
-  const prevObj = JSON.parse(prev || '{}');
-  for (const key of Object.keys(prevObj)) {
-    if (!(key in next)) fail(`refusing to drop existing entry: ${key}`);
+function ensureObject(value, label) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    fail(`${label} must be a JSON object`);
   }
-} catch {
-  // First commit of the file — nothing to compare against.
 }
 
-// Guardrail: only set-legality.json may have changed in this commit window.
-try {
-  const diff = execSync('git diff --name-only HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-  const changed = diff ? diff.split('\n') : [];
-  const disallowed = changed.filter((p) => p !== 'src/data/set-legality.json');
-  if (disallowed.length > 0) fail(`agent modified disallowed paths: ${disallowed.join(', ')}`);
-} catch {
-  // Outside a git repo — skip diff check.
+function ensureValidSetId(setId) {
+  if (!SET_ID_RE.test(setId)) {
+    fail(`invalid setId: ${setId}`);
+  }
 }
 
-if (!existsSync(targetPath)) fail('set-legality.json missing after agent run');
-console.log(`validate-legality: ok (${Object.keys(next).length} entries)`);
+function ensureNonEmptyString(value, label) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    fail(`${label} must be a non-empty string`);
+  }
+}
+
+function ensureDashDate(value, label) {
+  if (typeof value !== 'string' || !DATE_RE.test(value)) {
+    fail(`${label} must be YYYY-MM-DD (dashes only): got ${JSON.stringify(value)}`);
+  }
+}
+
+function ensureBoolean(value, label) {
+  if (typeof value !== 'boolean') {
+    fail(`${label} must be a boolean`);
+  }
+}
+
+function ensureIsoTimestamp(value, label) {
+  if (typeof value !== 'string' || !ISO_RE.test(value)) {
+    fail(`${label} must be an ISO 8601 UTC timestamp`);
+  }
+}
+
+function ensureAllowedHost(sourceUrl, label) {
+  let host;
+  try {
+    host = new URL(sourceUrl).hostname;
+  } catch {
+    fail(`${label} is not a valid URL`);
+  }
+  if (!ALLOWED_HOSTS.includes(host)) {
+    fail(`${label} host ${host} is not in the allow-list (${ALLOWED_HOSTS.join(', ')})`);
+  }
+}
+
+function ensureLegalAfterRelease(entry, setId) {
+  if (entry.legalFrom < entry.releaseDate) {
+    fail(`${setId}: legalFrom (${entry.legalFrom}) precedes releaseDate (${entry.releaseDate})`);
+  }
+}
+
+export function validateEntry(setId, entry) {
+  ensureValidSetId(setId);
+  ensureObject(entry, `${setId}: entry`);
+  ensureNonEmptyString(entry.name, `${setId}.name`);
+  ensureDashDate(entry.releaseDate, `${setId}.releaseDate`);
+  ensureBoolean(entry.isSpecialSet, `${setId}.isSpecialSet`);
+  ensureDashDate(entry.legalFrom, `${setId}.legalFrom`);
+  ensureNonEmptyString(entry.sourceUrl, `${setId}.sourceUrl`);
+  ensureAllowedHost(entry.sourceUrl, `${setId}.sourceUrl`);
+  ensureIsoTimestamp(entry.fetchedAt, `${setId}.fetchedAt`);
+  ensureLegalAfterRelease(entry, setId);
+}
+
+export function validateLegalityFile(data) {
+  ensureObject(data, 'set-legality.json root');
+  for (const [setId, entry] of Object.entries(data)) {
+    validateEntry(setId, entry);
+  }
+}
+
+export function ensureNoDroppedEntries(previous, next) {
+  for (const setId of Object.keys(previous)) {
+    if (!(setId in next)) {
+      fail(`refusing to drop existing entry: ${setId}`);
+    }
+  }
+}
+
+export function ensureOnlyAllowedPathChanged(changedPaths, allowedPath = ALLOWED_PATH) {
+  const disallowed = changedPaths.filter((path) => path !== allowedPath);
+  if (disallowed.length > 0) {
+    fail(`agent modified disallowed paths: ${disallowed.join(', ')}`);
+  }
+}
+
+function readCurrentLegalityFile() {
+  if (!existsSync(targetPath)) {
+    fail('set-legality.json missing after agent run');
+  }
+  return JSON.parse(readFileSync(targetPath, 'utf8'));
+}
+
+function readPreviousLegalityFile() {
+  try {
+    const previousJson = execSync('git show HEAD:src/data/set-legality.json', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString();
+    return JSON.parse(previousJson || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function readChangedPaths() {
+  try {
+    const diff = execSync('git diff --name-only HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim();
+    return diff ? diff.split('\n') : [];
+  } catch {
+    return [];
+  }
+}
+
+function main() {
+  try {
+    const current = readCurrentLegalityFile();
+    validateLegalityFile(current);
+
+    const previous = readPreviousLegalityFile();
+    ensureNoDroppedEntries(previous, current);
+
+    const changed = readChangedPaths();
+    if (changed.length > 0) {
+      ensureOnlyAllowedPathChanged(changed);
+    }
+
+    console.log(`validate-legality: ok (${Object.keys(current).length} entries)`);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.error(`validate-legality: ${error.message}`);
+      process.exit(1);
+    }
+    throw error;
+  }
+}
+
+const invokedDirectly = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  main();
+}
+
+export { ValidationError };

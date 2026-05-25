@@ -17,6 +17,11 @@ const cards = JSON.parse(readFileSync(cardsPath, 'utf8'));
 const prevIds = new Set(prev.map(([, id]) => id));
 const newIds = curr.map(([, id]) => id).filter((id) => !prevIds.has(id));
 
+function normalizeDate(raw) {
+  if (typeof raw !== 'string') return raw;
+  return raw.replaceAll('/', '-');
+}
+
 const meta = {};
 for (const card of Object.values(cards)) {
   if (!card.set?.id || meta[card.set.id]) continue;
@@ -24,7 +29,7 @@ for (const card of Object.values(cards)) {
     setId: card.set.id,
     ptcgoCode: card.set.ptcgoCode ?? null,
     name: card.set.name,
-    releaseDate: card.set.releaseDate,
+    releaseDate: normalizeDate(card.set.releaseDate),
   };
 }
 

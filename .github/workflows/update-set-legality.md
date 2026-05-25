@@ -21,12 +21,9 @@ timeout-minutes: 20
 network:
   allowed:
     - press.pokemon.com
-    - www.pokemon.com
-    - pokemon.com
-    - community.pokemon.com
 
 # Tools the agent can call. The combination of:
-#   - bash limited to read-only commands
+#   - bash limited to read-only commands + the date CLI for arithmetic
 #   - no `git` / no `gh`
 #   - write-tool diff enforced by the post-job validator
 # means the agent's only durable effect is editing src/data/set-legality.json.
@@ -36,6 +33,7 @@ tools:
     - "jq:*"
     - "test:*"
     - "ls src/data"
+    - "date:*"
   edit:
   web-fetch:
   github:
@@ -90,78 +88,114 @@ The set or sets to process are passed in as JSON via `${{ inputs.sets }}`:
 ${{ inputs.sets }}
 ```
 
-Each entry has `{ setId, ptcgoCode, name, releaseDate }`. Process every set in
-the input. Do nothing for sets not in the input — historical data is out of
-scope for this run.
+Each entry has `{ setId, ptcgoCode, name, releaseDate }` and `releaseDate` is
+already normalized to `YYYY-MM-DD`. Process every set in the input. Do nothing
+for sets not in the input — historical data is out of scope for this run.
 
 ## Per-set procedure
 
 For each set in the input:
 
-1. **Find the press release.** Search `https://press.pokemon.com/en/?itemtype=3`
-   (the TCG releases filter) for a release whose title or body matches the set
-   name. The press release URL goes into `sourceUrl`. If you cannot find a
-   matching press release after a thorough search, **do not guess** — emit a
-   `create-issue` safe-output describing the set and what you searched, and
-   move on to the next set. Do not write an entry for that set.
+### 1. Find the press release
 
-2. **Classify special vs main.** Read the press release product list. A set is
-   `isSpecialSet: false` (main set) when the press release lists **booster
-   boxes** or **sleeved booster packs** as products. A set is
-   `isSpecialSet: true` when the press release lists only collection boxes,
-   ETBs, premium collections, special sets, or similar — i.e. no booster
-   boxes/packs.
+Search `https://press.pokemon.com/en/?itemtype=3` (the TCG releases filter) for
+a release whose title or body matches the set name.
 
-3. **Determine `legalFrom`.** Fetch the current Play! Pokémon legality rules
-   from `https://community.pokemon.com/en-us/discussion/22216/pokemon-tcg-product-legality-update`
-   and apply them to this set:
-   - Main set (booster boxes/packs): legal **14 days after** `releaseDate`.
-   - Special set (no booster boxes/packs): apply the special-set rule from
-     that announcement. Read it fresh each run; do not hardcode from memory,
-     the rule may change again.
+The listing is paginated. If you do not find the set on the first page,
+follow the next-page / "Load more" link and keep going. Brand-new sets are at
+the top; older sets need pagination. Do not give up after one page.
 
-   Compute `legalFrom` in `YYYY-MM-DD`. It must be on or after `releaseDate`.
+The press release URL goes into `sourceUrl`. If you cannot find a matching
+press release after exhausting the listing, **do not guess** — emit a
+`create-issue` safe-output describing the set and what you searched, and move
+on to the next set. Do not write an entry for that set.
 
-4. **Edit the file.** Open `src/data/set-legality.json` and add the new entry.
-   Use exactly this shape — extra fields will fail validation:
+### 2. Classify special vs main
 
-   ```json
-   {
-     "<setId>": {
-       "name": "<full set name>",
-       "releaseDate": "<copy from input, YYYY/MM/DD>",
-       "isSpecialSet": <true|false>,
-       "legalFrom": "<YYYY-MM-DD>",
-       "sourceUrl": "<https://press.pokemon.com/... press release URL>",
-       "fetchedAt": "<current UTC time, ISO 8601, e.g. 2026-05-25T08:00:00Z>"
-     }
-   }
-   ```
+Read the press release product list:
 
-   Preserve all existing entries — never delete or rename keys. The validator
-   rejects dropped entries.
+- `isSpecialSet: false` (main set) — the press release lists **Booster Boxes**
+  *or* **Sleeved Booster Packs** as products.
+- `isSpecialSet: true` (special set) — the press release lists no booster
+  boxes and no sleeved booster packs. Typical products: Elite Trainer Box,
+  Booster Bundle, premium collection, special collection.
+
+### 3. Determine the base date for the +14-day cadence
+
+Both kinds of set become legal **14 days** after a base date. Only the base
+date differs:
+
+- **Main set** — base date is `releaseDate` (the set's release date from the
+  input).
+- **Special set** — base date is the earlier of the **Elite Trainer Box
+  release date** and the **Booster Bundle release date** as listed in the
+  press release. (This matches the rule: "Sets that do not have Sleeved
+  Booster Packs … will follow the same two-week cadence based on the release
+  date of the expansion's Elite Trainer Box or Booster Bundle, whichever comes
+  first.") If only one of the two is listed, use that date. If neither is
+  present in the press release, treat the press release as ambiguous and open
+  an issue rather than guessing.
+
+Press releases give dates in human form, e.g. "May 22, 2026". Convert that to
+`YYYY-MM-DD` before computing — do not eyeball.
+
+### 4. Add 14 days using the `date` CLI
+
+**Do not do date arithmetic by hand.** Use the `date` command:
+
+```bash
+date -u -d "2026-05-22 +14 days" +%Y-%m-%d
+# -> 2026-06-05
+```
+
+The output is your `legalFrom` value. It must be on or after `releaseDate`
+(the validator enforces this).
+
+### 5. Edit the file
+
+Open `src/data/set-legality.json` and add the new entry. Use exactly this
+shape — extra fields, missing fields, or slash-formatted dates will fail
+validation:
+
+```json
+{
+  "<setId>": {
+    "name": "<full set name>",
+    "releaseDate": "<YYYY-MM-DD, copy from input>",
+    "isSpecialSet": <true|false>,
+    "legalFrom": "<YYYY-MM-DD, output of `date -d`>",
+    "sourceUrl": "<https://press.pokemon.com/... press release URL>",
+    "fetchedAt": "<current UTC time in ISO 8601, e.g. 2026-05-25T08:00:00Z>"
+  }
+}
+```
+
+Preserve all existing entries — never delete or rename keys. The validator
+rejects dropped entries.
 
 ## Hard rules
 
 - The only file you may modify is `src/data/set-legality.json`. Do not edit
   scripts, workflows, or other data files.
 - Do not invent dates. The `releaseDate` from the input is authoritative
-  (sourced from the TCG API).
-- One `sourceUrl` per entry. Prefer the pokemon.com press release over
-  community posts.
+  (sourced from the TCG API). For special sets, the ETB / Booster Bundle
+  release dates come from the press release — read them, don't infer.
+- Dates everywhere are `YYYY-MM-DD`. Slashes are rejected.
+- Use `date -u -d "<base> +14 days" +%Y-%m-%d` for the arithmetic.
+- `sourceUrl` must be on `press.pokemon.com`. Other hosts are rejected.
 - Before opening an issue for a missing press release, search existing issues
   for the set name to avoid duplicates.
 
-## Issue format (when a press release cannot be found)
+## Issue format (when the press release is missing or ambiguous)
 
 Title: `Missing press release: <Set Name> (<setId>)`
 Body:
 - Set: name, setId, ptcgoCode, releaseDate
-- Searched: list of URLs you fetched
-- What you found / didn't find
+- Searched: pages you visited on press.pokemon.com
+- Why no entry was written (no match found / ETB+Bundle dates not in release / etc.)
 - Suggested next action
 
 The set will not be retried automatically — the snapshot workflow only
 dispatches this workflow when a *newly added* set appears. If an issue is
-filed, a follow-up dispatch (manual or after a future snapshot quirk) will be
-needed to fill that set in.
+filed, a follow-up dispatch (manual) is needed to fill that set in once the
+press release is available.
