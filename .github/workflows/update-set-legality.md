@@ -22,26 +22,24 @@ network:
   allowed:
     - press.pokemon.com
 
-# Tools the agent can call. The combination of:
-#   - bash limited to read-only commands + the date CLI for arithmetic
-#   - no `git` / no `gh`
-#   - write-tool diff enforced by the post-job validator
-# means the agent's only durable effect is editing src/data/set-legality.json.
+# Tools the agent can call. We give it broad shell access (`:*`) because
+# Copilot CLI's prefix-matching on `--allow-tool 'shell(...)'` makes a
+# fine-grained allow-list a whack-a-mole exercise — every flag combination
+# the agent tries (`curl -s …`, `curl -sL …`, `curl --silent …`) needs its
+# own prefix entry, and the previous attempts kept producing false "blocked
+# by security policy" reports when the actual blocker was the harness, not
+# the firewall.
+#
+# The real security boundaries that remain:
+#   - network firewall: only press.pokemon.com is reachable (network.allowed)
+#   - container: ephemeral, no persistent state
+#   - env: COPILOT_GITHUB_TOKEN / GITHUB_MCP_SERVER_TOKEN excluded
+#   - post-step validator: any diff outside src/data/set-legality.json
+#     fails the job before the commit
 tools:
   bash:
-    - "cat src/data/set-legality.json"
-    - "jq"
-    - "test"
-    - "ls src/data"
-    - "date"
-    # Embedded space prevents gh-aw from treating curl as a stem command and
-    # appending `:*` (which Copilot CLI then fails to prefix-match against
-    # `curl https://...`). The space-form passes through verbatim and Copilot
-    # prefix-matches it, allowing only curl calls to press.pokemon.com — which
-    # is also the only host the firewall permits.
-    - "curl https://press.pokemon.com"
+    - ":*"
   edit:
-  web-fetch:
   github:
     allowed:
       - list_issues
@@ -56,19 +54,25 @@ safe-outputs:
     title-prefix: "[set-legality] "
     labels: [automation, set-legality]
 
-# After the agent finishes, validate and commit. If validation rejects (e.g. the
-# agent touched any file other than src/data/set-legality.json, or wrote a bad
-# date), the job fails loudly and nothing is pushed.
+# After the agent finishes, validate and commit. The job fails loudly if:
+#   - the agent touched any file other than src/data/set-legality.json
+#   - the agent produced no diff at all (i.e. didn't actually do the work)
+#   - validation rejects a malformed entry (bad date, disallowed host, etc.)
 post-steps:
+  - name: Fail if the agent produced no legality update
+    run: |
+      if git diff --quiet src/data/set-legality.json; then
+        echo "::error::Agent finished without modifying src/data/set-legality.json — no legality entry was produced for the input sets." >&2
+        exit 1
+      fi
+      echo "Detected legality changes:"
+      git diff --stat src/data/set-legality.json
+
   - name: Validate agent output
     run: node scripts/validate-legality.mjs
 
-  - name: Commit and push if changed
+  - name: Commit and push
     run: |
-      if git diff --quiet src/data/set-legality.json; then
-        echo "No legality changes"
-        exit 0
-      fi
       git config user.name "github-actions[bot]"
       git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       git add src/data/set-legality.json
@@ -104,16 +108,19 @@ For each set in the input:
 
 ### 1. Find the press release
 
-Fetch the TCG releases listing with `curl`:
+Fetch the TCG releases listing from press.pokemon.com — use `curl` (or
+any other HTTP client; you have full shell access):
 
 ```bash
 curl -sL 'https://press.pokemon.com/en/?itemtype=3'
 ```
 
-`press.pokemon.com` is the only host the firewall allows — any other
-hostname will be blocked at the network layer, so do not waste time
-trying alternatives. Find a press release whose title or body matches
-the set name.
+`press.pokemon.com` is the only host the firewall allows. Any other
+hostname will fail at the network layer with a real connection error
+(not a permission/tool error) — if you see that, the hostname is wrong,
+not the tool.
+
+Find a press release whose title or body matches the set name.
 
 The listing is paginated. If you do not find the set on the first page,
 follow the next-page link and keep going (e.g.
@@ -193,10 +200,13 @@ rejects dropped entries.
 
 - The only file you may modify is `src/data/set-legality.json`. Do not edit
   scripts, workflows, or other data files.
-- Use `curl` to access press.pokemon.com. The firewall only allows that
-  one host; any other URL will fail at the network layer. If `curl`
-  itself fails (HTTP error, timeout), retry once, then open an issue
-  describing the URL and the error — do not report "missing tool".
+- Only `press.pokemon.com` is reachable. If a fetch fails because of the
+  hostname, fix the URL — do not report "missing tool" or "blocked by
+  security policy"; the tooling is fine, the network restriction is on
+  the host only.
+- Do not report `missing_tool` for curl/wget/http access. You have shell
+  access (`bash: [":*"]`). If a command genuinely won't run, retry
+  with a different syntax before giving up.
 - Do not invent dates. The `releaseDate` from the input is authoritative
   (sourced from the TCG API). For special sets, the ETB / Booster Bundle
   release dates come from the press release — read them, don't infer.
