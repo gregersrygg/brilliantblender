@@ -21,6 +21,39 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Run unit tests
+        id: scripts
+        run: npm run test:scripts 2>&1 | tee scripts-test-output.log
+        continue-on-error: true
+      - name: Unit test summary
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('scripts-test-output.log')) return;
+            const output = fs.readFileSync('scripts-test-output.log', 'utf8');
+            const num = (re) => {
+              const m = output.match(re);
+              return m ? m[1] : '0';
+            };
+            const pass = parseInt(num(/^ℹ pass (\d+)/m), 10);
+            const fail = parseInt(num(/^ℹ fail (\d+)/m), 10);
+            const skipped = parseInt(num(/^ℹ skipped (\d+)/m), 10);
+            const durationMs = parseFloat(num(/^ℹ duration_ms ([\d.]+)/m));
+            const icon = fail > 0 ? '❌' : '✅';
+            let md = `## ${icon} Unit Tests (scripts)\n\n| | |\n|---|---|\n`;
+            md += `| ✅ Passed | ${pass} |\n`;
+            md += `| ❌ Failed | ${fail} |\n`;
+            if (skipped) md += `| ⏭️ Skipped | ${skipped} |\n`;
+            md += `| ⏱️ Duration | ${(durationMs / 1000).toFixed(2)}s |\n`;
+            if (fail > 0) {
+              const failing = [...output.matchAll(/^✖ (.*?) \(\d/gm)].map(x => x[1]);
+              if (failing.length) {
+                md += `\n### Failed Tests\n\n` + failing.map(t => `- ${t}`).join('\n') + '\n';
+              }
+            }
+            await core.summary.addRaw(md).write();
       - run: npx playwright install --with-deps chromium
       - name: Run Playwright tests
         id: playwright
@@ -61,7 +94,7 @@ jobs:
           path: playwright-report/
           retention-days: 14
       - name: Fail if tests failed
-        if: steps.playwright.outcome == 'failure'
+        if: steps.playwright.outcome == 'failure' || steps.scripts.outcome == 'failure'
         run: exit 1
       - run: npm run build
         env:
