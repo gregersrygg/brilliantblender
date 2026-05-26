@@ -98,11 +98,24 @@ For each set in the input:
 
 ### 1. Find the press release
 
-Search `https://press.pokemon.com/en/?itemtype=3` (the TCG releases filter) for
-a release whose title or body matches the set name.
+**You must use the `web_fetch` tool to retrieve press.pokemon.com pages.**
+`curl`, `wget`, and other shell-level HTTP clients are not in your bash
+allow-list and will be denied — do not try them. The firewall is configured
+so that `web_fetch` works against `press.pokemon.com`; that is the one and
+only way to reach the site.
+
+Start by fetching the TCG releases listing:
+
+```
+web_fetch("https://press.pokemon.com/en/?itemtype=3")
+```
+
+Find a press release whose title or body matches the set name.
 
 The listing is paginated. If you do not find the set on the first page,
-follow the next-page / "Load more" link and keep going. Brand-new sets are at
+follow the next-page / "Load more" link and keep going (re-issue
+`web_fetch` against the next-page URL, e.g.
+`https://press.pokemon.com/en/?itemtype=3&page=2`). Brand-new sets are at
 the top; older sets need pagination. Do not give up after one page.
 
 The press release URL goes into `sourceUrl`. If you cannot find a matching
@@ -177,6 +190,10 @@ rejects dropped entries.
 
 - The only file you may modify is `src/data/set-legality.json`. Do not edit
   scripts, workflows, or other data files.
+- Use `web_fetch` (not `curl`, not `wget`) to access press.pokemon.com.
+  Shell HTTP clients are not in the allow-list and will be denied. If
+  `web_fetch` itself returns an error, retry once, then open an issue
+  describing the URL and the error — do not report "missing tool".
 - Do not invent dates. The `releaseDate` from the input is authoritative
   (sourced from the TCG API). For special sets, the ETB / Booster Bundle
   release dates come from the press release — read them, don't infer.
