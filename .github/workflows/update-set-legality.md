@@ -30,11 +30,16 @@ network:
 tools:
   bash:
     - "cat src/data/set-legality.json"
-    - "jq:*"
-    - "test:*"
+    - "jq"
+    - "test"
     - "ls src/data"
-    - "date:*"
-    - "curl:*"
+    - "date"
+    # Embedded space prevents gh-aw from treating curl as a stem command and
+    # appending `:*` (which Copilot CLI then fails to prefix-match against
+    # `curl https://...`). The space-form passes through verbatim and Copilot
+    # prefix-matches it, allowing only curl calls to press.pokemon.com — which
+    # is also the only host the firewall permits.
+    - "curl https://press.pokemon.com"
   edit:
   web-fetch:
   github:
