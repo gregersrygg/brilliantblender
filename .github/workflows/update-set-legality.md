@@ -34,6 +34,7 @@ tools:
     - "test:*"
     - "ls src/data"
     - "date:*"
+    - "curl:*"
   edit:
   web-fetch:
   github:
@@ -98,25 +99,22 @@ For each set in the input:
 
 ### 1. Find the press release
 
-**You must use the `web_fetch` tool to retrieve press.pokemon.com pages.**
-`curl`, `wget`, and other shell-level HTTP clients are not in your bash
-allow-list and will be denied — do not try them. The firewall is configured
-so that `web_fetch` works against `press.pokemon.com`; that is the one and
-only way to reach the site.
+Fetch the TCG releases listing with `curl`:
 
-Start by fetching the TCG releases listing:
-
-```
-web_fetch("https://press.pokemon.com/en/?itemtype=3")
+```bash
+curl -sL 'https://press.pokemon.com/en/?itemtype=3'
 ```
 
-Find a press release whose title or body matches the set name.
+`press.pokemon.com` is the only host the firewall allows — any other
+hostname will be blocked at the network layer, so do not waste time
+trying alternatives. Find a press release whose title or body matches
+the set name.
 
 The listing is paginated. If you do not find the set on the first page,
-follow the next-page / "Load more" link and keep going (re-issue
-`web_fetch` against the next-page URL, e.g.
-`https://press.pokemon.com/en/?itemtype=3&page=2`). Brand-new sets are at
-the top; older sets need pagination. Do not give up after one page.
+follow the next-page link and keep going (e.g.
+`curl -sL 'https://press.pokemon.com/en/?itemtype=3&page=2'`). Brand-new
+sets are at the top; older sets need pagination. Do not give up after
+one page.
 
 The press release URL goes into `sourceUrl`. If you cannot find a matching
 press release after exhausting the listing, **do not guess** — emit a
@@ -190,9 +188,9 @@ rejects dropped entries.
 
 - The only file you may modify is `src/data/set-legality.json`. Do not edit
   scripts, workflows, or other data files.
-- Use `web_fetch` (not `curl`, not `wget`) to access press.pokemon.com.
-  Shell HTTP clients are not in the allow-list and will be denied. If
-  `web_fetch` itself returns an error, retry once, then open an issue
+- Use `curl` to access press.pokemon.com. The firewall only allows that
+  one host; any other URL will fail at the network layer. If `curl`
+  itself fails (HTTP error, timeout), retry once, then open an issue
   describing the URL and the error — do not report "missing tool".
 - Do not invent dates. The `releaseDate` from the input is authoritative
   (sourced from the TCG API). For special sets, the ETB / Booster Bundle
