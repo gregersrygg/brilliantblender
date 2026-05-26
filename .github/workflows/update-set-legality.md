@@ -72,12 +72,18 @@ post-steps:
     run: node scripts/validate-legality.mjs
 
   - name: Commit and push
+    env:
+      SNAPSHOT_PUSH_TOKEN: ${{ secrets.SNAPSHOT_PUSH_TOKEN }}
     run: |
+      # gh-aw scrubs git credentials from the workspace before running the
+      # agent so the agent can't push on its own. Re-attach SNAPSHOT_PUSH_TOKEN
+      # via the remote URL so this trusted post-step can push.
       git config user.name "github-actions[bot]"
       git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      git remote set-url origin "https://x-access-token:${SNAPSHOT_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
       git add src/data/set-legality.json
       git commit -m "chore: update set legality $(date -u +%Y-%m-%d)"
-      git push
+      git push origin "HEAD:${GITHUB_REF_NAME}"
 
 # Use the same PAT as the snapshot workflow so pushes to main work.
 checkout:
