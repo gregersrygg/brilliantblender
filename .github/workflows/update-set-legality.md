@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       sets:
-        description: 'JSON array of new sets: [{setId,name,releaseDate,ptcgoCode}]'
+        description: 'JSON array of new sets: [{setId,name,releaseDate,ptcgoCode,isSpecialSet}]'
         required: true
         type: string
 
@@ -104,9 +104,18 @@ The set or sets to process are passed in as JSON via `${{ inputs.sets }}`:
 ${{ inputs.sets }}
 ```
 
-Each entry has `{ setId, ptcgoCode, name, releaseDate }` and `releaseDate` is
-already normalized to `YYYY-MM-DD`. Process every set in the input. Do nothing
-for sets not in the input — historical data is out of scope for this run.
+Each entry has `{ setId, ptcgoCode, name, releaseDate, isSpecialSet }`:
+
+- `releaseDate` is already normalized to `YYYY-MM-DD`.
+- `isSpecialSet` is **pre-classified for you** from the setId pattern
+  (`pt\d+` suffix → special, e.g. `me2pt5` = Ascended Heroes; bare numbers
+  like `me4` = main set). **Trust this value. Do not re-classify from press
+  release product lists** — those are unreliable, since release-day
+  MEDIA-ALERTs and announcement posts often omit SKUs even for sets that
+  ship with booster boxes.
+
+Process every set in the input. Do nothing for sets not in the input —
+historical data is out of scope for this run.
 
 ## Per-set procedure
 
@@ -139,36 +148,25 @@ press release after exhausting the listing, **do not guess** — emit a
 `create-issue` safe-output describing the set and what you searched, and move
 on to the next set. Do not write an entry for that set.
 
-### 2. Classify special vs main
+### 2. Determine the base date for the +14-day cadence
 
-Read the press release product list:
+Both kinds of set become legal **14 days** after a base date. The base date
+depends on `isSpecialSet` (already provided in the input — do not
+re-classify):
 
-- `isSpecialSet: false` (main set) — the press release lists **Booster Boxes**
-  *or* **Sleeved Booster Packs** as products.
-- `isSpecialSet: true` (special set) — the press release lists no booster
-  boxes and no sleeved booster packs. Typical products: Elite Trainer Box,
-  Booster Bundle, premium collection, special collection.
-
-### 3. Determine the base date for the +14-day cadence
-
-Both kinds of set become legal **14 days** after a base date. Only the base
-date differs:
-
-- **Main set** — base date is `releaseDate` (the set's release date from the
-  input).
-- **Special set** — base date is the earlier of the **Elite Trainer Box
-  release date** and the **Booster Bundle release date** as listed in the
-  press release. (This matches the rule: "Sets that do not have Sleeved
-  Booster Packs … will follow the same two-week cadence based on the release
-  date of the expansion's Elite Trainer Box or Booster Bundle, whichever comes
-  first.") If only one of the two is listed, use that date. If neither is
-  present in the press release, treat the press release as ambiguous and open
-  an issue rather than guessing.
+- **Main set (`isSpecialSet: false`)** — base date is `releaseDate` from
+  the input. You do not need any product information from the press
+  release; just find a URL for `sourceUrl`.
+- **Special set (`isSpecialSet: true`)** — base date is the earlier of the
+  **Elite Trainer Box release date** and the **Booster Bundle release
+  date** as listed in the press release. If only one of the two is listed,
+  use that date. If neither is present in any press release for the set,
+  open an issue rather than guessing.
 
 Press releases give dates in human form, e.g. "May 22, 2026". Convert that to
 `YYYY-MM-DD` before computing — do not eyeball.
 
-### 4. Add 14 days using the `date` CLI
+### 3. Add 14 days using the `date` CLI
 
 **Do not do date arithmetic by hand.** Use the `date` command:
 
@@ -180,7 +178,7 @@ date -u -d "2026-05-22 +14 days" +%Y-%m-%d
 The output is your `legalFrom` value. It must be on or after `releaseDate`
 (the validator enforces this).
 
-### 5. Edit the file
+### 4. Edit the file
 
 Open `src/data/set-legality.json` and add the new entry. Use exactly this
 shape — extra fields, missing fields, or slash-formatted dates will fail
@@ -189,9 +187,9 @@ validation:
 ```json
 {
   "<setId>": {
-    "name": "<full set name>",
+    "name": "<full set name, copy from input>",
     "releaseDate": "<YYYY-MM-DD, copy from input>",
-    "isSpecialSet": <true|false>,
+    "isSpecialSet": <copy from input — true|false>,
     "legalFrom": "<YYYY-MM-DD, output of `date -d`>",
     "sourceUrl": "<https://press.pokemon.com/... press release URL>",
     "fetchedAt": "<current UTC time in ISO 8601, e.g. 2026-05-25T08:00:00Z>"
@@ -216,6 +214,8 @@ rejects dropped entries.
 - Do not invent dates. The `releaseDate` from the input is authoritative
   (sourced from the TCG API). For special sets, the ETB / Booster Bundle
   release dates come from the press release — read them, don't infer.
+- `isSpecialSet` is provided in the input. Do not change it based on
+  what you see in press releases.
 - Dates everywhere are `YYYY-MM-DD`. Slashes are rejected.
 - Use `date -u -d "<base> +14 days" +%Y-%m-%d` for the arithmetic.
 - `sourceUrl` must be on `press.pokemon.com`. Other hosts are rejected.
