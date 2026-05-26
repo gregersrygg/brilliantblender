@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # required to dispatch the legality workflow when new sets appear
 
 jobs:
   update:
@@ -22,10 +23,33 @@ jobs:
       - run: npm ci
       - run: npm run snapshot
       - name: Commit and push if changed
+        id: commit
         run: |
-          git diff --quiet src/data/ && echo "No changes" && exit 0
+          if git diff --quiet src/data/; then
+            echo "No changes"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/data/
           git commit -m "chore: update card snapshot $(date -u +%Y-%m-%d)"
           git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+      - name: Detect newly added sets
+        if: steps.commit.outputs.committed == 'true'
+        id: detect
+        run: |
+          git show HEAD~1:src/data/sets.json > /tmp/prev-sets.json
+          NEW=$(node scripts/detect-new-sets.mjs /tmp/prev-sets.json src/data/sets.json src/data/cards.json)
+          echo "Detected new sets: $NEW"
+          echo "sets=$NEW" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$NEW" | jq 'length')" >> "$GITHUB_OUTPUT"
+      - name: Dispatch legality workflow for new sets
+        if: steps.commit.outputs.committed == 'true' && steps.detect.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run update-set-legality.lock.yml \
+            --ref main \
+            -f sets='${{ steps.detect.outputs.sets }}'

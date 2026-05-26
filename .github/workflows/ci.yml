@@ -21,6 +21,15 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Run unit tests
+        id: scripts
+        run: npm test
+        continue-on-error: true
+      - name: Unit test summary
+        if: always()
+        uses: test-summary/action@v2
+        with:
+          paths: junit-scripts.xml
       - run: npx playwright install --with-deps chromium
       - name: Run Playwright tests
         id: playwright
@@ -61,7 +70,7 @@ jobs:
           path: playwright-report/
           retention-days: 14
       - name: Fail if tests failed
-        if: steps.playwright.outcome == 'failure'
+        if: steps.playwright.outcome == 'failure' || steps.scripts.outcome == 'failure'
         run: exit 1
       - run: npm run build
         env:
