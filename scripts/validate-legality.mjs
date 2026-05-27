@@ -81,6 +81,23 @@ function ensureLegalAfterRelease(entry, setId) {
   }
 }
 
+function ensureSourceUrl(entry, setId) {
+  // Main sets are computed deterministically from the +14 day rule and
+  // legitimately have no press release to cite — null sourceUrl is allowed.
+  // Special sets must cite the press.pokemon.com release the ETB/Booster
+  // Bundle date was extracted from.
+  if (entry.isSpecialSet) {
+    ensureNonEmptyString(entry.sourceUrl, `${setId}.sourceUrl`);
+    ensureAllowedHost(entry.sourceUrl, `${setId}.sourceUrl`);
+    return;
+  }
+  if (entry.sourceUrl === null) {
+    return;
+  }
+  ensureNonEmptyString(entry.sourceUrl, `${setId}.sourceUrl`);
+  ensureAllowedHost(entry.sourceUrl, `${setId}.sourceUrl`);
+}
+
 export function validateEntry(setId, entry) {
   ensureValidSetId(setId);
   ensureObject(entry, `${setId}: entry`);
@@ -88,8 +105,7 @@ export function validateEntry(setId, entry) {
   ensureDashDate(entry.releaseDate, `${setId}.releaseDate`);
   ensureBoolean(entry.isSpecialSet, `${setId}.isSpecialSet`);
   ensureDashDate(entry.legalFrom, `${setId}.legalFrom`);
-  ensureNonEmptyString(entry.sourceUrl, `${setId}.sourceUrl`);
-  ensureAllowedHost(entry.sourceUrl, `${setId}.sourceUrl`);
+  ensureSourceUrl(entry, setId);
   ensureIsoTimestamp(entry.fetchedAt, `${setId}.fetchedAt`);
   ensureLegalAfterRelease(entry, setId);
 }

@@ -78,6 +78,19 @@ test('validateEntry rejects malformed sourceUrl', () => {
   );
 });
 
+test('validateEntry accepts null sourceUrl for main sets', () => {
+  assert.doesNotThrow(() =>
+    validateEntry('me4', { ...goodEntry(), isSpecialSet: false, sourceUrl: null }),
+  );
+});
+
+test('validateEntry rejects null sourceUrl for special sets', () => {
+  assertRejects(
+    () => validateEntry('me2pt5', { ...goodEntry(), isSpecialSet: true, sourceUrl: null }),
+    'sourceUrl',
+  );
+});
+
 test('validateEntry rejects non-ISO fetchedAt', () => {
   assertRejects(
     () => validateEntry('me4', { ...goodEntry(), fetchedAt: '2026-05-25 08:00' }),

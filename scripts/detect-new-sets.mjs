@@ -22,6 +22,17 @@ function normalizeDate(raw) {
   return raw.replaceAll('/', '-');
 }
 
+// The TCG API's set ID convention uses a `pt<N>` suffix for sub-set / special
+// releases (e.g. me2pt5 = Ascended Heroes, sv3pt5 = Pokemon 151, sv4pt5 =
+// Paldean Fates, sv8pt5 = Prismatic Evolutions, swsh12pt5 = Crown Zenith).
+// Bare-numbered IDs (me4, sv6, swsh8) are full main-set releases with booster
+// boxes and sleeved booster packs. This is more reliable than scraping press
+// releases, where individual articles (especially MEDIA-ALERTs) often omit
+// product SKUs even for sets that ship with them.
+function isSpecialSet(setId) {
+  return /pt\d+$/i.test(setId);
+}
+
 const meta = {};
 for (const card of Object.values(cards)) {
   if (!card.set?.id || meta[card.set.id]) continue;
@@ -30,6 +41,7 @@ for (const card of Object.values(cards)) {
     ptcgoCode: card.set.ptcgoCode ?? null,
     name: card.set.name,
     releaseDate: normalizeDate(card.set.releaseDate),
+    isSpecialSet: isSpecialSet(card.set.id),
   };
 }
 

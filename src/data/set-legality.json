@@ -1,1 +1,26 @@
-{}
+{
+  "me2pt5": {
+    "name": "Ascended Heroes",
+    "releaseDate": "2026-01-30",
+    "isSpecialSet": true,
+    "legalFrom": "2026-03-06",
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-Pokemon-Trading-Card-Game-Mega-EvolutionAscended-Heroes-La",
+    "fetchedAt": "2026-05-27T21:13:43Z"
+  },
+  "me4": {
+    "name": "Chaos Rising",
+    "releaseDate": "2026-05-22",
+    "isSpecialSet": false,
+    "legalFrom": "2026-06-05",
+    "sourceUrl": null,
+    "fetchedAt": "2026-05-26T21:51:23Z"
+  },
+  "me3": {
+    "name": "Perfect Order",
+    "releaseDate": "2026-03-27",
+    "isSpecialSet": false,
+    "legalFrom": "2026-04-10",
+    "sourceUrl": null,
+    "fetchedAt": "2026-05-27T21:33:52Z"
+  }
+}
