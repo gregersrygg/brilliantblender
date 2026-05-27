@@ -90,32 +90,28 @@ checkout:
   token: ${{ secrets.SNAPSHOT_PUSH_TOKEN }}
 ---
 
-# Update set legality
+# Update set legality (special sets only)
 
 You maintain `src/data/set-legality.json` for the Brilliant Blender Pokémon TCG
 deck builder. Wrong dates silently break deck validation for players, so be
 careful and never guess.
 
+This workflow is dispatched **only for special sets** — sets without sleeved
+booster packs (e.g. `me2pt5` Ascended Heroes, `sv8pt5` Prismatic Evolutions).
+Main sets are filled in by the snapshot workflow directly using the rule
+`releaseDate + 14 days`; they never reach this agent.
+
 ## Input
 
-The set or sets to process are passed in as JSON via `${{ inputs.sets }}`:
+The sets to process are passed in as JSON via `${{ inputs.sets }}`:
 
 ```json
 ${{ inputs.sets }}
 ```
 
-Each entry has `{ setId, ptcgoCode, name, releaseDate, isSpecialSet }`:
-
-- `releaseDate` is already normalized to `YYYY-MM-DD`.
-- `isSpecialSet` is **pre-classified for you** from the setId pattern
-  (`pt\d+` suffix → special, e.g. `me2pt5` = Ascended Heroes; bare numbers
-  like `me4` = main set). **Trust this value. Do not re-classify from press
-  release product lists** — those are unreliable, since release-day
-  MEDIA-ALERTs and announcement posts often omit SKUs even for sets that
-  ship with booster boxes.
-
-Process every set in the input. Do nothing for sets not in the input —
-historical data is out of scope for this run.
+Each entry has `{ setId, ptcgoCode, name, releaseDate, isSpecialSet }`. All
+entries will have `isSpecialSet: true` — if any do not, that is a bug in the
+snapshot workflow; open an issue and stop.
 
 ## Per-set procedure
 
@@ -141,30 +137,31 @@ The listing is paginated. If you do not find the set on the first page,
 follow the next-page link and keep going (e.g.
 `curl -sL 'https://press.pokemon.com/en/?itemtype=3&page=2'`). Brand-new
 sets are at the top; older sets need pagination. Do not give up after
-one page.
+one page. Look across multiple press releases for the same set — the
+MEDIA-ALERT around release day is usually a brief reminder; the original
+announcement weeks or months earlier has the full product list.
 
 The press release URL goes into `sourceUrl`. If you cannot find a matching
 press release after exhausting the listing, **do not guess** — emit a
 `create-issue` safe-output describing the set and what you searched, and move
 on to the next set. Do not write an entry for that set.
 
-### 2. Determine the base date for the +14-day cadence
+### 2. Find the ETB / Booster Bundle release date
 
-Both kinds of set become legal **14 days** after a base date. The base date
-depends on `isSpecialSet` (already provided in the input — do not
-re-classify):
+The Play! Pokémon rule for sets without sleeved booster packs is: "Sets
+that do not have Sleeved Booster Packs … will follow the same two-week
+cadence based on the release date of the expansion's Elite Trainer Box
+or Booster Bundle, whichever comes first."
 
-- **Main set (`isSpecialSet: false`)** — base date is `releaseDate` from
-  the input. You do not need any product information from the press
-  release; just find a URL for `sourceUrl`.
-- **Special set (`isSpecialSet: true`)** — base date is the earlier of the
-  **Elite Trainer Box release date** and the **Booster Bundle release
-  date** as listed in the press release. If only one of the two is listed,
-  use that date. If neither is present in any press release for the set,
-  open an issue rather than guessing.
+From the press release(s) for this set, find the earliest of:
+- the **Elite Trainer Box** release date, and
+- the **Booster Bundle** release date.
 
-Press releases give dates in human form, e.g. "May 22, 2026". Convert that to
-`YYYY-MM-DD` before computing — do not eyeball.
+If only one is listed, use that date. If neither is present in any press
+release you can find for the set, open an issue rather than guessing.
+
+Press releases give dates in human form, e.g. "May 22, 2026". Convert
+that to `YYYY-MM-DD` before computing — do not eyeball.
 
 ### 3. Add 14 days using the `date` CLI
 
@@ -189,7 +186,7 @@ validation:
   "<setId>": {
     "name": "<full set name, copy from input>",
     "releaseDate": "<YYYY-MM-DD, copy from input>",
-    "isSpecialSet": <copy from input — true|false>,
+    "isSpecialSet": true,
     "legalFrom": "<YYYY-MM-DD, output of `date -d`>",
     "sourceUrl": "<https://press.pokemon.com/... press release URL>",
     "fetchedAt": "<current UTC time in ISO 8601, e.g. 2026-05-25T08:00:00Z>"
@@ -211,11 +208,8 @@ rejects dropped entries.
 - Do not report `missing_tool` for curl/wget/http access. You have shell
   access (`bash: [":*"]`). If a command genuinely won't run, retry
   with a different syntax before giving up.
-- Do not invent dates. The `releaseDate` from the input is authoritative
-  (sourced from the TCG API). For special sets, the ETB / Booster Bundle
-  release dates come from the press release — read them, don't infer.
-- `isSpecialSet` is provided in the input. Do not change it based on
-  what you see in press releases.
+- Do not invent dates. The ETB / Booster Bundle release dates come from
+  the press release — read them, don't infer.
 - Dates everywhere are `YYYY-MM-DD`. Slashes are rejected.
 - Use `date -u -d "<base> +14 days" +%Y-%m-%d` for the arithmetic.
 - `sourceUrl` must be on `press.pokemon.com`. Other hosts are rejected.
@@ -228,10 +222,10 @@ Title: `Missing press release: <Set Name> (<setId>)`
 Body:
 - Set: name, setId, ptcgoCode, releaseDate
 - Searched: pages you visited on press.pokemon.com
-- Why no entry was written (no match found / ETB+Bundle dates not in release / etc.)
+- Why no entry was written (no match found / ETB+Bundle dates not in any release / etc.)
 - Suggested next action
 
 The set will not be retried automatically — the snapshot workflow only
-dispatches this workflow when a *newly added* set appears. If an issue is
-filed, a follow-up dispatch (manual) is needed to fill that set in once the
-press release is available.
+dispatches this workflow when a *newly added* special set appears. If an
+issue is filed, a follow-up dispatch (manual) is needed to fill that set in
+once the press release is available.

@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  actions: write # required to dispatch the legality workflow when new sets appear
+  actions: write # required to dispatch the legality workflow for special sets
 
 jobs:
   update:
@@ -22,6 +22,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run snapshot
+      - name: Detect newly added sets and apply main-set legality
+        id: legality
+        run: |
+          # Compare current snapshot's sets.json to the committed (HEAD) version
+          # to find newly added setIds. Main sets get their legality entry
+          # computed in-place; special sets are emitted to STDOUT for the agent
+          # to handle.
+          git show HEAD:src/data/sets.json > /tmp/prev-sets.json 2>/dev/null || echo '[]' > /tmp/prev-sets.json
+          ALL_NEW=$(node scripts/detect-new-sets.mjs /tmp/prev-sets.json src/data/sets.json src/data/cards.json)
+          echo "All new sets:"
+          echo "$ALL_NEW" | jq .
+          SPECIAL=$(echo "$ALL_NEW" | node scripts/apply-main-set-legality.mjs)
+          echo "Special sets remaining for agent:"
+          echo "$SPECIAL" | jq .
+          {
+            echo "special_sets<<EOF"
+            echo "$SPECIAL"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "special_count=$(echo "$SPECIAL" | jq 'length')" >> "$GITHUB_OUTPUT"
       - name: Commit and push if changed
         id: commit
         run: |
@@ -36,20 +56,11 @@ jobs:
           git commit -m "chore: update card snapshot $(date -u +%Y-%m-%d)"
           git push
           echo "committed=true" >> "$GITHUB_OUTPUT"
-      - name: Detect newly added sets
-        if: steps.commit.outputs.committed == 'true'
-        id: detect
-        run: |
-          git show HEAD~1:src/data/sets.json > /tmp/prev-sets.json
-          NEW=$(node scripts/detect-new-sets.mjs /tmp/prev-sets.json src/data/sets.json src/data/cards.json)
-          echo "Detected new sets: $NEW"
-          echo "sets=$NEW" >> "$GITHUB_OUTPUT"
-          echo "count=$(echo "$NEW" | jq 'length')" >> "$GITHUB_OUTPUT"
-      - name: Dispatch legality workflow for new sets
-        if: steps.commit.outputs.committed == 'true' && steps.detect.outputs.count != '0'
+      - name: Dispatch legality workflow for special sets only
+        if: steps.commit.outputs.committed == 'true' && steps.legality.outputs.special_count != '0'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run update-set-legality.lock.yml \
             --ref main \
-            -f sets='${{ steps.detect.outputs.sets }}'
+            -f sets='${{ steps.legality.outputs.special_sets }}'
