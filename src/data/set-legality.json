@@ -14,5 +14,13 @@
     "legalFrom": "2026-06-05",
     "sourceUrl": null,
     "fetchedAt": "2026-05-26T21:51:23Z"
+  },
+  "me3": {
+    "name": "Perfect Order",
+    "releaseDate": "2026-03-27",
+    "isSpecialSet": false,
+    "legalFrom": "2026-04-10",
+    "sourceUrl": null,
+    "fetchedAt": "2026-05-27T21:33:52Z"
   }
 }
