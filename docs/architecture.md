@@ -17,10 +17,15 @@ src/
     cards.json             Build-time snapshot: Standard-legal cards keyed by API ID
     sets.json              Build-time snapshot: [[ptcgoCode, setId], ...] entries
     snapshot-meta.json     Metadata: generatedAt, regulationMarks, cardCount
+    set-legality.json      Per-set tournament legalFrom dates (maintained by an agentic workflow)
   lib/
     parser.js              Pure function: PTCGL text → deck structure
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
     snapshot.js            In-memory access to bundled card/set snapshot data
+    legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate
+    legality.test.mjs      Node unit tests for legality.js
+    reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
+    reprint.test.mjs       Node unit tests for reprint.js
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
@@ -39,6 +44,8 @@ tests/
   m1-paste-preview.spec.js
   m2-quantity-editing.spec.js
   m3-print-substitution.spec.js
+  legality-warning.spec.js
+  set-legality-warning.spec.js
 ```
 
 ---
@@ -67,6 +74,7 @@ Used across all components. Light + dark mode via `@media (prefers-color-scheme:
 | `--border` | Borders |
 | `--accent` | Primary action colour (buttons, highlights) |
 | `--error` | Red — errors and warnings |
+| `--notice` | Amber — informational notices (e.g. "not legal yet") |
 | `--skeleton` | Loading placeholder background |
 
 ---

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fetchPrintsByName, getPtcgoCode } from './api.js';
   import { LEGAL_REGULATION_MARKS } from './config.js';
+  import { isFunctionalReprint, normalizeAttacks, normalizeAbilities } from './reprint.js';
 
   let { cardName, clickedSetCode, clickedNumber, initialPrints, onclose } = $props();
 
@@ -14,39 +15,6 @@
   let validationError = $state(null);
   let selectedPrint = $state(null);
   let mobileTab = $state('list'); // 'list' | 'detail'
-
-  function normalizeAttacks(attacks) {
-    if (!attacks || attacks.length === 0) return '[]';
-    return JSON.stringify(
-      [...attacks]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map(a => ({
-          name: a.name,
-          damage: a.damage ?? '',
-          cost: [...(a.cost ?? [])].sort().join(','),
-          text: a.text ?? '',
-        }))
-    );
-  }
-
-  function normalizeAbilities(abilities) {
-    if (!abilities || abilities.length === 0) return '[]';
-    return JSON.stringify(
-      [...abilities]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map(a => ({ name: a.name, text: a.text ?? '' }))
-    );
-  }
-
-  function isFunctionalReprint(card, legalPrints) {
-    if (legalPrints.length === 0) return false;
-    return legalPrints.some(
-      legal =>
-        card.hp === legal.hp &&
-        normalizeAttacks(card.attacks) === normalizeAttacks(legal.attacks) &&
-        normalizeAbilities(card.abilities) === normalizeAbilities(legal.abilities)
-    );
-  }
 
   function legalityBadge(legalities) {
     if (legalities?.standard === 'legal') return 'Standard';

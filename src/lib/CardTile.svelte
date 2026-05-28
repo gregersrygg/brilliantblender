@@ -1,10 +1,18 @@
 <script>
+  import { formatLegalDate } from './legality.js';
+
   let { card, onincrement, ondecrement, warning = null, onpick = null, onremove = null } = $props();
+
+  // Red error styling (rotated-out / rule violation) takes precedence over the amber
+  // informational "not legal yet" notice — and suppresses it when both apply.
+  let hasError = $derived(Boolean(warning) || (card.isRotating && card.qty > 0));
+  let showNotice = $derived(Boolean(card.notLegalUntil) && card.qty > 0 && !hasError);
 </script>
 
 <div
   class="card-tile"
-  class:card-warning={warning || (card.isRotating && card.qty > 0)}
+  class:card-warning={hasError}
+  class:card-notice={showNotice}
   data-testid="card-tile"
 >
   {#if card.cardLoading}
@@ -65,6 +73,8 @@
     <div class="warning-text">Not Standard-legal</div>
   {:else if warning}
     <div class="warning-text">{warning}</div>
+  {:else if showNotice}
+    <div class="warning-text notice">Legal from {formatLegalDate(card.notLegalUntil)}</div>
   {/if}
 </div>
 
@@ -78,6 +88,13 @@
 
   .card-warning {
     border: 2px solid var(--error);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  /* Informational (not an error): card is valid, just not tournament-legal yet. */
+  .card-notice {
+    border: 2px solid var(--notice);
     border-radius: 8px;
     padding: 4px;
   }
@@ -193,6 +210,10 @@
     font-size: 10px;
     color: var(--error);
     text-align: center;
+  }
+
+  .warning-text.notice {
+    color: var(--notice);
   }
 
   .skeleton {

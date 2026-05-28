@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "snapshot": "node scripts/build-card-snapshot.mjs",
     "test": "npm run test:scripts",
-    "test:scripts": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=junit-scripts.xml scripts/*.test.mjs"
+    "test:scripts": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=junit-scripts.xml scripts/*.test.mjs src/lib/*.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

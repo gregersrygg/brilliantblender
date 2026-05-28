@@ -1,6 +1,7 @@
 # Test Infrastructure
 
-All tests use Playwright. Config: `playwright.config.js` (runs against `localhost:5173`).
+Playwright covers all feature tests (`playwright.config.js`, runs against `localhost:5173`).
+Pure-logic units use Node's built-in runner: `npm test` → `node --test scripts/*.test.mjs src/lib/*.test.mjs`.
 
 ## Test files
 
@@ -10,6 +11,9 @@ All tests use Playwright. Config: `playwright.config.js` (runs against `localhos
 | `tests/m2-quantity-editing.spec.js` | +/− controls, deck total, section counts, warnings, export |
 | `tests/m3-print-substitution.spec.js` | Print Picker open/close, print list, current highlight, qty controls, >4 validation, export |
 | `tests/legality-warning.spec.js` | Cards with null regulation marks show "Not Standard-legal" warning; basic energy exempt |
+| `tests/set-legality-warning.spec.js` | Not-yet-legal set shows amber "Legal from {date}" notice; reprint of an already-legal card is suppressed (§4.1.3); a red rule violation (>4 copies) takes precedence over the amber notice; uses `page.clock` to pin the date |
+| `src/lib/legality.test.mjs` | Unit tests (`node --test`) for `notLegalUntil` (incl. `{isReprint}`), `isSetLegalOn`, `todayIso`, `formatLegalDate` |
+| `src/lib/reprint.test.mjs` | Unit tests for `isFunctionalReprint`, `normalizeAttacks`, `normalizeAbilities` |
 
 ## `tests/helpers.js`
 
@@ -31,6 +35,8 @@ Total Cards: 4
 | `NULL_MARK_POKEMON_DECKLIST` | 1 Psyduck BS 53 (regulationMark: null) |
 | `NULL_MARK_TRAINER_DECKLIST` | 1 Computer Search BS 71 (regulationMark: null) |
 | `MIXED_LEGALITY_DECKLIST` | 1 Dragapult ex TWM 130 (legal) + 1 Psyduck BS 53 (null mark) |
+| `NOT_YET_LEGAL_DECKLIST` | 1 Weedle CRI 1 (me4 / Chaos Rising, legalFrom 2026-06-05, reg mark J) — new card, warns |
+| `REPRINT_DECKLIST` | 1 Pikachu CRI 25 (me4) — functionally-identical reprint of legal TWM Pikachu, legal on release, no notice |
 
 ### `mockApi(page)`
 
@@ -54,6 +60,7 @@ Call in addition to `mockApi` for M3 and legality tests. Registers:
 | SVE | sve | Scarlet & Violet Energies |
 | PR-SV | svp | Scarlet & Violet Promos |
 | BS | base1 | Base Set |
+| CRI | me4 | Chaos Rising (not legal until 2026-06-05) |
 
 **`MOCK_CARDS`** — keyed by `{setId}-{number}`, each with `supertype`, `subtypes`, `regulationMark`:
 
@@ -68,14 +75,18 @@ Call in addition to `mockApi` for M3 and legality tests. Registers:
 | svp-149 | Pecharunt (Pokémon) | I |
 | base1-53 | Psyduck (Pokémon) | null |
 | base1-71 | Computer Search (Trainer) | null |
+| me4-1 | Weedle (Pokémon, Basic) | J |
+| me4-25 | Pikachu (Pokémon, Basic; hp/attacks for reprint matching) | J |
 
 **`MOCK_PRINTS_BY_NAME`** — alternate prints for M3:
 
 | Name | Prints |
 |---|---|
 | Dragapult ex | sv6-130 (TWM 130) and sv6-215 (TWM 215) |
+| Pikachu | me4-25 (CRI, not-yet-legal) and sv6-200 (TWM, already legal) — functionally identical, for the §4.1.3 reprint test |
 
-Both prints: standard-legal, supertype Pokémon, subtypes [Stage 2, ex].
+Dragapult ex prints: standard-legal, supertype Pokémon, subtypes [Stage 2, ex]. The two
+Pikachu prints share hp/attacks/abilities so `isFunctionalReprint` matches them.
 
 ## Common test patterns
 
@@ -89,6 +100,9 @@ await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(4);
 
 // M3: also mock prints
 await mockPrints(page);  // call before goto
+
+// Set-legality: pin the date so the not-yet-legal comparison is deterministic
+await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));  // call before goto
 
 // Clipboard assertions (grant permission first)
 await context.grantPermissions(['clipboard-read', 'clipboard-write']);
