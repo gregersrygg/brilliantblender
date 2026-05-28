@@ -42,6 +42,25 @@ loadDeck(text)
 
 Cards render progressively as each fetch resolves (skeleton → image).
 
+## Set-legality annotation (`notLegalUntil`)
+
+A set is only tournament-legal ~2 weeks after release, but the API marks its cards
+Standard-legal at print time. `src/data/set-legality.json` (keyed by API `setId`) records
+the real `legalFrom` date per set. Every card-creation path (`loadDeck` general branch,
+`addCard`, `applyPrintPicker`) sets `card.notLegalUntil` via the local `legalityFor(setId)`
+helper, which delegates to `notLegalUntil(setLegality[setId], todayIso())` in
+[`legality.js`](../../src/lib/legality.js):
+
+- Returns the `legalFrom` string when it is strictly after today (set not legal yet), else `null`.
+- Computed **after** `setId` is finalized, so it reflects the print actually used (the
+  Trainer/Energy reprint swap may change `setId`).
+- Basic energy is always `null` (basics never rotate or wait for legality).
+
+`CardTile` renders this as an amber **informational** notice (`Legal from {date}`), distinct
+from the red error styling — the card is valid, just early. The static `set-legality.json`
+import is **not** gated by `VITE_DISABLE_SNAPSHOT`, so the annotation works even when the
+card snapshot is disabled (e.g. in tests).
+
 ## `getWarnings()` rules
 
 - Basic Energy cards are excluded from all warnings. PTCGL `Basic {X} Energy` lines are detected by name pattern at parse time (`isBasicEnergy = true`) and resolved directly via `fetchBasicEnergyFromSve()` using a curly-brace symbol → API name map (`{G}` → Grass Energy, etc.) — bypassing the normal `setCode`/`number` lookup, since PTCGL set codes like `MEE` don't correspond to a fetchable API card.

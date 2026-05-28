@@ -1,10 +1,13 @@
 <script>
+  import { formatLegalDate } from './legality.js';
+
   let { card, onincrement, ondecrement, warning = null, onpick = null, onremove = null } = $props();
 </script>
 
 <div
   class="card-tile"
   class:card-warning={warning || (card.isRotating && card.qty > 0)}
+  class:card-notice={card.notLegalUntil && card.qty > 0}
   data-testid="card-tile"
 >
   {#if card.cardLoading}
@@ -63,6 +66,8 @@
   {/if}
   {#if card.isRotating && card.qty > 0}
     <div class="warning-text">Not Standard-legal</div>
+  {:else if card.notLegalUntil && card.qty > 0}
+    <div class="warning-text notice">Legal from {formatLegalDate(card.notLegalUntil)}</div>
   {:else if warning}
     <div class="warning-text">{warning}</div>
   {/if}
@@ -78,6 +83,13 @@
 
   .card-warning {
     border: 2px solid var(--error);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  /* Informational (not an error): card is valid, just not tournament-legal yet. */
+  .card-notice {
+    border: 2px solid var(--notice);
     border-radius: 8px;
     padding: 4px;
   }
@@ -193,6 +205,10 @@
     font-size: 10px;
     color: var(--error);
     text-align: center;
+  }
+
+  .warning-text.notice {
+    color: var(--notice);
   }
 
   .skeleton {

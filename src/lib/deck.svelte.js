@@ -3,6 +3,13 @@ import { parseDeck } from './parser.js';
 import { fetchSets, resolveCard, fetchNewestLegalPrint, fetchBasicEnergyFromSve, getPtcgoCode } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
 import { sortDeck } from './sort.js';
+import { notLegalUntil, todayIso } from './legality.js';
+import setLegality from '../data/set-legality.json';
+
+// The `legalFrom` date for a card's set when it isn't tournament-legal yet, else null.
+function legalityFor(setId) {
+  return notLegalUntil(setLegality[setId], todayIso());
+}
 
 const BASIC_ENERGY_NAME_RE = /^Basic \{([A-Z])\} Energy$/;
 const BASIC_ENERGY_API_NAMES = {
@@ -76,6 +83,7 @@ export function createDeck() {
                 card.evolvesFrom = d.evolvesFrom ?? null;
                 card.regulationMark = d.regulationMark ?? null;
                 card.isRotating = false;
+                card.notLegalUntil = null;
                 card.cardLoading = false;
               })
               .catch((e) => {
@@ -113,6 +121,9 @@ export function createDeck() {
               const mark = d.regulationMark ?? null;
               card.regulationMark = mark;
               card.isRotating = !card.isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark);
+              // Computed after setId is finalized, so it reflects the print actually used
+              // (Trainer/Energy may have swapped to a newer legal reprint above).
+              card.notLegalUntil = legalityFor(card.setId);
               card.cardLoading = false;
             })
             .catch((e) => {
@@ -236,6 +247,7 @@ export function createDeck() {
       evolvesFrom: apiCard.evolvesFrom ?? null,
       regulationMark: mark,
       isRotating: !isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark),
+      notLegalUntil: legalityFor(apiCard.set?.id ?? null),
     });
     sortDeck(deck);
   }
@@ -291,6 +303,7 @@ export function createDeck() {
           evolvesFrom,
           regulationMark: p.regulationMark ?? null,
           isRotating: !(p.isBasicEnergy ?? false) && !LEGAL_REGULATION_MARKS.includes(p.regulationMark ?? null),
+          notLegalUntil: legalityFor(p.setId ?? null),
         }));
       section.cards.splice(idx, 0, ...newCards);
       break;

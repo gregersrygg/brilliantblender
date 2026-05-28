@@ -50,6 +50,11 @@ When `onpick` is provided, the image is wrapped in `<button class="pick-trigger"
 
 When `onremove` is provided, error-state tiles show a `×` button (top-right corner) that calls `onremove(card)` to remove the card from the deck entirely.
 
+**Warning/notice text** (shown below the qty controls for `qty > 0`, first match wins):
+1. `card.isRotating` → red `Not Standard-legal` (red `.card-warning` border).
+2. `card.notLegalUntil` → **amber** `Legal from {formatLegalDate(date)}` (`.warning-text.notice`, amber `.card-notice` border) — informational, the card is valid but its set isn't tournament-legal yet.
+3. `warning` prop (count/ACE SPEC rule) → red text (red `.card-warning` border).
+
 **data-testid attributes:** `card-tile`, `increment`, `decrement`
 
 ---

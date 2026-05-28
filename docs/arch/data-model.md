@@ -22,6 +22,7 @@ Each card in the deck has this shape (after loading):
   evolvesFrom: string|null, // Parent Pokémon name (e.g. "Dreepy" for Drakloak); used to group evolution chains
   regulationMark: string|null,
   isRotating: boolean,   // true when !isBasicEnergy && regulationMark not in LEGAL_REGULATION_MARKS (null marks count as not legal)
+  notLegalUntil: string|null, // legalFrom date (YYYY-MM-DD) when the card's set isn't tournament-legal yet (per set-legality.json); else null
 }
 ```
 
