@@ -52,7 +52,7 @@ When `onremove` is provided, error-state tiles show a `×` button (top-right cor
 
 **Warning/notice text** (shown below the qty controls for `qty > 0`, first match wins):
 1. `card.isRotating` → red `Not Standard-legal` (red `.card-warning` border).
-2. `card.notLegalUntil` → **amber** `Legal from {formatLegalDate(date)}` (`.warning-text.notice`, amber `.card-notice` border) — informational, the card is valid but its set isn't tournament-legal yet.
+2. `card.notLegalUntil` → **amber** `Legal from {formatLegalDate(date)}` (`.warning-text.notice`, amber `.card-notice` border) — informational, the card is valid but its set isn't tournament-legal yet. Suppressed for functionally-identical reprints of already-legal cards (legal on release, Handbook §4.1.3 — see [state.md](state.md)).
 3. `warning` prop (count/ACE SPEC rule) → red text (red `.card-warning` border).
 
 **data-testid attributes:** `card-tile`, `increment`, `decrement`
@@ -69,7 +69,7 @@ When `onremove` is provided, error-state tiles show a `×` button (top-right cor
 
 **On mount:** calls `fetchPrintsByName(cardName)`, filters to Standard-legal prints only, then merges with `initialPrints`.
 
-**Regulation filtering:** Only prints with `regulationMark` in `LEGAL_REGULATION_MARKS` (from `config.js`) are shown. Exception: older prints that are **functional reprints** of a legal card (same HP, same attacks by name/cost/damage/text, same abilities by name/text) are also included.
+**Regulation filtering:** Only prints with `regulationMark` in `LEGAL_REGULATION_MARKS` (from `config.js`) are shown. Exception: older prints that are **functional reprints** of a legal card (same HP, same attacks by name/cost/damage/text, same abilities by name/text — via `isFunctionalReprint` in [`reprint.js`](../../src/lib/reprint.js), shared with the deck legality logic) are also included.
 
 **Each `pickerPrint` entry:** `{ setCode, setId, number, setName, image, largeImage, legalities, isBasicEnergy, isAceSpec, regulationMark, hp, supertype, attacks, abilities, qty }`.
 

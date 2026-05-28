@@ -44,22 +44,38 @@ Cards render progressively as each fetch resolves (skeleton → image).
 
 ## Set-legality annotation (`notLegalUntil`)
 
-A set is only tournament-legal ~2 weeks after release, but the API marks its cards
-Standard-legal at print time. `src/data/set-legality.json` (keyed by API `setId`) records
-the real `legalFrom` date per set. Every card-creation path (`loadDeck` general branch,
-`addCard`, `applyPrintPicker`) sets `card.notLegalUntil` via the local `legalityFor(setId)`
-helper, which delegates to `notLegalUntil(setLegality[setId], todayIso())` in
-[`legality.js`](../../src/lib/legality.js):
+A set is only tournament-legal ~2 weeks after release (Handbook §4.1.2), but the API marks
+its cards Standard-legal at print time. `src/data/set-legality.json` (keyed by API `setId`)
+records the real `releaseDate` and `legalFrom` per set. `card.notLegalUntil` holds the date
+the card becomes legal when that date is still in the future, else `null`. `CardTile`
+renders it as an amber **informational** notice (`Legal from {date}`), distinct from the red
+error styling — the card is valid, just early.
 
-- Returns the `legalFrom` string when it is strictly after today (set not legal yet), else `null`.
+It is set in two stages by every card-creation path (`loadDeck` general branch, `addCard`,
+`applyPrintPicker`):
+
+1. **Conservative (sync):** `legalityFor(setId)` → `notLegalUntil(setLegality[setId], todayIso())`
+   from [`legality.js`](../../src/lib/legality.js). Returns `legalFrom` if it's after today,
+   else `null`. Treats the card as brand-new (warns).
+2. **Refined (async):** `refineLegality(card)` applies the **reprint rule** (Handbook §4.1.3):
+   a card from a not-yet-legal set is legal from the set's **`releaseDate`** (not the later
+   `legalFrom`) when it is a *functionally-identical reprint* of a card whose set is already
+   legal. It fetches all prints of the card's name (`fetchPrintsByName`), keeps those from a
+   currently-legal set (`isSetLegalOn`) with a legal regulation mark, and compares them to the
+   card's own print via [`isFunctionalReprint`](../../src/lib/reprint.js) (HP + attacks +
+   abilities). If a match is found, `notLegalUntil(entry, today, { isReprint: true })` uses the
+   release date — so released reprints clear the notice. On any lookup failure it keeps the
+   conservative value. `loadDeck` awaits this; `addCard`/`applyPrintPicker` fire it and let
+   the reactive card update.
+
+Notes:
 - Computed **after** `setId` is finalized, so it reflects the print actually used (the
-  Trainer/Energy reprint swap may change `setId`).
+  Trainer/Energy reprint swap in `loadDeck` may change `setId` to a newer, not-yet-legal set).
 - Basic energy is always `null` (basics never rotate or wait for legality).
-
-`CardTile` renders this as an amber **informational** notice (`Legal from {date}`), distinct
-from the red error styling — the card is valid, just early. The static `set-legality.json`
-import is **not** gated by `VITE_DISABLE_SNAPSHOT`, so the annotation works even when the
-card snapshot is disabled (e.g. in tests).
+- The static `set-legality.json` import is **not** gated by `VITE_DISABLE_SNAPSHOT`, so the
+  base annotation works even when the card snapshot is disabled (e.g. in tests). The reprint
+  refinement relies on `fetchPrintsByName`, which uses the snapshot in production and the
+  mocked network in tests.
 
 ## `getWarnings()` rules
 

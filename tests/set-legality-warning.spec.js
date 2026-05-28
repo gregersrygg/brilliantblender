@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockApi, mockPrints, NOT_YET_LEGAL_DECKLIST, SAMPLE_DECKLIST } from './helpers.js';
+import { mockApi, mockPrints, NOT_YET_LEGAL_DECKLIST, REPRINT_DECKLIST, SAMPLE_DECKLIST } from './helpers.js';
 
 // Weedle (CRI 1) is from me4 / Chaos Rising — legalFrom 2026-06-05 in set-legality.json.
 // We pin the browser clock so these tests don't depend on the real date: legality
@@ -30,6 +30,19 @@ test.describe('Not-yet-legal set warning', () => {
     await mockPrints(page);
     await page.goto('/');
     await loadDeck(page, NOT_YET_LEGAL_DECKLIST);
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+    await expect(page.getByText(/Legal from/)).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(0);
+  });
+
+  test('a functionally-identical reprint of a legal card shows no notice (legal on release, §4.1.3)', async ({ page }) => {
+    // me4 isn't tournament-legal until 2026-06-05, but Pikachu is a reprint of the
+    // already-legal TWM Pikachu, so it's legal from me4's release date (2026-05-22).
+    await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await loadDeck(page, REPRINT_DECKLIST);
     await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
     await expect(page.getByText(/Legal from/)).toHaveCount(0);
     await expect(page.locator('.card-notice')).toHaveCount(0);

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { notLegalUntil, todayIso, formatLegalDate } from './legality.js';
+import { notLegalUntil, todayIso, formatLegalDate, isSetLegalOn } from './legality.js';
 
 test('notLegalUntil returns legalFrom when the set is not legal yet', () => {
   const entry = { legalFrom: '2026-06-05' };
@@ -44,4 +44,28 @@ test('formatLegalDate renders a readable date', () => {
 
 test('formatLegalDate returns input unchanged when not an ISO date', () => {
   assert.equal(formatLegalDate('not-a-date'), 'not-a-date');
+});
+
+// §4.1.3: a reprint of a currently-playable card is legal upon the set's RELEASE date,
+// not the later tournament-legal date.
+const chaosRising = { releaseDate: '2026-05-22', legalFrom: '2026-06-05' };
+
+test('notLegalUntil(isReprint) uses releaseDate instead of legalFrom', () => {
+  // In the pre-legal window, a reprint is already legal (released), a new card is not.
+  assert.equal(notLegalUntil(chaosRising, '2026-05-27', { isReprint: true }), null);
+  assert.equal(notLegalUntil(chaosRising, '2026-05-27', { isReprint: false }), '2026-06-05');
+});
+
+test('notLegalUntil(isReprint) still warns for a reprint before the set is released', () => {
+  assert.equal(notLegalUntil(chaosRising, '2026-05-20', { isReprint: true }), '2026-05-22');
+});
+
+test('isSetLegalOn: untracked set is treated as legal', () => {
+  assert.equal(isSetLegalOn(undefined, '2026-05-27'), true);
+});
+
+test('isSetLegalOn: tracked set is legal only from its legalFrom date', () => {
+  assert.equal(isSetLegalOn(chaosRising, '2026-05-27'), false);
+  assert.equal(isSetLegalOn(chaosRising, '2026-06-05'), true);
+  assert.equal(isSetLegalOn(chaosRising, '2026-06-10'), true);
 });

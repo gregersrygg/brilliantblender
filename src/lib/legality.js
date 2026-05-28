@@ -11,17 +11,38 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
- * Returns the `legalFrom` date string when a set is not tournament-legal yet
- * (its legal date is strictly after `today`), otherwise `null`.
+ * Returns the date string when a card from this set becomes legal to play, if that
+ * date is still in the future relative to `today`; otherwise `null` (already legal).
  * Date strings are YYYY-MM-DD, so lexicographic comparison is chronological.
  *
- * @param {{ legalFrom?: string } | null | undefined} entry - set-legality.json entry
+ * Per Handbook §4.1.2 a new card is legal from the set's `legalFrom` (≈2 weeks after
+ * release). Per §4.1.3 a *reprint* of an already-playable card is legal from the set's
+ * `releaseDate` instead — pass `{ isReprint: true }` to use that earlier date.
+ *
+ * @param {{ legalFrom?: string, releaseDate?: string } | null | undefined} entry
  * @param {string} today - today's date as YYYY-MM-DD (see todayIso)
+ * @param {{ isReprint?: boolean }} [opts]
  * @returns {string|null}
  */
-export function notLegalUntil(entry, today) {
-  if (!entry || typeof entry.legalFrom !== 'string') return null;
-  return entry.legalFrom > today ? entry.legalFrom : null;
+export function notLegalUntil(entry, today, { isReprint = false } = {}) {
+  if (!entry) return null;
+  const date = isReprint ? entry.releaseDate : entry.legalFrom;
+  if (typeof date !== 'string') return null;
+  return date > today ? date : null;
+}
+
+/**
+ * Is a set already tournament-legal on `today`? Untracked sets (no entry) are
+ * established and treated as legal; tracked sets are legal from their `legalFrom`.
+ * Used to decide whether another print can anchor the §4.1.3 reprint rule.
+ *
+ * @param {{ legalFrom?: string } | null | undefined} entry
+ * @param {string} today - today's date as YYYY-MM-DD
+ * @returns {boolean}
+ */
+export function isSetLegalOn(entry, today) {
+  if (!entry || typeof entry.legalFrom !== 'string') return true;
+  return entry.legalFrom <= today;
 }
 
 /**

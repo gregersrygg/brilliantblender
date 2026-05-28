@@ -22,8 +22,10 @@ src/
     parser.js              Pure function: PTCGL text → deck structure
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
     snapshot.js            In-memory access to bundled card/set snapshot data
-    legality.js            Pure helpers: notLegalUntil, todayIso, formatLegalDate
+    legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate
     legality.test.mjs      Node unit tests for legality.js
+    reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
+    reprint.test.mjs       Node unit tests for reprint.js
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)

@@ -32,6 +32,14 @@ export const NOT_YET_LEGAL_DECKLIST = `Pokémon: 1
 
 Total Cards: 1`;
 
+// Pikachu CRI 25 is from the not-yet-legal me4 set, but is a functionally-identical
+// reprint of the already-legal TWM Pikachu — so per Handbook §4.1.3 it is legal on
+// me4's release date (2026-05-22) and must NOT show the not-yet-legal notice.
+export const REPRINT_DECKLIST = `Pokémon: 1
+1 Pikachu CRI 25
+
+Total Cards: 1`;
+
 export const SAMPLE_DECKLIST = `Pokémon: 2
 1 Dragapult ex TWM 130
 1 Dreepy TWM 128
@@ -136,6 +144,19 @@ const MOCK_CARDS = {
     number: '1',
     regulationMark: 'J',
   },
+  'me4-25': {
+    id: 'me4-25',
+    name: 'Pikachu',
+    supertype: 'Pokémon',
+    subtypes: ['Basic'],
+    images: { small: 'https://images.pokemontcg.io/me4/25.png' },
+    set: { id: 'me4', ptcgoCode: 'CRI' },
+    number: '25',
+    regulationMark: 'J',
+    hp: '60',
+    attacks: [{ name: 'Thunder Shock', cost: ['Lightning'], damage: '20', text: '' }],
+    abilities: [],
+  },
   'base1-53': {
     id: 'base1-53',
     name: 'Psyduck',
@@ -231,6 +252,40 @@ const MOCK_PRINTS_BY_NAME = {
       regulationMark: 'J',
       hp: 320,
       attacks: [{ name: 'Phantom Dive', damage: '200', cost: ['Psychic', 'Colorless'], text: '' }],
+      abilities: [],
+    },
+  ],
+
+  // Reprint case: the me4 (CRI) print is not legal until 2026-06-05, but it is
+  // functionally identical to the already-legal TWM print, so §4.1.3 makes it legal
+  // on me4's release date. The not-yet-legal notice must be suppressed.
+  'Pikachu': [
+    {
+      id: 'me4-25',
+      name: 'Pikachu',
+      number: '25',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'me4', ptcgoCode: 'CRI', name: 'Chaos Rising', printedTotal: 180 },
+      images: { small: 'https://images.pokemontcg.io/me4/25.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'J',
+      hp: '60',
+      attacks: [{ name: 'Thunder Shock', cost: ['Lightning'], damage: '20', text: '' }],
+      abilities: [],
+    },
+    {
+      id: 'sv6-200',
+      name: 'Pikachu',
+      number: '200',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'sv6', ptcgoCode: 'TWM', name: 'Twilight Masquerade', printedTotal: 226 },
+      images: { small: 'https://images.pokemontcg.io/sv6/200.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: 'H',
+      hp: '60',
+      attacks: [{ name: 'Thunder Shock', cost: ['Lightning'], damage: '20', text: '' }],
       abilities: [],
     },
   ],

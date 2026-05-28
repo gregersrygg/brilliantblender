@@ -1,14 +1,49 @@
 // src/lib/deck.svelte.js
 import { parseDeck } from './parser.js';
-import { fetchSets, resolveCard, fetchNewestLegalPrint, fetchBasicEnergyFromSve, getPtcgoCode } from './api.js';
+import { fetchSets, resolveCard, fetchNewestLegalPrint, fetchBasicEnergyFromSve, getPtcgoCode, fetchPrintsByName } from './api.js';
 import { LEGAL_REGULATION_MARKS } from './config.js';
 import { sortDeck } from './sort.js';
-import { notLegalUntil, todayIso } from './legality.js';
+import { notLegalUntil, todayIso, isSetLegalOn } from './legality.js';
+import { isFunctionalReprint } from './reprint.js';
 import setLegality from '../data/set-legality.json';
 
-// The `legalFrom` date for a card's set when it isn't tournament-legal yet, else null.
+// Conservative (date-only) legality date for a card's set: the legalFrom date when the
+// set isn't tournament-legal yet, else null. Treats the card as a brand-new card; the
+// §4.1.3 reprint rule is applied asynchronously by refineLegality().
 function legalityFor(setId) {
   return notLegalUntil(setLegality[setId], todayIso());
+}
+
+// Apply Handbook §4.1.3 to a single card, updating card.notLegalUntil in place: a card
+// from a not-yet-legal set is legal from the set's RELEASE date (not its later legalFrom)
+// when it is a functionally-identical reprint of a card whose set is already legal.
+// Falls back to the conservative date-only value on any lookup failure.
+async function refineLegality(card) {
+  const entry = setLegality[card.setId];
+  const today = todayIso();
+  if (!entry || isSetLegalOn(entry, today)) {
+    card.notLegalUntil = null;
+    return;
+  }
+  let isReprint = false;
+  try {
+    const prints = await fetchPrintsByName(card.name);
+    const self = prints.find(p => p.set?.id === card.setId && p.number === card.number);
+    if (self) {
+      const legalTwins = prints
+        .filter(p => p !== self
+          && LEGAL_REGULATION_MARKS.includes(p.regulationMark)
+          && isSetLegalOn(setLegality[p.set?.id], today))
+        .map(p => ({ hp: p.hp, attacks: p.attacks, abilities: p.abilities }));
+      isReprint = isFunctionalReprint(
+        { hp: self.hp, attacks: self.attacks, abilities: self.abilities },
+        legalTwins
+      );
+    }
+  } catch {
+    // Lookup failed — keep the conservative (warn) value computed below.
+  }
+  card.notLegalUntil = notLegalUntil(entry, today, { isReprint });
 }
 
 const BASIC_ENERGY_NAME_RE = /^Basic \{([A-Z])\} Energy$/;
@@ -121,10 +156,10 @@ export function createDeck() {
               const mark = d.regulationMark ?? null;
               card.regulationMark = mark;
               card.isRotating = !card.isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark);
+              card.cardLoading = false;
               // Computed after setId is finalized, so it reflects the print actually used
               // (Trainer/Energy may have swapped to a newer legal reprint above).
-              card.notLegalUntil = legalityFor(card.setId);
-              card.cardLoading = false;
+              await refineLegality(card);
             })
             .catch((e) => {
               card.cardError = e.message;
@@ -230,7 +265,7 @@ export function createDeck() {
 
     const mark = apiCard.regulationMark ?? null;
     const isBasicEnergy = apiCard.supertype === 'Energy' && (apiCard.subtypes ?? []).includes('Basic');
-    section.cards.push({
+    const newCard = {
       qty: 1,
       name: apiCard.name,
       setCode: resolvedSetCode,
@@ -248,7 +283,9 @@ export function createDeck() {
       regulationMark: mark,
       isRotating: !isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark),
       notLegalUntil: legalityFor(apiCard.set?.id ?? null),
-    });
+    };
+    section.cards.push(newCard);
+    refineLegality(newCard);
     sortDeck(deck);
   }
 
@@ -306,6 +343,7 @@ export function createDeck() {
           notLegalUntil: legalityFor(p.setId ?? null),
         }));
       section.cards.splice(idx, 0, ...newCards);
+      for (const c of newCards) refineLegality(c);
       break;
     }
     sortDeck(deck);
