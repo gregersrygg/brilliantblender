@@ -48,6 +48,21 @@ test.describe('Not-yet-legal set warning', () => {
     await expect(page.locator('.card-notice')).toHaveCount(0);
   });
 
+  test('a red rule violation takes precedence over the amber not-yet-legal notice', async ({ page }) => {
+    // 5 copies of a not-yet-legal card: over the 4-copy limit AND from a future set.
+    // The red "Max 4 copies" error must win — no amber notice, no amber border.
+    await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await loadDeck(page, `Pokémon: 5\n5 Weedle CRI 1\n\nTotal Cards: 5`);
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+    await expect(page.getByText(/Max 4 copies/)).toBeVisible();
+    await expect(page.getByText(/Legal from/)).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(0);
+    await expect(page.locator('.card-warning')).toHaveCount(1);
+  });
+
   test('a card from an already-legal set never shows the notice', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
     await mockApi(page);

@@ -71,7 +71,10 @@ It is set in two stages by every card-creation path (`loadDeck` general branch, 
 Notes:
 - Computed **after** `setId` is finalized, so it reflects the print actually used (the
   Trainer/Energy reprint swap in `loadDeck` may change `setId` to a newer, not-yet-legal set).
-- Basic energy is always `null` (basics never rotate or wait for legality).
+- Basic energy is always `null` (basics never rotate or wait for legality). Every path
+  enforces this: the sync construction in `addCard`/`applyPrintPicker` short-circuits on the
+  `isBasicEnergy` flag, and `refineLegality` early-returns `null` for basic energy — so a
+  basic-energy print from a tracked not-yet-legal set never shows the notice.
 - The static `set-legality.json` import is **not** gated by `VITE_DISABLE_SNAPSHOT`, so the
   base annotation works even when the card snapshot is disabled (e.g. in tests). The reprint
   refinement relies on `fetchPrintsByName`, which uses the snapshot in production and the

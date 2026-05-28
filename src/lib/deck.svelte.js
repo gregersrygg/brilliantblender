@@ -19,6 +19,11 @@ function legalityFor(setId) {
 // when it is a functionally-identical reprint of a card whose set is already legal.
 // Falls back to the conservative date-only value on any lookup failure.
 async function refineLegality(card) {
+  // Basic energy never rotates or waits for legality.
+  if (card.isBasicEnergy) {
+    card.notLegalUntil = null;
+    return;
+  }
   const entry = setLegality[card.setId];
   const today = todayIso();
   if (!entry || isSetLegalOn(entry, today)) {
@@ -282,7 +287,7 @@ export function createDeck() {
       evolvesFrom: apiCard.evolvesFrom ?? null,
       regulationMark: mark,
       isRotating: !isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark),
-      notLegalUntil: legalityFor(apiCard.set?.id ?? null),
+      notLegalUntil: isBasicEnergy ? null : legalityFor(apiCard.set?.id ?? null),
     };
     section.cards.push(newCard);
     refineLegality(newCard);
@@ -340,7 +345,7 @@ export function createDeck() {
           evolvesFrom,
           regulationMark: p.regulationMark ?? null,
           isRotating: !(p.isBasicEnergy ?? false) && !LEGAL_REGULATION_MARKS.includes(p.regulationMark ?? null),
-          notLegalUntil: legalityFor(p.setId ?? null),
+          notLegalUntil: (p.isBasicEnergy ?? false) ? null : legalityFor(p.setId ?? null),
         }));
       section.cards.splice(idx, 0, ...newCards);
       for (const c of newCards) refineLegality(c);
