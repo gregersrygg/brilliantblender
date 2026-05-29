@@ -2,7 +2,7 @@
 
 Paste a Pokémon TCG decklist, see your cards, swap prints, and export a tournament-ready list.
 
-**Live app:** https://gregers.no/brilliantblender/
+**Live app:** https://brilliantblender.com/
 
 ## Features
 
@@ -22,7 +22,7 @@ const deckText = `Pokémon: 1
 
 Total Cards: 1`;
 
-const url = 'https://gregers.no/brilliantblender#deck=' + encodeURIComponent(deckText);
+const url = 'https://brilliantblender.com/#deck=' + encodeURIComponent(deckText);
 ```
 
 The hash is stripped from the address bar after the deck loads. Typical 60-card decks encode to ~600–1,200 chars.
