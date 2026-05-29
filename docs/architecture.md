@@ -26,6 +26,8 @@ src/
     legality.test.mjs      Node unit tests for legality.js
     reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
     reprint.test.mjs       Node unit tests for reprint.js
+    energy.js              Pure basic-energy helpers (name regex, letter→name map, SVE name match)
+    energy.test.mjs        Node unit tests for energy.js
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
@@ -46,7 +48,11 @@ tests/
   m3-print-substitution.spec.js
   legality-warning.spec.js
   set-legality-warning.spec.js
+  old-card-load.spec.js      Old Trainer prints resolve by name without exact-print fetch
 ```
+
+`playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can
+run the dev server without colliding.
 
 ---
 

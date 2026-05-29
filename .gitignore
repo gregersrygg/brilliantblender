@@ -8,3 +8,7 @@ playwright-report
 .superpowers
 .claude/settings.local.json
 junit-scripts.xml
+
+# Playwright MCP / test artifacts
+.playwright-mcp/
+test-results/
