@@ -66,7 +66,7 @@ Imports `src/data/cards.json` and `src/data/sets.json` at bundle time. Exports:
 |---|---|
 | `getSnapshotSetMap()` | `Map<ptcgoCode, setId>` |
 | `getSnapshotCard(setId, number)` | card object or `null` |
-| `getSnapshotBasicEnergy(apiName)` | SVE energy card or `null` |
+| `getSnapshotBasicEnergy(apiName)` | SVE energy card or `null` (matches via `matchesBasicEnergyName` from `energy.js`, tolerating the `"Basic "` name prefix) |
 | `findSnapshotPrint(name, legalMarks)` | newest legal non-alt-art print or `null` |
 | `getSnapshotPrintsByName(name)` | array of prints (oldest→newest) |
 | `searchSnapshot(query)` | up to 20 matching cards (newest-first) |

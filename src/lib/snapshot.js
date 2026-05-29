@@ -1,5 +1,6 @@
 import cardsData from '../data/cards.json';
 import setsData from '../data/sets.json';
+import { matchesBasicEnergyName } from './energy.js';
 
 const DISABLED = import.meta.env.VITE_DISABLE_SNAPSHOT === 'true';
 
@@ -26,7 +27,7 @@ export function getSnapshotCard(setId, number) {
 export function getSnapshotBasicEnergy(apiName) {
   if (DISABLED) return null;
   for (const card of Object.values(cardsData)) {
-    if (card.name === apiName && card.set?.id === 'sve' && card.supertype === 'Energy') {
+    if (card.set?.id === 'sve' && card.supertype === 'Energy' && matchesBasicEnergyName(card.name, apiName)) {
       return card;
     }
   }

@@ -5,6 +5,7 @@ import { LEGAL_REGULATION_MARKS } from './config.js';
 import { sortDeck } from './sort.js';
 import { notLegalUntil, todayIso, isSetLegalOn } from './legality.js';
 import { isFunctionalReprint } from './reprint.js';
+import { BASIC_ENERGY_NAME_RE, BASIC_ENERGY_API_NAMES } from './energy.js';
 import setLegality from '../data/set-legality.json';
 
 // Conservative (date-only) legality date for a card's set: the legalFrom date when the
@@ -51,18 +52,73 @@ async function refineLegality(card) {
   card.notLegalUntil = notLegalUntil(entry, today, { isReprint });
 }
 
-const BASIC_ENERGY_NAME_RE = /^Basic \{([A-Z])\} Energy$/;
-const BASIC_ENERGY_API_NAMES = {
-  G: 'Grass Energy',
-  R: 'Fire Energy',
-  W: 'Water Energy',
-  L: 'Lightning Energy',
-  P: 'Psychic Energy',
-  F: 'Fighting Energy',
-  D: 'Darkness Energy',
-  M: 'Metal Energy',
-  Y: 'Fairy Energy',
-};
+// Resolve a single non-basic-energy deck card and write the result onto `card`.
+// Trainers are always normalised to the newest legal print by name, so for cards in
+// the Trainer section we resolve straight from the snapshot-backed
+// fetchNewestLegalPrint and skip the slow exact-print API fetch. Trainers without a
+// legal reprint (genuinely rotated out) fall back to the exact print.
+//
+// The Energy section is left on the resolve-then-normalise path: it also contains
+// plain-named basic energies (e.g. "Grass Energy SVE 1") which must resolve to their
+// actual print, not be looked up by name. Special energy is normalised after fetch.
+async function resolveDeckCard(card, section, setMap) {
+  const isTrainerSection = section.name === 'Trainer';
+  try {
+    let d;
+    let fromNamePrint = false;
+
+    if (isTrainerSection) {
+      try {
+        d = await fetchNewestLegalPrint(card.name, LEGAL_REGULATION_MARKS);
+        fromNamePrint = true;
+      } catch {
+        // No legal reprint — fall back to the exact printed card below.
+      }
+    }
+
+    if (!d) {
+      const data = await resolveCard(card.setCode, card.number, setMap, card.name);
+      // Trainers/special Energy not normalised above (Energy/Unknown section, or a
+      // Trainer with no legal reprint): normalise to the newest legal print here.
+      const isNonBasicNonPokemon =
+        data.supertype === 'Trainer' ||
+        (data.supertype === 'Energy' && !(data.subtypes ?? []).includes('Basic'));
+      if (isNonBasicNonPokemon && !isTrainerSection) {
+        try {
+          d = await fetchNewestLegalPrint(data.name, LEGAL_REGULATION_MARKS);
+          fromNamePrint = true;
+        } catch {
+          d = data; // no legal reprint — keep original
+        }
+      } else {
+        d = data;
+      }
+    }
+
+    if (fromNamePrint) {
+      card.setCode = d.set?.ptcgoCode ?? card.setCode;
+      card.number = d.number;
+    }
+    card.image = d.images?.small || null;
+    card.setId = d.set?.id ?? null;
+    card.supertype = d.supertype ?? null;
+    card.isBasicEnergy = card.isBasicEnergy || (d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic'));
+    card.isAceSpec = (d.subtypes ?? []).includes('ACE SPEC');
+    card.types = d.types ?? null;
+    card.subtypes = d.subtypes ?? [];
+    card.evolvesFrom = d.evolvesFrom ?? null;
+    const mark = d.regulationMark ?? null;
+    card.regulationMark = mark;
+    card.isRotating = !card.isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark);
+    card.cardLoading = false;
+    // Computed after setId is finalized, so it reflects the print actually used
+    // (Trainer/Energy may have swapped to a newer legal reprint above).
+    await refineLegality(card);
+  } catch (e) {
+    card.cardError = e.message;
+    card.cardLoading = false;
+  }
+}
 
 /**
  * Create a reactive deck state manager.
@@ -134,43 +190,7 @@ export function createDeck() {
           continue;
         }
 
-        promises.push(
-          resolveCard(card.setCode, card.number, setMap, card.name)
-            .then(async (data) => {
-              let d = data;
-              const isNonBasicNonPokemon =
-                data.supertype === 'Trainer' ||
-                (data.supertype === 'Energy' && !(data.subtypes ?? []).includes('Basic'));
-              if (isNonBasicNonPokemon) {
-                try {
-                  d = await fetchNewestLegalPrint(data.name, LEGAL_REGULATION_MARKS);
-                  card.setCode = d.set?.ptcgoCode ?? card.setCode;
-                  card.number = d.number;
-                } catch {
-                  d = data; // no legal reprint — keep original
-                }
-              }
-              card.image = d.images?.small || null;
-              card.setId = d.set?.id ?? null;
-              card.supertype = d.supertype ?? null;
-              card.isBasicEnergy = card.isBasicEnergy || (d.supertype === 'Energy' && (d.subtypes ?? []).includes('Basic'));
-              card.isAceSpec = (d.subtypes ?? []).includes('ACE SPEC');
-              card.types = d.types ?? null;
-              card.subtypes = d.subtypes ?? [];
-              card.evolvesFrom = d.evolvesFrom ?? null;
-              const mark = d.regulationMark ?? null;
-              card.regulationMark = mark;
-              card.isRotating = !card.isBasicEnergy && !LEGAL_REGULATION_MARKS.includes(mark);
-              card.cardLoading = false;
-              // Computed after setId is finalized, so it reflects the print actually used
-              // (Trainer/Energy may have swapped to a newer legal reprint above).
-              await refineLegality(card);
-            })
-            .catch((e) => {
-              card.cardError = e.message;
-              card.cardLoading = false;
-            })
-        );
+        promises.push(resolveDeckCard(card, section, setMap));
       }
     }
 

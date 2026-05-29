@@ -40,6 +40,14 @@ export const REPRINT_DECKLIST = `Pokémon: 1
 
 Total Cards: 1`;
 
+// An old Trainer print (Boss's Orders PAL 265 = sv2-265, regulationMark 'G') that is
+// not snapshot-legal but has a legal 'I'-mark reprint. Loading it must NOT fetch the
+// exact print (sv2-265) — it should resolve straight to the legal reprint by name.
+export const OLD_TRAINER_DECKLIST = `Trainer: 1
+1 Boss's Orders PAL 265
+
+Total Cards: 1`;
+
 export const SAMPLE_DECKLIST = `Pokémon: 2
 1 Dragapult ex TWM 130
 1 Dreepy TWM 128
@@ -60,6 +68,7 @@ const MOCK_SETS = {
     { id: 'svp', name: 'Scarlet & Violet Promos', ptcgoCode: 'PR-SV' },
     { id: 'base1', name: 'Base Set', ptcgoCode: 'BS' },
     { id: 'me4', name: 'Chaos Rising', ptcgoCode: 'CRI' },
+    { id: 'sv2', name: 'Paldea Evolved', ptcgoCode: 'PAL' },
   ],
 };
 
@@ -177,6 +186,16 @@ const MOCK_CARDS = {
     number: '71',
     regulationMark: null,
   },
+  'sv2-265': {
+    id: 'sv2-265',
+    name: "Boss's Orders",
+    supertype: 'Trainer',
+    subtypes: ['Supporter'],
+    images: { small: 'https://images.pokemontcg.io/sv2/265.png' },
+    set: { id: 'sv2', ptcgoCode: 'PAL' },
+    number: '265',
+    regulationMark: 'G',
+  },
 };
 
 export async function mockApi(page) {
@@ -222,6 +241,24 @@ const MOCK_PRINTS_BY_NAME = {
       regulationMark: 'H',
       rarity: 'Common',
       rules: [],
+    },
+  ],
+
+  // Old print (sv2-265, mark 'G') is not legal, but this 'I'-mark reprint is — so a
+  // Boss's Orders deck line must resolve here by name without fetching sv2-265.
+  "Boss's Orders": [
+    {
+      id: 'me2pt5-183',
+      name: "Boss's Orders",
+      number: '183',
+      supertype: 'Trainer',
+      subtypes: ['Supporter'],
+      set: { id: 'me2pt5', ptcgoCode: 'ASC', name: 'Ascended Heroes', printedTotal: 217 },
+      images: { small: 'https://images.pokemontcg.io/me2pt5/183.png' },
+      legalities: { standard: 'Legal', unlimited: 'Legal', expanded: 'Legal' },
+      regulationMark: 'I',
+      rarity: 'Uncommon',
+      rules: ['Switch in 1 of your opponent\'s Benched Pokémon to the Active Spot.'],
     },
   ],
 
