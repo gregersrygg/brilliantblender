@@ -397,6 +397,40 @@ const MOCK_SEARCH_RESULTS = {
       regulationMark: 'H',
     },
   ],
+  // me4 (CRI) Pikachu — not legal until 2026-06-05, but a functional reprint of the
+  // already-legal TWM Pikachu (see MOCK_PRINTS_BY_NAME['Pikachu']). Added via search it
+  // must NOT show the not-yet-legal notice (§4.1.3 — legal on release).
+  'pikachu': [
+    {
+      id: 'me4-25',
+      name: 'Pikachu',
+      number: '25',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'me4', ptcgoCode: 'CRI', name: 'Chaos Rising' },
+      images: { small: 'https://images.pokemontcg.io/me4/25.png' },
+      legalities: { standard: 'legal' },
+      regulationMark: 'J',
+      hp: '60',
+      attacks: [{ name: 'Thunder Shock', cost: ['Lightning'], damage: '20', text: '' }],
+      abilities: [],
+    },
+  ],
+  // me4 (CRI) Weedle — genuinely new card with no already-legal twin, so it stays
+  // flagged until me4's legalFrom (2026-06-05) even when added via search.
+  'weedle': [
+    {
+      id: 'me4-1',
+      name: 'Weedle',
+      number: '1',
+      supertype: 'Pokémon',
+      subtypes: ['Basic'],
+      set: { id: 'me4', ptcgoCode: 'CRI', name: 'Chaos Rising' },
+      images: { small: 'https://images.pokemontcg.io/me4/1.png' },
+      legalities: { standard: 'legal' },
+      regulationMark: 'J',
+    },
+  ],
 };
 
 export async function mockPrints(page) {

@@ -72,4 +72,62 @@ test.describe('Not-yet-legal set warning', () => {
     await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(4);
     await expect(page.getByText(/Legal from/)).toHaveCount(0);
   });
+
+  // ── Issue #20: the §4.1.3 reprint rule must also apply when a card is added via the
+  // search box or rebuilt via the print picker, not just on paste/load. ──
+
+  // Start from an empty deck so addCard has to CREATE the section — the path the bug
+  // actually hit (a freshly-created section is a raw, non-reactive object).
+  test('a reprint added via search shows no notice (§4.1.3, issue #20)', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: /start from scratch/i }).click();
+
+    await page.getByPlaceholder(/search cards/i).fill('pikachu');
+    await page.locator('.search-result').first().click();
+
+    // Pikachu (me4/CRI) is a functional reprint of the already-legal TWM Pikachu,
+    // so it is legal on me4's release date — no not-yet-legal notice.
+    await expect(page.locator('[data-testid="card-tile"] img[alt="Pikachu"]')).toBeVisible();
+    await expect(page.getByText(/Legal from/)).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(0);
+  });
+
+  test('a genuinely-new card added via search still shows the notice', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: /start from scratch/i }).click();
+
+    await page.getByPlaceholder(/search cards/i).fill('weedle');
+    await page.locator('.search-result').first().click();
+
+    // Weedle (me4/CRI) has no already-legal twin, so it stays flagged until 2026-06-05.
+    await expect(page.locator('[data-testid="card-tile"] img[alt="Weedle"]')).toBeVisible();
+    await expect(page.getByText('Legal from Jun 5, 2026')).toBeVisible();
+  });
+
+  test('a reprint kept via the print picker shows no notice (§4.1.3, applyPrintPicker)', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-06-01T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+    await loadDeck(page, REPRINT_DECKLIST);
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+    await expect(page.getByText(/Legal from/)).toHaveCount(0);
+
+    // Re-running the card through the picker rebuilds it via applyPrintPicker.
+    await page.locator('[data-testid="card-tile"] img[alt="Pikachu"]').click();
+    const picker = page.locator('[data-testid="print-picker"]');
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: /done/i }).click();
+
+    await expect(picker).toHaveCount(0);
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+    await expect(page.getByText(/Legal from/)).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(0);
+  });
 });

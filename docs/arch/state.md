@@ -68,6 +68,13 @@ It is set in two stages by every card-creation path (`loadDeck` general branch, 
    conservative value. `loadDeck` awaits this; `addCard`/`applyPrintPicker` fire it and let
    the reactive card update.
 
+   > **Reactivity:** the async refinement must run against the **`$state` proxy**, not the
+   > raw card object. `addCard`/`applyPrintPicker` therefore read the card back out of
+   > `deck.sections[…].cards[…]` (and `addCard` re-reads a freshly-created section through
+   > `deck.sections[idx]`) before calling `refineLegality`. Mutating the raw object that was
+   > pushed/spliced in would not trigger a re-render, leaving the conservative notice stuck on
+   > (issue #20). `loadDeck` is already safe because it iterates the proxied array.
+
 Notes:
 - Computed **after** `setId` is finalized, so it reflects the print actually used (the
   Trainer/Energy reprint swap in `loadDeck` may change `setId` to a newer, not-yet-legal set).

@@ -251,11 +251,15 @@ export function createDeck() {
     const supertypeMap = { 'Pokémon': 'Pokémon', 'Trainer': 'Trainer', 'Energy': 'Energy' };
     const sectionName = supertypeMap[apiCard.supertype] ?? 'Trainer';
 
-    let section = deck.sections.find(s => s.name === sectionName);
-    if (!section) {
-      section = { name: sectionName, cards: [] };
-      deck.sections.push(section);
+    // Re-read the section through `deck` after any insert so it's the reactive $state
+    // proxy (a freshly-created section object is raw); otherwise the proxy read-back
+    // below — and refineLegality's async mutation — would not be reactive (#20).
+    let sectionIdx = deck.sections.findIndex(s => s.name === sectionName);
+    if (sectionIdx === -1) {
+      deck.sections.push({ name: sectionName, cards: [] });
+      sectionIdx = deck.sections.length - 1;
     }
+    const section = deck.sections[sectionIdx];
 
     const resolvedSetCode = apiCard.set?.ptcgoCode ?? getPtcgoCode(apiCard.set?.id) ?? '';
 
@@ -290,7 +294,10 @@ export function createDeck() {
       notLegalUntil: isBasicEnergy ? null : legalityFor(apiCard.set?.id ?? null),
     };
     section.cards.push(newCard);
-    refineLegality(newCard);
+    // Refine on the reactive $state proxy (read back from the array), not the raw
+    // `newCard` reference — mutating the raw object inside the async refineLegality
+    // would not trigger a re-render, leaving the conservative notice stuck on (#20).
+    refineLegality(section.cards[section.cards.length - 1]);
     sortDeck(deck);
   }
 
@@ -348,7 +355,8 @@ export function createDeck() {
           notLegalUntil: (p.isBasicEnergy ?? false) ? null : legalityFor(p.setId ?? null),
         }));
       section.cards.splice(idx, 0, ...newCards);
-      for (const c of newCards) refineLegality(c);
+      // Refine on the reactive proxies (by index), not the raw `newCards` refs — see #20.
+      for (let i = 0; i < newCards.length; i++) refineLegality(section.cards[idx + i]);
       break;
     }
     sortDeck(deck);
