@@ -6,6 +6,8 @@
   import PrintPicker from './lib/PrintPicker.svelte';
   import ConfirmDialog from './lib/ConfirmDialog.svelte';
   import CardSearch from './lib/CardSearch.svelte';
+  import Features from './lib/Features.svelte';
+  import Changelog from './lib/Changelog.svelte';
   import { createDeck } from './lib/deck.svelte.js';
 
   const DECK_HASH_PREFIX = '#deck=';
@@ -154,6 +156,8 @@
     />
   {:else}
     <DeckInput onload={handleLoad} />
+    <Features />
+    <Changelog />
   {/if}
 </main>
 

@@ -31,6 +31,9 @@ src/
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
+    changelog.js           CHANGELOG data: user-facing release notes (landing page)
+    Features.svelte        "Why Brilliant Blender?" differentiators grid (landing page)
+    Changelog.svelte       "What's new" release-notes list (landing page)
     DeckView.svelte        Section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
     ExportButton.svelte    Copy-to-clipboard export button

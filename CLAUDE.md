@@ -36,3 +36,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full architecture ref
 ## Keeping Docs Up to Date
 
 **Part of every task and milestone:** after completing implementation, update `docs/architecture.md` to reflect any changes to files, components, functions, props, data shapes, or milestone status. The doc should always match the current code.
+
+## Keeping the Changelog Up to Date
+
+**Part of every user-facing change:** add an entry to the `CHANGELOG` array in `src/lib/changelog.js` (shown on the landing page via `Changelog.svelte`). Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Newest first; group same-day items under one date.
