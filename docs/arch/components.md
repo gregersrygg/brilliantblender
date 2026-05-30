@@ -3,7 +3,7 @@
 ## `App.svelte`
 
 Top-level flow controller. Three render states:
-- `DeckInput` — empty state (no deck loaded)
+- `DeckInput` + `Features` + `Changelog` — empty state / landing page (no deck loaded)
 - `DeckView` + `ExportButton` — deck loaded
 - Error banner — top-level fetch failure
 
@@ -24,6 +24,18 @@ Also manages `PrintPicker` visibility.
 **Props:** `{ onload: (text: string) → void }`
 
 Textarea with placeholder + "Load Deck" button. Button disabled when textarea is empty.
+
+---
+
+## `Features.svelte`
+
+No props. Static "Why Brilliant Blender?" section shown on the landing page (empty state only). A 3-up grid of differentiators (print swapping, tournament-legality checks, instant/offline/private). Edit the `features` array in-component to change copy. Collapses to a single column under 640px.
+
+---
+
+## `Changelog.svelte`
+
+No props. "What's new" section shown on the landing page (empty state only). Renders entries from `src/lib/changelog.js` (`CHANGELOG`), newest first, each with a locale-formatted date and a bullet list of user-facing changes. **Add a `CHANGELOG` entry whenever you ship something a user would notice** — keep it player-focused, not internal/CI churn. Dates are `YYYY-MM-DD` strings parsed as local dates to avoid timezone drift.
 
 ---
 
