@@ -1,16 +1,16 @@
 <script>
   const features = [
     {
-      title: 'Swap to the print you own',
-      body: 'The reason Brilliant Blender exists. Tap any Pokémon to see every print and swap in the exact set and number you’ll bring to the table — something Limitless and PTCGL won’t do for you.',
+      title: 'Swap prints effortlessly',
+      body: 'The reason Brilliant Blender exists. Tap any Pokémon to see every print and swap in the exact set and number you’ll bring to the table — no fiddling, no friction.',
     },
     {
       title: 'Tournament-legality built in',
       body: 'We flag cards from sets that aren’t legal yet and apply the reprint rule (§4.1.3) automatically, so your exported list passes deck check.',
     },
     {
-      title: 'Instant, offline, and private',
-      body: 'Standard-legal cards are bundled in, so decks render the moment you paste — no API waits, no account, no decklist ever leaves your browser.',
+      title: 'Beginner-friendly, not limiting',
+      body: 'New to deck check? The visual flow walks you through it. Already know the ropes? Nothing slows you down — paste, adjust, and export in seconds.',
     },
   ];
 </script>
