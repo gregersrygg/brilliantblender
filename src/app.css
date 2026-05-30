@@ -41,6 +41,8 @@
 
 body {
   margin: 0;
+  /* Allow panning + pinch-zoom, but disable double-tap-to-zoom on mobile. */
+  touch-action: manipulation;
 }
 
 #app {
