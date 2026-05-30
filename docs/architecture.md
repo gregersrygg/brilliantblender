@@ -86,6 +86,19 @@ Used across all components. Light + dark mode via `@media (prefers-color-scheme:
 | `--notice` | Amber — informational notices (e.g. "not legal yet") |
 | `--skeleton` | Loading placeholder background |
 
+### Mobile zoom behaviour
+
+The page must **not** zoom on its own — only when the user intentionally
+pinch-zooms (kept for accessibility; we never set `user-scalable=no` or
+`maximum-scale`). Two unwanted auto-zoom triggers are suppressed:
+
+- **Double-tap-to-zoom** — `body { touch-action: manipulation }` in `src/app.css`
+  disables it while leaving panning and pinch-zoom intact.
+- **iOS focus-zoom** — iOS Safari zooms when a focused field's font is < 16px,
+  so every `<input>`/`<textarea>`/`<select>` must be ≥ 16px. Currently the only
+  fields are the search input (`CardSearch.svelte`) and the decklist textarea
+  (`DeckInput.svelte`), both 16px.
+
 ---
 
 ## Milestone status
