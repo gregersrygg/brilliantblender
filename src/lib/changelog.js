@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-05-30',
+    items: [
+      'On mobile, tapping the search box or decklist no longer zooms the page in — pinch-to-zoom still works.',
+    ],
+  },
+  {
     date: '2026-05-29',
     items: [
       'Heads-up when a card belongs to a set that isn’t tournament-legal yet.',
