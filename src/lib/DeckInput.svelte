@@ -29,7 +29,7 @@
 
   textarea {
     font-family: var(--mono);
-    font-size: 14px;
+    font-size: 16px;
     padding: 12px;
     border: 1px solid var(--border);
     border-radius: 8px;

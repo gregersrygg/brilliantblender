@@ -154,7 +154,7 @@
     flex: 1;
     border: none;
     background: none;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-h);
     outline: none;
   }
