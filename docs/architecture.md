@@ -41,8 +41,18 @@ src/
     config.js              App-wide constants (LEGAL_REGULATION_MARKS — update annually)
     PrintPicker.svelte     Full-screen modal: alternate prints with regulation filtering, large image detail panel
 
+public/                    Copied verbatim into dist/ at build time
+  CNAME                    Custom domain (brilliantblender.com) for GitHub Pages
+  favicon.svg              Browser tab icon
+  logo.svg                 Standalone brand logo
+  icons.svg                Sprite sheet of UI icons
+  robots.txt               Allows all crawlers; points to the sitemap
+  sitemap.xml              Single-URL sitemap (the app is one route)
+  og-image.png             1200×630 social/link-preview card (referenced by index.html)
+
 scripts/
   build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
+  og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST
@@ -56,6 +66,27 @@ tests/
 
 `playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can
 run the dev server without colliding.
+
+---
+
+## SEO & social metadata (`index.html`)
+
+The app is a single-route, client-rendered SPA served as a static build, so all
+crawler-facing metadata lives in `index.html`'s `<head>`:
+
+- **Title + description** describe the tool with the searchable terms a player uses
+  ("Pokémon TCG decklist builder"), not just the brand name.
+- **`<link rel="canonical">`, `og:*`, and `twitter:*`** use absolute
+  `https://brilliantblender.com/` URLs (Vite's `base: './'` only affects bundled asset
+  paths, so these must be hardcoded absolute). `og:image`/`twitter:image` point at
+  `/og-image.png` (1200×630, raster — SVG is not supported by most scrapers).
+
+**Behavioural rule — one `<h1>` per page:** the brand wordmark in `App.svelte`'s header
+is the page's single `<h1>` (`.wordmark`); all other headings are `<h2>`+. Keep it that
+way — don't add a second `<h1>` or downgrade the wordmark to a `<span>`.
+
+To regenerate `og-image.png`, edit `scripts/og-image.html`, serve `public/` + `scripts/`
+over HTTP, and screenshot the page at a 1200×630 viewport into `public/og-image.png`.
 
 ---
 

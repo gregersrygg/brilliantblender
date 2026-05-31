@@ -113,7 +113,7 @@
       </g>
       <rect x="4" y="4" width="72" height="72" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.22"/>
     </svg>
-    <span class="wordmark">Brilliant Blender</span>
+    <h1 class="wordmark">Brilliant Blender</h1>
   </div>
   {#if deckState.deck}
     <div class="header-actions">
@@ -250,6 +250,7 @@
   }
 
   .wordmark {
+    margin: 0;
     font-size: 28px;
     font-weight: 800;
     color: var(--text-h);

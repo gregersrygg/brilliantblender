@@ -50,11 +50,11 @@ test.describe('M4: Polish', () => {
     await page.goto('/');
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
       'content',
-      'Brilliant Blender'
+      'Brilliant Blender — Tournament Pokémon TCG Decklist Builder'
     );
     await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
       'content',
-      /swap pok/i
+      /tournament-ready pok/i
     );
   });
 });
