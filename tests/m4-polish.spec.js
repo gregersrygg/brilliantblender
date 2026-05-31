@@ -54,7 +54,7 @@ test.describe('M4: Polish', () => {
     );
     await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
       'content',
-      /swap pok/i
+      /tournament-ready pok/i
     );
   });
 });
