@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-05-31',
+    items: [
+      'Sharing a Brilliant Blender link now shows a proper preview card (logo, title, and description) on Discord, social media, and chat apps.',
+    ],
+  },
+  {
     date: '2026-05-30',
     items: [
       'On mobile, tapping the search box or decklist no longer zooms the page in — pinch-to-zoom still works.',
