@@ -10,7 +10,8 @@ Read only the sections relevant to your task. Each doc is self-contained.
 
 ```
 src/
-  main.js                  Entry point — mounts App.svelte
+  main.js                  Entry point — hydrates prerendered #app (prod) or mounts fresh (dev)
+  entry-server.js          SSR entry — render(App) for build-time prerendering
   app.css                  Global CSS variables and resets
   App.svelte               Top-level: flow control, picker state
   data/
@@ -53,6 +54,7 @@ public/                    Copied verbatim into dist/ at build time
 scripts/
   build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
   og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
+  prerender.mjs            Post-build: injects the SSR-rendered landing HTML into dist/index.html
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST
@@ -87,6 +89,27 @@ way — don't add a second `<h1>` or downgrade the wordmark to a `<span>`.
 
 To regenerate `og-image.png`, edit `scripts/og-image.html`, serve `public/` + `scripts/`
 over HTTP, and screenshot the page at a 1200×630 viewport into `public/og-image.png`.
+
+### Prerendering (build-time SSR)
+
+The landing/empty state is prerendered into `dist/index.html` at build time so crawlers
+and link unfurlers that don't run JS still get real content (header `<h1>`, Features,
+Changelog, deck-input CTA) instead of an empty `<div id="app">`. The `build` script runs
+three steps: (1) `vite build` (client), (2) `vite build --ssr src/entry-server.js`
+(server bundle → throwaway `dist-ssr/`), (3) `node scripts/prerender.mjs`, which calls
+`render(App)` from `svelte/server`, injects the `body` into `#app`, and deletes `dist-ssr/`.
+`prerender.mjs` asserts expected markers are present, so the build fails loudly if the
+landing stops rendering.
+
+On the client, `main.js` **hydrates** when `#app` already has children (prod) and falls
+back to `mount` when it's empty (dev server / Playwright e2e).
+
+**Behavioural rule — keep the landing SSR-safe:** `render(App)` runs in Node with no DOM,
+and the initial client render must match the prerendered markup. Do not touch browser
+globals (`window`, `document`, `sessionStorage`, `location`) at module load or during the
+landing render — defer them to `onMount` or event handlers (as the `#deck=` hash parsing
+in `App.svelte` already does). Avoid render output that differs between Node and the
+browser, which would cause a hydration mismatch.
 
 ---
 
