@@ -6,6 +6,7 @@ export const CHANGELOG = [
   {
     date: '2026-06-02',
     items: [
+      'New animated backdrop — a soft glow behind the logo with gently twinkling sparkles, replacing the plain background.',
       'The blender logo now spins for a few seconds when the page opens, a deck loads, or you start a new deck.',
     ],
   },
