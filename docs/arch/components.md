@@ -17,6 +17,8 @@ Also manages `PrintPicker` visibility.
 
 **Key function:** `getPickerDeckCards(cardName)` — collects `[{ setCode, number, qty, setId }]` for all deck entries with that name (feeds `initialPrints` into PrintPicker, including entries at qty=0). `setId` is the API set id used for robust matching when `ptcgoCode` is ambiguous.
 
+**Behavioural rule — logo animation runs a fixed 5s window:** the logo SVG's `blending` class (which drives the spin/pulse/sparkle CSS animations) is bound to `animating || deckState.loading`. `animating` is a local `$state` flag set true by `playLogoAnimation()`, which arms a 5s `setTimeout` (clearing any prior one so re-triggers restart a single clean window). `playLogoAnimation()` is called on mount, in `handleLoad()`, and in the `ConfirmDialog` reset handler. Intent: card data now resolves almost instantly from cached/bundled data, so tying the animation purely to `loading` made it flicker invisibly; the timer guarantees a visible run, while OR-ing in `loading` keeps it spinning through a genuinely slow fetch.
+
 ---
 
 ## `DeckInput.svelte`

@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-02',
+    items: [
+      'The blender logo now spins for a few seconds when the page opens, a deck loads, or you start a new deck.',
+    ],
+  },
+  {
     date: '2026-05-30',
     items: [
       'On mobile, tapping the search box or decklist no longer zooms the page in — pinch-to-zoom still works.',

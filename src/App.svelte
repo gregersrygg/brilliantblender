@@ -17,7 +17,23 @@
   let showConfirm = $state(false);
   let dismissedParseWarning = $state(false);
 
+  // The logo "blending" animation. Loads now resolve almost instantly from cached/
+  // bundled card data, so tying the animation purely to `deckState.loading` made it
+  // flicker invisibly. Instead we run it for a fixed 5s window on page load, deck
+  // load, and reset; `deckState.loading` is OR-ed in so a genuinely slow load keeps
+  // spinning past the 5s.
+  let animating = $state(false);
+  let animTimer;
+
+  function playLogoAnimation() {
+    animating = true;
+    clearTimeout(animTimer);
+    animTimer = setTimeout(() => { animating = false; }, 5000);
+  }
+
   onMount(() => {
+    playLogoAnimation();
+
     const hash = window.location.hash;
     if (!hash.startsWith(DECK_HASH_PREFIX)) return;
 
@@ -43,6 +59,7 @@
 
   function handleLoad(text) {
     dismissedParseWarning = false;
+    playLogoAnimation();
     deckState.loadDeck(text);
   }
 
@@ -73,7 +90,7 @@
 
 <header class="app-header">
   <div class="brand">
-    <svg class="logo-img" class:blending={deckState.loading}
+    <svg class="logo-img" class:blending={animating || deckState.loading}
       width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
       role="img" aria-label="Brilliant Blender logo">
       <defs>
@@ -167,7 +184,7 @@
 
 {#if showConfirm}
   <ConfirmDialog
-    onconfirm={() => { deckState.reset(); showConfirm = false; }}
+    onconfirm={() => { deckState.reset(); playLogoAnimation(); showConfirm = false; }}
     oncancel={() => (showConfirm = false)}
   />
 {/if}
