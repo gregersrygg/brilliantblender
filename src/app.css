@@ -9,6 +9,8 @@
   --notice: #b45309;
   --skeleton: #ede9fe;
   --subtle: #a78bfa;
+  --glow: rgba(124, 58, 237, 0.12);
+  --spark: #f0b429;
 
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
@@ -30,6 +32,8 @@
     --notice: #fbbf24;
     --skeleton: #2a2a3d;
     --subtle: #6d5eb5;
+    --glow: rgba(167, 139, 250, 0.18);
+    --spark: #ffd23f;
   }
 }
 

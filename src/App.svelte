@@ -17,6 +17,29 @@
   let showConfirm = $state(false);
   let dismissedParseWarning = $state(false);
 
+  // Decorative "blender lab" sparkles drifting behind the page (purely cosmetic,
+  // aria-hidden). The twinkle animation is disabled under prefers-reduced-motion
+  // (see styles). Positions are seeded/deterministic on purpose: the landing markup
+  // is prerendered and hydrated (scripts/prerender.mjs + main.js), so server and
+  // client must generate the exact same sparkles or hydration mismatches.
+  const SPARKLES = (() => {
+    // mulberry32 PRNG with a fixed seed — stable across server prerender + client.
+    let seed = 0x9e3779b9;
+    const rand = () => {
+      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    return Array.from({ length: 16 }, () => ({
+      left: rand() * 100,
+      top: rand() * 92,
+      size: 6 + rand() * 7,
+      duration: 9 + rand() * 4,
+      delay: -rand() * 13,
+    }));
+  })();
+
   // The logo "blending" animation. Loads now resolve almost instantly from cached/
   // bundled card data, so tying the animation purely to `deckState.loading` made it
   // flicker invisibly. Instead we run it for a fixed 5s window on page load, deck
@@ -87,6 +110,15 @@
     pickerCard = null;
   }
 </script>
+
+<div class="bg-fx" aria-hidden="true">
+  {#each SPARKLES as s}
+    <span
+      class="bg-spark"
+      style="left: {s.left}vw; top: {s.top}vh; font-size: {s.size}px; animation-duration: {s.duration}s; animation-delay: {s.delay}s;"
+    >✦</span>
+  {/each}
+</div>
 
 <header class="app-header">
   <div class="brand">
@@ -200,6 +232,41 @@
 {/if}
 
 <style>
+  /* "Blender lab" backdrop: a soft glow behind the logo plus drifting sparkles.
+     Fixed, full-viewport, non-interactive, and sits behind all content. */
+  .bg-fx {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background: radial-gradient(1200px 600px at 50% -10%, var(--glow), transparent 60%);
+  }
+
+  .bg-spark {
+    position: absolute;
+    color: var(--spark);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: spark-twinkle ease-in-out infinite;
+  }
+
+  /* Invisible most of the cycle, then a slow blink — fade in, briefly hold, fade
+     out — once per 9–13s per sparkle (staggered by negative delays). The visible
+     window spans ~35% of the cycle (~3–4.5s) so each blink is easy to catch. */
+  @keyframes spark-twinkle {
+    0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+    10%      { opacity: 1; transform: scale(1) rotate(12deg); }
+    25%      { opacity: 1; transform: scale(1) rotate(12deg); }
+    35%      { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  }
+
+  /* Respect reduced-motion: keep the sparkles faintly visible but stop them blinking. */
+  @media (prefers-reduced-motion: reduce) {
+    .bg-spark { animation: none; opacity: 0.18; }
+  }
+
   .app-header {
     display: grid;
     grid-template-columns: 1fr auto 1fr;

@@ -111,6 +111,18 @@ landing render — defer them to `onMount` or event handlers (as the `#deck=` ha
 in `App.svelte` already does). Avoid render output that differs between Node and the
 browser, which would cause a hydration mismatch.
 
+**Decorative backdrop (`.bg-fx`):** `App.svelte` renders a fixed, `aria-hidden`, behind-content
+layer — a soft radial `--glow` behind the logo plus ~16 small `.bg-spark` "✦" sparkles
+that are invisible most of the time and slowly blink to full opacity — fade in, hold, fade
+out — once per 9–13s each (staggered, visible window ~35% of the cycle)
+("blender lab" theme; replaced the flat `--bg`). Sparkle positions/timings come from a
+**seeded** mulberry32 PRNG (fixed seed) in the `SPARKLES` const, *not* `Math.random()`:
+because the landing is prerendered then hydrated, the server and client must emit identical
+sparkles or hydration mismatches — so positions are deterministic by design (same every
+render/visit). The twinkle keyframe is gated behind `@media (prefers-reduced-motion)` — under
+reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens live in
+`app.css` (light + dark variants).
+
 ---
 
 ## Sections
