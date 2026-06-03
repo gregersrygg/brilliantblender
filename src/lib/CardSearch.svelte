@@ -103,18 +103,21 @@
           class="search-result"
           role="option"
           aria-selected="false"
+          title={card.name}
           onmousedown={() => selectCard(card)}
         >
-          {#if card.images?.small}
-            <img class="result-thumb" src={card.images.small} alt={card.name} loading="lazy" />
-          {:else}
-            <div class="result-thumb-placeholder"></div>
-          {/if}
+          <div class="result-image">
+            {#if card.images?.small}
+              <img class="result-thumb" src={card.images.small} alt={card.name} loading="lazy" />
+            {:else}
+              <div class="result-thumb-placeholder"></div>
+            {/if}
+            <span class="result-type-badge {supertypeClass(card.supertype)}">{supertypeBadge(card.supertype)}</span>
+          </div>
           <div class="result-info">
             <span class="result-name">{card.name}</span>
             <span class="result-set">{card.set?.ptcgoCode ?? card.set?.id ?? '?'} {card.number}</span>
           </div>
-          <span class="result-type-badge {supertypeClass(card.supertype)}">{supertypeBadge(card.supertype)}</span>
         </li>
       {/each}
     </ul>
@@ -187,21 +190,22 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     list-style: none;
     margin: 0;
-    padding: 4px;
+    padding: 8px;
     z-index: 200;
-    max-height: 520px;
+    max-height: 70vh;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
   }
 
   .search-result {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    border-radius: 7px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 8px;
     cursor: pointer;
     transition: background 100ms ease;
   }
@@ -210,55 +214,80 @@
     background: color-mix(in srgb, var(--accent) 8%, transparent);
   }
 
+  .result-image {
+    position: relative;
+    width: 100%;
+  }
+
   .result-thumb {
-    width: 120px;
+    width: 100%;
+    display: block;
     border-radius: 6px;
-    flex-shrink: 0;
   }
 
   .result-thumb-placeholder {
-    width: 120px;
+    width: 100%;
     aspect-ratio: 245 / 342;
     background: var(--skeleton);
     border-radius: 6px;
-    flex-shrink: 0;
   }
 
   .result-info {
-    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1px;
+    text-align: center;
   }
 
   .result-name {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-h);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .result-set {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text);
     opacity: 0.7;
   }
 
   .result-type-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
     font-size: 10px;
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 10px;
-    flex-shrink: 0;
     color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 
   .badge-pokemon { background: #7c3aed; }
   .badge-trainer { background: #0891b2; }
   .badge-energy  { background: #15803d; }
+
+  @media (max-width: 640px) {
+    .search-results {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      max-height: 65vh;
+    }
+
+    .result-name {
+      font-size: 13px;
+    }
+
+    .result-set {
+      font-size: 11px;
+    }
+  }
 
   .search-no-results {
     position: absolute;
