@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-03',
+    items: [
+      'Card search results now show larger card images in a grid that fills the screen width, so cards are easier to read and pick.',
+    ],
+  },
+  {
     date: '2026-06-02',
     items: [
       'New animated backdrop — a soft glow behind the logo with gently twinkling sparkles, replacing the plain background.',

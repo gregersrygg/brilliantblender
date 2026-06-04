@@ -29,6 +29,16 @@ Textarea with placeholder + "Load Deck" button. Button disabled when textarea is
 
 ---
 
+## `CardSearch.svelte`
+
+**Props:** `{ onadd: (card) → void }`
+
+Search input that adds cards to the deck. Input is debounced (300ms) and ignored under 2 chars; results come from `searchCards()` and are filtered to legal regulation marks (basic Energy always allowed). Selecting a result calls `onadd` and clears the query.
+
+Results render as a **responsive grid of card images** (`.search-results`) rather than a list — the grid auto-fills as many columns as fit (~4-up on desktop, ~2-up under 640px), so it uses the full width on wide screens. Each result (`.search-result`) is the card image with a supertype badge (P/T/E) overlaid in the corner and a centered caption below: name (`.result-name`) + set code/number. The input is 16px to avoid iOS focus-zoom (see architecture.md → Mobile zoom behaviour).
+
+---
+
 ## `Features.svelte`
 
 No props. Static "Why Brilliant Blender?" section shown on the landing page (empty state only). A 3-up grid of differentiators (print swapping, tournament-legality checks, instant/offline/private). Edit the `features` array in-component to change copy. Collapses to a single column under 640px.
