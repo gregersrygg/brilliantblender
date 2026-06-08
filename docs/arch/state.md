@@ -105,6 +105,13 @@ Notes:
   base annotation works even when the card snapshot is disabled (e.g. in tests). The reprint
   refinement relies on `fetchPrintsByName`, which uses the snapshot in production and the
   mocked network in tests.
+- The updated §4.1.3 (reprints playable **immediately**, including during the **prerelease
+  window**) needs no code change here: the card snapshot only surfaces a set once
+  pokemontcg.io has it (≈ its release date), which is *after* prerelease, so a reprint can
+  never appear in a deck before its set is in the DB. The existing refinement (reprint legal
+  from `releaseDate`) already covers every case the app can observe. An advance prerelease
+  notice would require a new upcoming-sets data source (e.g. scraping press.pokemon.com ahead
+  of release), out of scope for the legality annotation.
 
 ## `getWarnings()` rules
 
