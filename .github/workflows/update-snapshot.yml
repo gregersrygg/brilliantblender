@@ -42,6 +42,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "special_count=$(echo "$SPECIAL" | jq 'length')" >> "$GITHUB_OUTPUT"
+          echo "new_count=$(echo "$ALL_NEW" | jq 'length')" >> "$GITHUB_OUTPUT"
       - name: Commit and push if changed
         id: commit
         run: |
@@ -64,3 +65,11 @@ jobs:
           gh workflow run update-set-legality.lock.yml \
             --ref main \
             -f sets='${{ steps.legality.outputs.special_sets }}'
+      - name: Dispatch upcoming-sets workflow when any set was released
+        # A released set means the *next* set is already announced on
+        # press.pokemon.com (~10-11 week lead), so refresh upcoming-sets.json.
+        if: steps.commit.outputs.committed == 'true' && steps.legality.outputs.new_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run update-upcoming-sets.lock.yml --ref main

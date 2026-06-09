@@ -110,8 +110,11 @@ Notes:
   pokemontcg.io has it (≈ its release date), which is *after* prerelease, so a reprint can
   never appear in a deck before its set is in the DB. The existing refinement (reprint legal
   from `releaseDate`) already covers every case the app can observe. An advance prerelease
-  notice would require a new upcoming-sets data source (e.g. scraping press.pokemon.com ahead
-  of release), out of scope for the legality annotation.
+  *notice* (showing a set before it exists in the card DB) is fed by a separate
+  `src/data/upcoming-sets.json` pipeline (see [architecture.md](../architecture.md) →
+  "Data pipelines") that scrapes press.pokemon.com announcements ahead of release; that data
+  is not yet consumed by the app (the prerelease-notice UI is a follow-up) and is independent
+  of this legality annotation.
 
 ## `getWarnings()` rules
 
