@@ -19,6 +19,7 @@ src/
     sets.json              Build-time snapshot: [[ptcgoCode, setId], ...] entries
     snapshot-meta.json     Metadata: generatedAt, regulationMarks, cardCount
     set-legality.json      Per-set tournament legalFrom dates (maintained by an agentic workflow)
+    upcoming-sets.json     Announced-but-unreleased sets: name + release/prerelease dates (agentic workflow)
   lib/
     parser.js              Pure function: PTCGL text → deck structure
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
@@ -122,6 +123,46 @@ sparkles or hydration mismatches — so positions are deterministic by design (s
 render/visit). The twinkle keyframe is gated behind `@media (prefers-reduced-motion)` — under
 reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens live in
 `app.css` (light + dark variants).
+
+---
+
+## Data pipelines (agentic workflows)
+
+Two agentic (gh-aw) workflows keep `src/data/*.json` current. Neither is scheduled
+directly — both are dispatched by the nightly `update-snapshot.yml` run (plus manual
+`workflow_dispatch`). Both write a single data file each, guarded by a strict
+post-step validator that fails the job on any out-of-scope change; both push with
+`SNAPSHOT_PUSH_TOKEN`.
+
+- **`update-set-legality`** (`.github/workflows/update-set-legality.md`) — fills
+  `set-legality.json` `legalFrom` dates for **special** sets (ETB/Booster-Bundle
+  date from a press release + 14 days). Dispatched by `update-snapshot.yml` only
+  when a newly-released set is special. Validator: `scripts/validate-legality.mjs`.
+
+- **`update-upcoming-sets`** (`.github/workflows/update-upcoming-sets.md`) — keeps
+  `upcoming-sets.json`, the list of **announced-but-unreleased** expansions. The
+  card DB (pokemontcg.io) only surfaces a set at release, but The Pokémon Company
+  announces each expansion on `press.pokemon.com` ~10–11 weeks earlier with the
+  bare set name, **tabletop release date**, and (main sets) **Prerelease start
+  date**. The agent scrapes those announcements, drops entries whose release date
+  has passed, and rewrites the file. Validator: `scripts/validate-upcoming.mjs`.
+  Dispatched by `update-snapshot.yml` whenever **any** set is newly released
+  (`new_count != 0`) — by then the next set is always already announced — plus
+  manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
+
+`upcoming-sets.json` is a **name-keyed array** (no API `setId` exists before a set
+releases): `{ setId|null, name, series, releaseDate, prereleaseDate|null,
+isSpecialSet, sourceUrl, fetchedAt }`. `setId` is always `null` at scrape time — a
+placeholder for the API set ID, which is hard to pin down this early (sometimes
+hinted in teaser images, otherwise revealed around release). The agent opens a
+"Backfill setId" reminder issue per newly-added set so it can be filled in by hand
+when available (entries otherwise age out on release). `name` is the bare expansion
+name (matches the API / `set-legality.json` `name`) so released sets can be
+reconciled by name.
+`prereleaseDate` is `null` for special sets (no Prerelease). It is *data only* — the
+authoritative special/main classification still happens at release via the set-ID
+`pt\d+` suffix in `scripts/detect-new-sets.mjs`, **not** from prerelease presence.
+This data is not yet consumed by the app (a prerelease-notice UI is a follow-up).
 
 ---
 
