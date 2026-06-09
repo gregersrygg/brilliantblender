@@ -38,7 +38,7 @@ tools:
 # its own trusted credentials — the agent itself has no write/issue token.
 safe-outputs:
   create-issue:
-    max: 3
+    max: 5
     title-prefix: "[upcoming-sets] "
     labels: [automation, upcoming-sets]
 
@@ -105,8 +105,9 @@ set releases, so entries cannot yet be keyed by it). Each entry:
 ```
 
 - `setId` — the API set ID (e.g. `"me5"`). **Always `null` here** — it is not
-  assigned until the set releases. It is a placeholder, filled in later by hand (or a
-  future script) if needed; the agent always writes `null` and never guesses it.
+  assigned until the set releases. It is a placeholder to be backfilled by hand once
+  the set ships; the agent always writes `null`, never guesses it, and opens a
+  tracking issue when it adds a new set (see step 5) so the backfill isn't forgotten.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
   set name. **Not** the series-prefixed title.
@@ -177,6 +178,16 @@ trailing newline. Set `fetchedAt` to the current UTC time on entries you add or 
 If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
 unchanged) is fine — the workflow will simply not commit.
 
+### 5. Open a setId-backfill reminder for each newly-added set
+
+For every set you add that was **not** already present in the file, emit one
+`create-issue` safe-output. The `setId` can't be known until the set releases, so
+this issue is the reminder to check whether the API set ID is available yet and fill
+it into `src/data/upcoming-sets.json` (done by hand). Only for **newly-added** sets —
+first search existing issues for the set name and do **not** open a second issue for
+a set already tracked (e.g. a later run that merely refreshes its dates). Use the
+"setId backfill" issue format below.
+
 ## Hard rules
 
 - The only file you may modify is `src/data/upcoming-sets.json`. Do not edit
@@ -189,6 +200,17 @@ unchanged) is fine — the workflow will simply not commit.
 - Do not invent dates. Every date comes from the press release — read it, don't infer.
 - Dates are `YYYY-MM-DD`. `sourceUrl` must be on `press.pokemon.com`.
 - Before opening an issue, search existing issues for the set name to avoid duplicates.
+
+## Issue format — setId backfill (one per newly-added set)
+
+Title: `Backfill setId: <Set Name>`
+Body:
+- Set: series + name, releaseDate, prereleaseDate
+- Why: `setId` is `null` until the set releases. Once it ships and appears in the
+  card database (the snapshot workflow adds it on release day), fill the API set ID
+  into the matching `src/data/upcoming-sets.json` entry — or just drop the entry if
+  it has aged out.
+- Source: the `press.pokemon.com` announcement URL
 
 ## Issue format — ambiguous announcement (when dates can't be read)
 
