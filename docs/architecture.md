@@ -128,9 +128,11 @@ reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens l
 
 ## Data pipelines (agentic workflows)
 
-Two nightly-triggered agentic (gh-aw) workflows keep `src/data/*.json` current.
-Both write a single data file each, guarded by a strict post-step validator that
-fails the job on any out-of-scope change; both push with `SNAPSHOT_PUSH_TOKEN`.
+Two agentic (gh-aw) workflows keep `src/data/*.json` current. Neither is scheduled
+directly — both are dispatched by the nightly `update-snapshot.yml` run (plus manual
+`workflow_dispatch`). Both write a single data file each, guarded by a strict
+post-step validator that fails the job on any out-of-scope change; both push with
+`SNAPSHOT_PUSH_TOKEN`.
 
 - **`update-set-legality`** (`.github/workflows/update-set-legality.md`) — fills
   `set-legality.json` `legalFrom` dates for **special** sets (ETB/Booster-Bundle

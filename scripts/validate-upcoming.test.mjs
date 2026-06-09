@@ -90,6 +90,20 @@ test('validateEntry accepts prereleaseDate equal to releaseDate', () => {
   );
 });
 
+test('validateEntry rejects a main set (isSpecialSet false) with no prereleaseDate', () => {
+  assertRejects(
+    () => validateEntry('upcoming[0]', { ...goodEntry(), isSpecialSet: false, prereleaseDate: null }),
+    'inconsistent',
+  );
+});
+
+test('validateEntry rejects a special set (isSpecialSet true) that has a prereleaseDate', () => {
+  assertRejects(
+    () => validateEntry('upcoming[0]', { ...goodEntry(), isSpecialSet: true, prereleaseDate: '2026-07-04' }),
+    'inconsistent',
+  );
+});
+
 test('validateEntry rejects non-boolean isSpecialSet', () => {
   assertRejects(
     () => validateEntry('upcoming[0]', { ...goodEntry(), isSpecialSet: 'false' }),
@@ -108,6 +122,13 @@ test('validateEntry rejects malformed sourceUrl', () => {
   assertRejects(
     () => validateEntry('upcoming[0]', { ...goodEntry(), sourceUrl: 'not-a-url' }),
     'valid URL',
+  );
+});
+
+test('validateEntry rejects a non-HTTPS sourceUrl', () => {
+  assertRejects(
+    () => validateEntry('upcoming[0]', { ...goodEntry(), sourceUrl: 'http://press.pokemon.com/en/releases/x' }),
+    'https',
   );
 });
 

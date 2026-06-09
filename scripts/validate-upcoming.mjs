@@ -60,14 +60,18 @@ function ensureIsoTimestamp(value, label) {
 }
 
 function ensureAllowedHost(sourceUrl, label) {
-  let host;
+  let url;
   try {
-    host = new URL(sourceUrl).hostname;
+    url = new URL(sourceUrl);
   } catch {
     fail(`${label} is not a valid URL`);
   }
-  if (!ALLOWED_HOSTS.includes(host)) {
-    fail(`${label} host ${host} is not in the allow-list (${ALLOWED_HOSTS.join(', ')})`);
+  // Provenance link must be HTTPS — reject http:// and other schemes.
+  if (url.protocol !== 'https:') {
+    fail(`${label} must use https (got ${url.protocol})`);
+  }
+  if (!ALLOWED_HOSTS.includes(url.hostname)) {
+    fail(`${label} host ${url.hostname} is not in the allow-list (${ALLOWED_HOSTS.join(', ')})`);
   }
 }
 
@@ -88,6 +92,19 @@ function ensurePrereleaseBeforeRelease(entry, label) {
   }
 }
 
+// isSpecialSet is *defined* by Prerelease presence (see the workflow prompt): main
+// sets have a Prerelease (prereleaseDate set), special sets do not (prereleaseDate
+// null). Reject contradictory combinations so we never write self-inconsistent data.
+function ensureSpecialMatchesPrerelease(entry, label) {
+  const hasPrerelease = entry.prereleaseDate !== null;
+  if (entry.isSpecialSet === hasPrerelease) {
+    fail(
+      `${label}: isSpecialSet (${entry.isSpecialSet}) is inconsistent with prereleaseDate ` +
+      `(${JSON.stringify(entry.prereleaseDate)}) — special sets have no Prerelease, main sets have one`,
+    );
+  }
+}
+
 export function validateEntry(label, entry) {
   ensureObject(entry, `${label}: entry`);
   ensureSetIdOrNull(entry.setId, `${label}.setId`);
@@ -103,6 +120,7 @@ export function validateEntry(label, entry) {
   ensureAllowedHost(entry.sourceUrl, `${label}.sourceUrl`);
   ensureIsoTimestamp(entry.fetchedAt, `${label}.fetchedAt`);
   ensurePrereleaseBeforeRelease(entry, label);
+  ensureSpecialMatchesPrerelease(entry, label);
 }
 
 export function validateUpcomingFile(data) {
