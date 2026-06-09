@@ -149,9 +149,11 @@ fails the job on any out-of-scope change; both push with `SNAPSHOT_PUSH_TOKEN`.
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
 
 `upcoming-sets.json` is a **name-keyed array** (no API `setId` exists before a set
-releases): `{ name, series, releaseDate, prereleaseDate|null, isSpecialSet,
-sourceUrl, fetchedAt }`. `name` is the bare expansion name (matches the API /
-`set-legality.json` `name`) so released sets can be reconciled by name.
+releases): `{ setId|null, name, series, releaseDate, prereleaseDate|null,
+isSpecialSet, sourceUrl, fetchedAt }`. `setId` is always `null` at scrape time — a
+placeholder backfilled once the set releases (the agent opens a "Backfill setId"
+tracking issue per newly-announced set). `name` is the bare expansion name (matches
+the API / `set-legality.json` `name`) so released sets can be reconciled by name.
 `prereleaseDate` is `null` for special sets (no Prerelease). It is *data only* — the
 authoritative special/main classification still happens at release via the set-ID
 `pt\d+` suffix in `scripts/detect-new-sets.mjs`, **not** from prerelease presence.

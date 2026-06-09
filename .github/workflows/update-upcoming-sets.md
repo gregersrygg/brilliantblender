@@ -38,7 +38,7 @@ tools:
 # its own trusted credentials — the agent itself has no write/issue token.
 safe-outputs:
   create-issue:
-    max: 3
+    max: 5
     title-prefix: "[upcoming-sets] "
     labels: [automation, upcoming-sets]
 
@@ -89,10 +89,11 @@ weeks earlier. This workflow harvests those announcements.
 ## The data file
 
 `src/data/upcoming-sets.json` is a **JSON array** (there is no API set ID before a
-set releases, so entries are not keyed). Each entry:
+set releases, so entries cannot yet be keyed by it). Each entry:
 
 ```json
 {
+  "setId": null,
   "name": "Pitch Black",
   "series": "Mega Evolution",
   "releaseDate": "2026-07-17",
@@ -103,6 +104,9 @@ set releases, so entries are not keyed). Each entry:
 }
 ```
 
+- `setId` — the API set ID (e.g. `"me5"`). **Always `null` here** — it is not
+  assigned until the set releases. It is a placeholder to be backfilled later; the
+  agent never tries to guess it. See "Track the setId backfill" below.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
   set name. **Not** the series-prefixed title.
@@ -165,13 +169,22 @@ emit a `create-issue` safe-output describing the set and what you found, and ski
 ### 4. Write the file
 
 Merge: keep the still-future existing entries (refresh their dates if the press
-release now has better data) and add any newly-found upcoming sets. De-duplicate by
-`name`. Sort the array by `releaseDate` ascending. Write valid JSON with
-2-space indentation and a trailing newline. Set `fetchedAt` to the current UTC time
-on entries you add or update.
+release now has better data) and add any newly-found upcoming sets. Set `setId` to
+`null` on every entry (it is never known at this stage). De-duplicate by `name`. Sort
+the array by `releaseDate` ascending. Write valid JSON with 2-space indentation and a
+trailing newline. Set `fetchedAt` to the current UTC time on entries you add or update.
 
 If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
 unchanged) is fine — the workflow will simply not commit.
+
+### 5. Track the setId backfill
+
+For each set you add that was **not** already present in the file (a newly-announced
+set), emit one `create-issue` safe-output so the API `setId` gets filled in once the
+set releases and appears in the card database. First search existing issues for the
+set name to avoid duplicates — do **not** open a second issue for a set already
+tracked (e.g. on a later run that merely refreshes its dates). Use the "setId
+backfill" issue format below.
 
 ## Hard rules
 
@@ -186,7 +199,17 @@ unchanged) is fine — the workflow will simply not commit.
 - Dates are `YYYY-MM-DD`. `sourceUrl` must be on `press.pokemon.com`.
 - Before opening an issue, search existing issues for the set name to avoid duplicates.
 
-## Issue format (when an announcement is missing or ambiguous)
+## Issue format — setId backfill (one per newly-added set)
+
+Title: `Backfill setId: <Set Name>`
+Body:
+- Set: series + name, releaseDate, prereleaseDate
+- Why: `setId` is `null` until the set releases; fill it in
+  `src/data/upcoming-sets.json` once the set appears in the card database (the
+  snapshot workflow adds it on release day), or drop the entry if it has shipped.
+- Source: the `press.pokemon.com` announcement URL
+
+## Issue format — ambiguous announcement (when dates can't be read)
 
 Title: `Ambiguous announcement: <Set Name>`
 Body:

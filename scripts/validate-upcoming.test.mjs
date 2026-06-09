@@ -11,6 +11,7 @@ import {
 } from './validate-upcoming.mjs';
 
 const goodEntry = () => ({
+  setId: null,
   name: 'Pitch Black',
   series: 'Mega Evolution',
   releaseDate: '2026-07-17',
@@ -33,6 +34,19 @@ function assertRejects(fn, expectedFragment) {
 
 test('validateEntry accepts a well-formed entry', () => {
   assert.doesNotThrow(() => validateEntry('upcoming[0]', goodEntry()));
+});
+
+test('validateEntry accepts a backfilled setId', () => {
+  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'me5' }));
+  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'sv8pt5' }));
+});
+
+test('validateEntry rejects a malformed setId', () => {
+  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'me 5!' }), 'setId');
+});
+
+test('validateEntry rejects a non-string, non-null setId', () => {
+  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 5 }), 'setId');
 });
 
 test('validateEntry rejects missing name', () => {
