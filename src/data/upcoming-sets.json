@@ -1,0 +1,22 @@
+[
+  {
+    "setId": null,
+    "name": "Pitch Black",
+    "series": "Mega Evolution",
+    "releaseDate": "2026-07-17",
+    "prereleaseDate": "2026-07-04",
+    "isSpecialSet": false,
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Mega-EvolutionPitch-Black-Ex",
+    "fetchedAt": "2026-06-09T20:12:25Z"
+  },
+  {
+    "setId": null,
+    "name": "30th Celebration",
+    "series": "30th Celebration",
+    "releaseDate": "2026-09-16",
+    "prereleaseDate": null,
+    "isSpecialSet": true,
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-Pokemon-Unveils-New-Pokemon-Trading-Card-Game-30th-Celebra",
+    "fetchedAt": "2026-06-09T20:12:25Z"
+  }
+]
