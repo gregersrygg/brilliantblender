@@ -11,7 +11,7 @@ import {
 } from './validate-upcoming.mjs';
 
 const goodEntry = () => ({
-  setId: null,
+  setCode: null,
   name: 'Pitch Black',
   series: 'Mega Evolution',
   releaseDate: '2026-07-17',
@@ -36,17 +36,18 @@ test('validateEntry accepts a well-formed entry', () => {
   assert.doesNotThrow(() => validateEntry('upcoming[0]', goodEntry()));
 });
 
-test('validateEntry accepts a backfilled setId', () => {
-  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'me5' }));
-  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'sv8pt5' }));
+test('validateEntry accepts a backfilled setCode', () => {
+  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setCode: 'CRI' }));
+  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodEntry(), setCode: 'B2' }));
 });
 
-test('validateEntry rejects a malformed setId', () => {
-  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 'me 5!' }), 'setId');
+test('validateEntry rejects a malformed setCode (lowercase / too long)', () => {
+  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setCode: 'cri' }), 'setCode');
+  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setCode: 'TOOLONG' }), 'setCode');
 });
 
-test('validateEntry rejects a non-string, non-null setId', () => {
-  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setId: 5 }), 'setId');
+test('validateEntry rejects a non-string, non-null setCode', () => {
+  assertRejects(() => validateEntry('upcoming[0]', { ...goodEntry(), setCode: 5 }), 'setCode');
 });
 
 test('validateEntry rejects missing name', () => {

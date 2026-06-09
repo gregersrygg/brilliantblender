@@ -88,12 +88,12 @@ weeks earlier. This workflow harvests those announcements.
 
 ## The data file
 
-`src/data/upcoming-sets.json` is a **JSON array** (there is no API set ID before a
-set releases, so entries cannot yet be keyed by it). Each entry:
+`src/data/upcoming-sets.json` is a **JSON array** (the set code isn't known before
+release, so entries cannot yet be keyed by it). Each entry:
 
 ```json
 {
-  "setId": null,
+  "setCode": null,
   "name": "Pitch Black",
   "series": "Mega Evolution",
   "releaseDate": "2026-07-17",
@@ -104,10 +104,12 @@ set releases, so entries cannot yet be keyed by it). Each entry:
 }
 ```
 
-- `setId` — the API set ID (e.g. `"me5"`). **Always `null` here** — it is hard to
-  pin down before release (sometimes hinted in teaser images, but rarely published
-  cleanly), so the agent always writes `null` and never guesses it. It is a
-  placeholder to be backfilled by hand; the agent opens a tracking issue when it adds
+- `setCode` — the set code printed on the card next to the collector number (e.g.
+  `"CRI"`, `"SSP"`), the join key the app uses (the same `setCode` as deck cards; it
+  is the API's `set.ptcgoCode`). **Always `null` here** — it is hard to pin down
+  before release (sometimes hinted in teaser images, but rarely published cleanly), so
+  the agent always writes `null` and never guesses it. It is a placeholder to be
+  backfilled by hand; the agent opens a tracking issue when it adds
   a new set (see step 5) so the backfill isn't forgotten.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
@@ -171,24 +173,24 @@ emit a `create-issue` safe-output describing the set and what you found, and ski
 ### 4. Write the file
 
 Merge: keep the still-future existing entries (refresh their dates if the press
-release now has better data) and add any newly-found upcoming sets. Set `setId` to
-`null` on every entry (it is never known at this stage). De-duplicate by `name`. Sort
+release now has better data) and add any newly-found upcoming sets. Set `setCode`
+to `null` on every entry (it is never known at this stage). De-duplicate by `name`. Sort
 the array by `releaseDate` ascending. Write valid JSON with 2-space indentation and a
 trailing newline. Set `fetchedAt` to the current UTC time on entries you add or update.
 
 If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
 unchanged) is fine — the workflow will simply not commit.
 
-### 5. Open a setId-backfill reminder for each newly-added set
+### 5. Open a set-code-backfill reminder for each newly-added set
 
 For every set you add that was **not** already present in the file, emit one
-`create-issue` safe-output. The `setId` is hard to find this early (it sometimes
-surfaces in teaser images but isn't reliably published), so this issue is the
-reminder to check whether the API set ID is available yet and fill it into
-`src/data/upcoming-sets.json` (done by hand). Only for **newly-added** sets —
-first search existing issues for the set name and do **not** open a second issue for
-a set already tracked (e.g. a later run that merely refreshes its dates). Use the
-"setId backfill" issue format below.
+`create-issue` safe-output. The `setCode` (the set code on the card) is hard to find
+this early (it sometimes surfaces in teaser images but isn't reliably published), so
+this issue is the reminder to check whether the set code is available yet and fill it
+into `src/data/upcoming-sets.json` (done by hand). Only for **newly-added** sets —
+first search existing issues for the set name and do **not** open a second issue for a
+set already tracked (e.g. a later run that merely refreshes its dates). Use the
+"set code backfill" issue format below.
 
 ## Hard rules
 
@@ -203,16 +205,17 @@ a set already tracked (e.g. a later run that merely refreshes its dates). Use th
 - Dates are `YYYY-MM-DD`. `sourceUrl` must be on `press.pokemon.com`.
 - Before opening an issue, search existing issues for the set name to avoid duplicates.
 
-## Issue format — setId backfill (one per newly-added set)
+## Issue format — set code backfill (one per newly-added set)
 
-Title: `Backfill setId: <Set Name>`
+Title: `Backfill set code: <Set Name>`
 Body:
 - Set: series + name, releaseDate, prereleaseDate
-- Why: `setId` starts `null` — it's hard to find this early (sometimes hinted in
-  teasers, otherwise revealed around release). Once you can confirm the API set ID
-  (e.g. it appears in the card database — the snapshot workflow adds it on release
-  day), fill it into the matching `src/data/upcoming-sets.json` entry — or just drop
-  the entry if it has aged out.
+- Why: `setCode` starts `null` — the set code (printed on the card) is hard to find
+  this early (sometimes hinted in teasers, otherwise revealed around release). Once
+  you can confirm the set code (e.g. the set appears in the card database — the
+  snapshot workflow adds it on release day, and it's the first element of the
+  `sets.json` tuples), fill it into the matching `src/data/upcoming-sets.json`
+  entry — or just drop the entry if it has aged out.
 - Source: the `press.pokemon.com` announcement URL
 
 ## Issue format — ambiguous announcement (when dates can't be read)
