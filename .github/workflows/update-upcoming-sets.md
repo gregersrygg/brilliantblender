@@ -104,10 +104,11 @@ set releases, so entries cannot yet be keyed by it). Each entry:
 }
 ```
 
-- `setId` — the API set ID (e.g. `"me5"`). **Always `null` here** — it is not
-  assigned until the set releases. It is a placeholder to be backfilled by hand once
-  the set ships; the agent always writes `null`, never guesses it, and opens a
-  tracking issue when it adds a new set (see step 5) so the backfill isn't forgotten.
+- `setId` — the API set ID (e.g. `"me5"`). **Always `null` here** — it is hard to
+  pin down before release (sometimes hinted in teaser images, but rarely published
+  cleanly), so the agent always writes `null` and never guesses it. It is a
+  placeholder to be backfilled by hand; the agent opens a tracking issue when it adds
+  a new set (see step 5) so the backfill isn't forgotten.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
   set name. **Not** the series-prefixed title.
@@ -181,9 +182,10 @@ unchanged) is fine — the workflow will simply not commit.
 ### 5. Open a setId-backfill reminder for each newly-added set
 
 For every set you add that was **not** already present in the file, emit one
-`create-issue` safe-output. The `setId` can't be known until the set releases, so
-this issue is the reminder to check whether the API set ID is available yet and fill
-it into `src/data/upcoming-sets.json` (done by hand). Only for **newly-added** sets —
+`create-issue` safe-output. The `setId` is hard to find this early (it sometimes
+surfaces in teaser images but isn't reliably published), so this issue is the
+reminder to check whether the API set ID is available yet and fill it into
+`src/data/upcoming-sets.json` (done by hand). Only for **newly-added** sets —
 first search existing issues for the set name and do **not** open a second issue for
 a set already tracked (e.g. a later run that merely refreshes its dates). Use the
 "setId backfill" issue format below.
@@ -206,10 +208,11 @@ a set already tracked (e.g. a later run that merely refreshes its dates). Use th
 Title: `Backfill setId: <Set Name>`
 Body:
 - Set: series + name, releaseDate, prereleaseDate
-- Why: `setId` is `null` until the set releases. Once it ships and appears in the
-  card database (the snapshot workflow adds it on release day), fill the API set ID
-  into the matching `src/data/upcoming-sets.json` entry — or just drop the entry if
-  it has aged out.
+- Why: `setId` starts `null` — it's hard to find this early (sometimes hinted in
+  teasers, otherwise revealed around release). Once you can confirm the API set ID
+  (e.g. it appears in the card database — the snapshot workflow adds it on release
+  day), fill it into the matching `src/data/upcoming-sets.json` entry — or just drop
+  the entry if it has aged out.
 - Source: the `press.pokemon.com` announcement URL
 
 ## Issue format — ambiguous announcement (when dates can't be read)

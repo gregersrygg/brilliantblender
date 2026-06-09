@@ -151,10 +151,11 @@ fails the job on any out-of-scope change; both push with `SNAPSHOT_PUSH_TOKEN`.
 `upcoming-sets.json` is a **name-keyed array** (no API `setId` exists before a set
 releases): `{ setId|null, name, series, releaseDate, prereleaseDate|null,
 isSpecialSet, sourceUrl, fetchedAt }`. `setId` is always `null` at scrape time — a
-placeholder for the API set ID, which only exists once the set releases. The agent
-opens a "Backfill setId" reminder issue per newly-added set so it can be filled in by
-hand when available (entries otherwise age out on release). `name` is the bare
-expansion name (matches the API / `set-legality.json` `name`) so released sets can be
+placeholder for the API set ID, which is hard to pin down this early (sometimes
+hinted in teaser images, otherwise revealed around release). The agent opens a
+"Backfill setId" reminder issue per newly-added set so it can be filled in by hand
+when available (entries otherwise age out on release). `name` is the bare expansion
+name (matches the API / `set-legality.json` `name`) so released sets can be
 reconciled by name.
 `prereleaseDate` is `null` for special sets (no Prerelease). It is *data only* — the
 authoritative special/main classification still happens at release via the set-ID
