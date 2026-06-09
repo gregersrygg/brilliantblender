@@ -1,6 +1,6 @@
 [
   {
-    "setId": null,
+    "setCode": null,
     "name": "Pitch Black",
     "series": "Mega Evolution",
     "releaseDate": "2026-07-17",
@@ -10,7 +10,7 @@
     "fetchedAt": "2026-06-09T20:12:25Z"
   },
   {
-    "setId": null,
+    "setCode": null,
     "name": "30th Celebration",
     "series": "30th Celebration",
     "releaseDate": "2026-09-16",

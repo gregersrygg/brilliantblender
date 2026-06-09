@@ -150,15 +150,16 @@ post-step validator that fails the job on any out-of-scope change; both push wit
   (`new_count != 0`) — by then the next set is always already announced — plus
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
 
-`upcoming-sets.json` is a **name-keyed array** (no API `setId` exists before a set
-releases): `{ setId|null, name, series, releaseDate, prereleaseDate|null,
-isSpecialSet, sourceUrl, fetchedAt }`. `setId` is always `null` at scrape time — a
-placeholder for the API set ID, which is hard to pin down this early (sometimes
-hinted in teaser images, otherwise revealed around release). The agent opens a
-"Backfill setId" reminder issue per newly-added set so it can be filled in by hand
-when available (entries otherwise age out on release). `name` is the bare expansion
-name (matches the API / `set-legality.json` `name`) so released sets can be
-reconciled by name.
+`upcoming-sets.json` is a **name-keyed array** (the `setCode` isn't known before
+release): `{ setCode|null, name, series, releaseDate, prereleaseDate|null,
+isSpecialSet, sourceUrl, fetchedAt }`. `setCode` is the set code printed on the card
+— the same `setCode` the app uses on deck cards (the API's `set.ptcgoCode`, and the
+first element of the `sets.json` `[ptcgoCode, setId]` tuples) — always `null` at
+scrape time, since it's hard to pin down this early (sometimes hinted in teaser
+images, otherwise revealed around release). The agent opens a "Backfill set code"
+reminder issue per newly-added set so it can be filled in by hand when available
+(entries otherwise age out on release). `name` is the bare expansion name (matches the
+API / `set-legality.json` `name`) so released sets can be reconciled by name.
 `prereleaseDate` is `null` for special sets (no Prerelease). It is *data only* — the
 authoritative special/main classification still happens at release via the set-ID
 `pt\d+` suffix in `scripts/detect-new-sets.mjs`, **not** from prerelease presence.

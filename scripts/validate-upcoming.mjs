@@ -21,7 +21,11 @@ export const ALLOWED_HOSTS = ['press.pokemon.com'];
 export const ALLOWED_PATH = 'src/data/upcoming-sets.json';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
-const SET_ID_RE = /^[a-z0-9]+(pt\d+)?$/i;
+// The set code printed on the card (e.g. "CRI", "SSP", "BS", "B2") — short uppercase
+// alphanumeric. Matches the deck card's `setCode` elsewhere in the app and the first
+// element of the sets.json [ptcgoCode, setId] tuples (the API's `set.ptcgoCode`),
+// not the pokemontcg.io API set ID.
+const SET_CODE_RE = /^[A-Z0-9]{2,5}$/;
 
 class ValidationError extends Error {}
 
@@ -75,12 +79,12 @@ function ensureAllowedHost(sourceUrl, label) {
   }
 }
 
-// setId is null until the set releases (no API ID exists pre-release); once
-// backfilled it must look like a real API set ID (e.g. "me5", "sv8pt5").
-function ensureSetIdOrNull(value, label) {
+// setCode is null until the set's code is known (it isn't in the press release);
+// once backfilled it must look like a real set code (e.g. "CRI").
+function ensureSetCodeOrNull(value, label) {
   if (value === null) return;
-  if (typeof value !== 'string' || !SET_ID_RE.test(value)) {
-    fail(`${label} must be null or a valid set ID: got ${JSON.stringify(value)}`);
+  if (typeof value !== 'string' || !SET_CODE_RE.test(value)) {
+    fail(`${label} must be null or a valid set code: got ${JSON.stringify(value)}`);
   }
 }
 
@@ -107,7 +111,7 @@ function ensureSpecialMatchesPrerelease(entry, label) {
 
 export function validateEntry(label, entry) {
   ensureObject(entry, `${label}: entry`);
-  ensureSetIdOrNull(entry.setId, `${label}.setId`);
+  ensureSetCodeOrNull(entry.setCode, `${label}.setCode`);
   ensureNonEmptyString(entry.name, `${label}.name`);
   ensureNonEmptyString(entry.series, `${label}.series`);
   ensureDashDate(entry.releaseDate, `${label}.releaseDate`);
