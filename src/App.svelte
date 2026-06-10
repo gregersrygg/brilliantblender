@@ -7,6 +7,7 @@
   import ConfirmDialog from './lib/ConfirmDialog.svelte';
   import CardSearch from './lib/CardSearch.svelte';
   import Features from './lib/Features.svelte';
+  import UpcomingSets from './lib/UpcomingSets.svelte';
   import Changelog from './lib/Changelog.svelte';
   import { createDeck } from './lib/deck.svelte.js';
 
@@ -206,6 +207,7 @@
   {:else}
     <DeckInput onload={handleLoad} />
     <Features />
+    <UpcomingSets />
     <Changelog />
   {/if}
 </main>

@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-10',
+    items: [
+      'New “Upcoming sets” section on the home page shows announced sets with their release date and when they become legal to play (with a heads-up about the prerelease reprint rule, §4.1.3).',
+      'Pasting a card from a set that isn’t out yet — or one that just released, before our card data catches up — now shows a clear “coming soon” card with its release and legal-to-play dates, instead of a generic error.',
+    ],
+  },
+  {
     date: '2026-06-03',
     items: [
       'Card search results now show larger card images in a grid that fills the screen width, so cards are easier to read and pick.',

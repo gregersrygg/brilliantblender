@@ -109,12 +109,36 @@ Notes:
   window**) needs no code change here: the card snapshot only surfaces a set once
   pokemontcg.io has it (≈ its release date), which is *after* prerelease, so a reprint can
   never appear in a deck before its set is in the DB. The existing refinement (reprint legal
-  from `releaseDate`) already covers every case the app can observe. An advance prerelease
+  from `releaseDate`) already covers every case the app can observe. The advance prerelease
   *notice* (showing a set before it exists in the card DB) is fed by a separate
   `src/data/upcoming-sets.json` pipeline (see [architecture.md](../architecture.md) →
-  "Data pipelines") that scrapes press.pokemon.com announcements ahead of release; that data
-  is not yet consumed by the app (the prerelease-notice UI is a follow-up) and is independent
-  of this legality annotation.
+  "Data pipelines"), independent of this legality annotation. That data is now surfaced on
+  the landing page (`UpcomingSets.svelte`, including a prerelease-window §4.1.3 reminder).
+
+## Cards from announced-but-unreleased sets
+
+Two behaviours cover deck lines whose printed set code belongs to a set in
+`upcoming-sets.json` (recognised via `findSetByCode` from [`upcoming.js`](../../src/lib/upcoming.js)):
+
+- **Trainers / special Energy with an existing name are silently swapped to a legal print.**
+  This is *not* special-cased for upcoming sets — it falls out of the existing
+  name-normalisation in `resolveDeckCard`: the Trainer section resolves straight through
+  `fetchNewestLegalPrint(name)` and special Energy is normalised by name after fetch, both
+  discarding the pasted set code. So `Iono PBL 80` (PBL unreleased) resolves to the current
+  legal Iono print. Basic energy likewise resolves by name via SVE. (Pinned by
+  `tests/upcoming-sets.spec.js`.)
+- **An unresolvable card from an upcoming set gets an amber "coming soon" tile.** A
+  brand-new card (e.g. a new Pokémon, or a genuinely new Trainer name) can't be fetched —
+  the snapshot/API don't have it until release. In `resolveDeckCard`'s `catch` we set
+  `card.cardError` and, when `findSetByCode(upcomingSets, card.setCode)` matches, also
+  `card.upcomingSet` (the entry). `CardTile` then renders an amber (`--notice`) tile with the
+  set name and "Releases … · legal …" (legal = `legalToPlayDate`, or "?" for special sets)
+  instead of the red error tile. Once the set's release date has passed
+  (`upcomingStatus(card.upcomingSet, todayIso()) === 'released'`) but the card DB hasn't
+  caught up yet (the snapshot refreshes nightly), the tile instead reads "Card data not in
+  yet — usually within a day or two" — a transient "released, data pending" state rather than
+  "coming later". A line with an *unknown* (non-upcoming) set code still gets the red error
+  tile.
 
 ## `getWarnings()` rules
 

@@ -24,8 +24,10 @@ src/
     parser.js              Pure function: PTCGL text → deck structure
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
     snapshot.js            In-memory access to bundled card/set snapshot data
-    legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate
+    legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate, addDaysIso
     legality.test.mjs      Node unit tests for legality.js
+    upcoming.js            Pure helpers for upcoming-sets.json: legalToPlayDate, upcomingStatus, sortByReleaseDate, findSetByCode
+    upcoming.test.mjs      Node unit tests for upcoming.js
     reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
     reprint.test.mjs       Node unit tests for reprint.js
     energy.js              Pure basic-energy helpers (name regex, letter→name map, SVE name match)
@@ -35,6 +37,7 @@ src/
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
     changelog.js           CHANGELOG data: user-facing release notes (landing page)
     Features.svelte        "Why Brilliant Blender?" differentiators grid (landing page)
+    UpcomingSets.svelte    "Upcoming sets" table: announced sets + release/legal dates + status (landing page)
     Changelog.svelte       "What's new" release-notes list (landing page)
     DeckView.svelte        Section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
@@ -163,7 +166,28 @@ API / `set-legality.json` `name`) so released sets can be reconciled by name.
 `prereleaseDate` is `null` for special sets (no Prerelease). It is *data only* — the
 authoritative special/main classification still happens at release via the set-ID
 `pt\d+` suffix in `scripts/detect-new-sets.mjs`, **not** from prerelease presence.
-This data is not yet consumed by the app (a prerelease-notice UI is a follow-up).
+
+This data is consumed by the app in two places, both via the pure
+[`upcoming.js`](../src/lib/upcoming.js) helpers (kept JSON-import-free so they unit-test
+under `node --test`, like `legality.js`):
+- **`UpcomingSets.svelte`** — the landing-page "Upcoming sets" table (Set · Release · Legal
+  · Status, one row per set; the set name links to the announcement `sourceUrl` in a new
+  tab). Main sets' legal-to-play date is computed in-app as
+  `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2); special sets show
+  "?" (unknown until the `update-set-legality` workflow fills `legalFrom` at release). The
+  Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` — the
+  last covers a just-released set that hasn't aged out of the JSON yet). A single §4.1.3
+  reprint note below the table names whichever set is playable-early-but-not-yet-fully-legal
+  (in prerelease, or released before its legal date), phrased per its status; for a released
+  set it also notes that card data usually appears within a day or two (the snapshot/DB lags
+  release). The deck-paste "coming soon" tile carries the same released/data-pending wording.
+  **Behavioural rule — keep it SSR-safe:** the set names/dates are static and render
+  server-side, but everything date-relative (the status pill, the §4.1.3 note) stays blank
+  until an `onMount` flag flips, so the prerendered landing and first client render match
+  (no hydration mismatch).
+- **`deck.svelte.js`** — when a pasted deck line can't be resolved and its set code matches
+  an upcoming set (`findSetByCode`), the card is tagged `card.upcomingSet` and `CardTile`
+  renders an amber "coming soon" tile (release/legal dates) instead of the red error tile.
 
 ---
 

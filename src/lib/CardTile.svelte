@@ -1,7 +1,18 @@
 <script>
-  import { formatLegalDate } from './legality.js';
+  import { formatLegalDate, todayIso } from './legality.js';
+  import { legalToPlayDate, upcomingStatus } from './upcoming.js';
 
   let { card, onincrement, ondecrement, warning = null, onpick = null, onremove = null } = $props();
+
+  // A card we couldn't resolve whose set code belongs to an announced-but-unreleased
+  // set: not a typo, just not in the card DB yet. Shown as an amber "coming soon" tile.
+  let isUpcoming = $derived(Boolean(card.upcomingSet) && Boolean(card.cardError));
+  let upcomingLegal = $derived(card.upcomingSet ? legalToPlayDate(card.upcomingSet) : null);
+  // The set's release date has passed but the card DB hasn't caught up yet (the snapshot
+  // refreshes nightly): a transient "released, data pending" state, not "coming later".
+  let upcomingReleased = $derived(
+    Boolean(card.upcomingSet) && upcomingStatus(card.upcomingSet, todayIso()) === 'released'
+  );
 
   // Red error styling (rotated-out / rule violation) takes precedence over the amber
   // informational "not legal yet" notice — and suppresses it when both apply.
@@ -11,12 +22,21 @@
 
 <div
   class="card-tile"
-  class:card-warning={hasError}
-  class:card-notice={showNotice}
+  class:card-warning={hasError && !isUpcoming}
+  class:card-notice={showNotice || isUpcoming}
   data-testid="card-tile"
 >
   {#if card.cardLoading}
     <div class="skeleton"></div>
+  {:else if isUpcoming}
+    <div class="coming-card" data-testid="coming-soon">
+      {#if onremove}
+        <button class="remove-btn" onclick={() => onremove(card)} aria-label="Remove {card.name}">×</button>
+      {/if}
+      <span class="coming-icon" aria-hidden="true">&#x23F3;</span>
+      <span class="card-name">{card.qty}× {card.name}</span>
+      <span class="coming-set">{card.upcomingSet.name}</span>
+    </div>
   {:else if card.cardError}
     <div class="error-card">
       {#if onremove}
@@ -69,7 +89,17 @@
       >+</button>
     </div>
   {/if}
-  {#if card.isRotating && card.qty > 0}
+  {#if isUpcoming}
+    {#if upcomingReleased}
+      <div class="warning-text notice">
+        Card data not in yet — usually within a day or two{#if upcomingLegal}{' '}· legal {formatLegalDate(upcomingLegal)}{/if}
+      </div>
+    {:else}
+      <div class="warning-text notice">
+        Releases {formatLegalDate(card.upcomingSet.releaseDate)} · legal {upcomingLegal ? formatLegalDate(upcomingLegal) : '?'}
+      </div>
+    {/if}
+  {:else if card.isRotating && card.qty > 0}
     <div class="warning-text">Not Standard-legal</div>
   {:else if warning}
     <div class="warning-text">{warning}</div>
@@ -275,5 +305,39 @@
     color: var(--error);
     text-align: center;
     word-break: break-word;
+  }
+
+  /* "Coming soon" tile: a valid card from an announced set the card DB doesn't have
+     yet. Amber (informational), not red (error). */
+  .coming-card {
+    width: 100%;
+    aspect-ratio: 245 / 342;
+    background: var(--skeleton);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    position: relative;
+  }
+
+  .coming-icon {
+    font-size: 24px;
+  }
+
+  .coming-card .card-name {
+    font-size: 12px;
+    color: var(--text-h);
+    text-align: center;
+    word-break: break-word;
+  }
+
+  .coming-set {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--notice);
+    text-align: center;
   }
 </style>

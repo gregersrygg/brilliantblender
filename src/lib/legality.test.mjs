@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { notLegalUntil, todayIso, formatLegalDate, isSetLegalOn } from './legality.js';
+import { notLegalUntil, todayIso, formatLegalDate, isSetLegalOn, addDaysIso } from './legality.js';
 
 test('notLegalUntil returns legalFrom when the set is not legal yet', () => {
   const entry = { legalFrom: '2026-06-05' };
@@ -58,6 +58,24 @@ test('notLegalUntil(isReprint) uses releaseDate instead of legalFrom', () => {
 
 test('notLegalUntil(isReprint) still warns for a reprint before the set is released', () => {
   assert.equal(notLegalUntil(chaosRising, '2026-05-20', { isReprint: true }), '2026-05-22');
+});
+
+test('addDaysIso adds days within a month', () => {
+  assert.equal(addDaysIso('2026-07-17', 14), '2026-07-31');
+});
+
+test('addDaysIso rolls over month and year boundaries', () => {
+  assert.equal(addDaysIso('2026-07-20', 14), '2026-08-03');
+  assert.equal(addDaysIso('2026-12-25', 14), '2027-01-08');
+});
+
+test('addDaysIso handles leap day and negative offsets', () => {
+  assert.equal(addDaysIso('2028-02-20', 9), '2028-02-29');
+  assert.equal(addDaysIso('2026-03-01', -1), '2026-02-28');
+});
+
+test('addDaysIso returns input unchanged when not an ISO date', () => {
+  assert.equal(addDaysIso('not-a-date', 14), 'not-a-date');
 });
 
 test('isSetLegalOn: untracked set is treated as legal', () => {
