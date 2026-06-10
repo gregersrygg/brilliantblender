@@ -53,7 +53,13 @@
         {@const status = dateAware ? upcomingStatus(set, today) : 'announced'}
         <div class="row" role="row">
           <span class="set" role="cell">
-            <span class="set-name">{set.name}</span>
+            {#if set.sourceUrl}
+              <a class="set-name" href={set.sourceUrl} target="_blank" rel="noopener noreferrer">
+                {set.name}
+              </a>
+            {:else}
+              <span class="set-name">{set.name}</span>
+            {/if}
             <span class="set-series">{set.series}</span>
           </span>
           <span role="cell">{formatLegalDate(set.releaseDate)}</span>
@@ -136,6 +142,21 @@
   .set-name {
     font-weight: 700;
     color: var(--text-h);
+  }
+
+  a.set-name {
+    text-decoration: none;
+  }
+
+  a.set-name:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  a.set-name:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
   }
 
   .set-series {

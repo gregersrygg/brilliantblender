@@ -42,6 +42,18 @@ test.describe('Upcoming sets section (landing page)', () => {
     }
   });
 
+  test('set name links to its source URL (opens in a new tab)', async ({ page }) => {
+    const first = upcomingSets.find((s) => s.sourceUrl);
+    test.skip(!first, 'no upcoming set with a source URL in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await page.goto('/');
+
+    const link = page.getByRole('link', { name: first.name });
+    await expect(link).toHaveAttribute('href', first.sourceUrl);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', /noopener/);
+  });
+
   test('special sets show "?" for the unknown legal date', async ({ page }) => {
     test.skip(!specialSet, 'no special upcoming set in the bundled data');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));

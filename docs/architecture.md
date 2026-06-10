@@ -171,7 +171,8 @@ This data is consumed by the app in two places, both via the pure
 [`upcoming.js`](../src/lib/upcoming.js) helpers (kept JSON-import-free so they unit-test
 under `node --test`, like `legality.js`):
 - **`UpcomingSets.svelte`** — the landing-page "Upcoming sets" table (Set · Release · Legal
-  · Status, one row per set). Main sets' legal-to-play date is computed in-app as
+  · Status, one row per set; the set name links to the announcement `sourceUrl` in a new
+  tab). Main sets' legal-to-play date is computed in-app as
   `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2); special sets show
   "?" (unknown until the `update-set-legality` workflow fills `legalFrom` at release). The
   Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` — the
