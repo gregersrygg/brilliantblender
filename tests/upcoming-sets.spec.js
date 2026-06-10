@@ -1,0 +1,170 @@
+import { test, expect } from '@playwright/test';
+import { createRequire } from 'node:module';
+import { mockApi, mockPrints } from './helpers.js';
+import { formatLegalDate } from '../src/lib/legality.js';
+import { sortByReleaseDate, legalToPlayDate } from '../src/lib/upcoming.js';
+
+// These tests derive their expectations from the bundled upcoming-sets.json rather than
+// hard-coding set names: entries age out of that file once a set releases, so anything
+// pinned to a specific set would rot. We read the same data the app bundles and assert
+// the rendering/behaviour contract against whatever is currently in it.
+const require = createRequire(import.meta.url);
+const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json'));
+
+// PTCGL set codes in deck lines must be letters only (the parser's CARD_RE rejects codes
+// with digits, e.g. "30C"), so pick the first upcoming set with a letters-only code.
+const codeableSet = upcomingSets.find((s) => /^[A-Za-z]{2,6}$/.test(s.setCode ?? ''));
+const specialSet = upcomingSets.find((s) => s.isSpecialSet);
+const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
+
+async function loadDeck(page, decklist) {
+  await page.getByRole('textbox', { name: /paste/i }).fill(decklist);
+  await page.getByRole('button', { name: /load deck/i }).click();
+}
+
+test.describe('Upcoming sets section (landing page)', () => {
+  test.skip(upcomingSets.length === 0, 'no upcoming sets in the bundled data');
+
+  test('lists each upcoming set with its release date and computed legal date', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await page.goto('/');
+
+    const section = page.getByRole('region', { name: /upcoming sets/i });
+    await expect(section).toBeVisible();
+
+    const first = upcomingSets[0];
+    await expect(section.getByText(first.name, { exact: false })).toBeVisible();
+    await expect(section.getByText(formatLegalDate(first.releaseDate))).toBeVisible();
+
+    const legal = legalToPlayDate(first);
+    if (legal) {
+      await expect(section.getByText(formatLegalDate(legal))).toBeVisible();
+    }
+  });
+
+  test('special sets show "?" for the unknown legal date', async ({ page }) => {
+    test.skip(!specialSet, 'no special upcoming set in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await page.goto('/');
+    const section = page.getByRole('region', { name: /upcoming sets/i });
+    await expect(section.getByText('?', { exact: true })).toBeVisible();
+  });
+
+  test('a set in its prerelease window shows the status pill and §4.1.3 note', async ({ page }) => {
+    test.skip(!prereleaseSet, 'no set with a prerelease date in the bundled data');
+    // Pin "today" to the day the prerelease window opens (inclusive).
+    await page.clock.setFixedTime(new Date(`${prereleaseSet.prereleaseDate}T12:00:00`));
+    await page.goto('/');
+
+    await expect(page.getByTestId('status-prerelease').first()).toBeVisible();
+    const note = page.getByTestId('reprint-note').first();
+    await expect(note).toBeVisible();
+    await expect(note).toContainText('§4.1.3');
+  });
+
+  test('before the prerelease window, no prerelease status or note is shown', async ({ page }) => {
+    test.skip(!prereleaseSet, 'no set with a prerelease date in the bundled data');
+    // One day before the earliest prerelease opens.
+    const dayBefore = new Date(`${prereleaseSet.prereleaseDate}T12:00:00`);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    await page.clock.setFixedTime(dayBefore);
+    await page.goto('/');
+
+    await expect(page.getByTestId('status-prerelease')).toHaveCount(0);
+    await expect(page.getByTestId('reprint-note')).toHaveCount(0);
+  });
+
+  test('a just-released set shows "Released" status and a data-availability note', async ({ page }) => {
+    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    // A few days after release (still before the legal date), the set lingers in the
+    // list until the pipeline prunes it — it should read "Released", with a note that
+    // card data lands within a day or two.
+    const after = new Date(`${codeableSet.releaseDate}T12:00:00`);
+    after.setDate(after.getDate() + 3);
+    await page.clock.setFixedTime(after);
+    await page.goto('/');
+
+    await expect(page.getByTestId('status-released').first()).toBeVisible();
+    await expect(page.getByTestId('reprint-note').first()).toContainText(/within a day or two/i);
+  });
+});
+
+test.describe('Cards from upcoming sets in a pasted deck', () => {
+  test('an unresolvable card from an upcoming set shows an amber "coming soon" tile', async ({ page }) => {
+    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+
+    await loadDeck(
+      page,
+      `Pokémon: 2\n2 Zzfakemon ${codeableSet.setCode} 199\n\nTotal Cards: 2`
+    );
+
+    const tile = page.getByTestId('coming-soon');
+    await expect(tile).toBeVisible();
+    await expect(tile).toContainText(codeableSet.name);
+    await expect(tile).toContainText('Zzfakemon');
+    // Amber informational tile, not the red error tile.
+    await expect(page.locator('.card-notice')).toHaveCount(1);
+    await expect(page.locator('.card-warning')).toHaveCount(0);
+    await expect(page.locator('.error-card')).toHaveCount(0);
+    await expect(page.getByText(/Releases .* · legal/)).toBeVisible();
+  });
+
+  test('an unresolvable card with an unknown (non-upcoming) set code stays a red error tile', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+
+    await loadDeck(page, `Pokémon: 1\n1 Foo ZZZ 99\n\nTotal Cards: 1`);
+
+    await expect(page.locator('.error-card')).toHaveCount(1);
+    await expect(page.getByTestId('coming-soon')).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(0);
+  });
+
+  test('a Trainer pasted with an upcoming set code is silently swapped to a legal print', async ({ page }) => {
+    // Boss's Orders pasted with an upcoming set code resolves by NAME to the legal
+    // reprint (me2pt5/ASC in the mock), discarding the pasted upcoming code — no error.
+    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+
+    await loadDeck(
+      page,
+      `Trainer: 1\n1 Boss's Orders ${codeableSet.setCode} 250\n\nTotal Cards: 1`
+    );
+
+    await expect(page.locator('[data-testid="card-tile"] img[alt="Boss\'s Orders"]')).toBeVisible();
+    await expect(page.getByTestId('coming-soon')).toHaveCount(0);
+    await expect(page.locator('.error-card')).toHaveCount(0);
+  });
+
+  test('a card from a just-released set (data not in yet) shows the data-pending message', async ({ page }) => {
+    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    const after = new Date(`${codeableSet.releaseDate}T12:00:00`);
+    after.setDate(after.getDate() + 3);
+    await page.clock.setFixedTime(after);
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+
+    await loadDeck(
+      page,
+      `Pokémon: 2\n2 Zzfakemon ${codeableSet.setCode} 199\n\nTotal Cards: 2`
+    );
+
+    const tile = page.getByTestId('coming-soon');
+    await expect(tile).toBeVisible();
+    await expect(tile).toContainText(codeableSet.name);
+    await expect(page.getByText(/data not in yet/i)).toBeVisible();
+    await expect(page.getByText(/within a day or two/i)).toBeVisible();
+    // The future-tense "Releases …" wording must not show once the set is out.
+    await expect(page.getByText(/Releases /)).toHaveCount(0);
+  });
+});

@@ -6,7 +6,9 @@ import { sortDeck } from './sort.js';
 import { notLegalUntil, todayIso, isSetLegalOn } from './legality.js';
 import { isFunctionalReprint } from './reprint.js';
 import { BASIC_ENERGY_NAME_RE, BASIC_ENERGY_API_NAMES } from './energy.js';
+import { findSetByCode } from './upcoming.js';
 import setLegality from '../data/set-legality.json';
+import upcomingSets from '../data/upcoming-sets.json';
 
 // Conservative (date-only) legality date for a card's set: the legalFrom date when the
 // set isn't tournament-legal yet, else null. Treats the card as a brand-new card; the
@@ -117,6 +119,12 @@ async function resolveDeckCard(card, section, setMap) {
   } catch (e) {
     card.cardError = e.message;
     card.cardLoading = false;
+    // A card we can't resolve whose set code belongs to an announced-but-unreleased
+    // set isn't a typo — it's a brand-new card the card DB doesn't have yet. Tag it so
+    // CardTile shows an amber "coming soon" tile (with release/legal dates) instead of
+    // the red error tile. Trainers/special Energy with an existing name never reach here
+    // (they're already swapped to a legal print by name above).
+    card.upcomingSet = findSetByCode(upcomingSets, card.setCode);
   }
 }
 

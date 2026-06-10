@@ -58,6 +58,30 @@ export function todayIso(date = new Date()) {
 }
 
 /**
+ * Adds `n` days to a YYYY-MM-DD date string, returning a YYYY-MM-DD string.
+ * Done in UTC (no local-timezone offset) so it's deterministic — same result on the
+ * build-time prerender server and in any client timezone, which keeps the prerendered
+ * landing free of hydration mismatches. Returns the input unchanged if it isn't ISO.
+ *
+ * Used to derive an upcoming main set's tournament-legal date (releaseDate + 14, per
+ * Handbook §4.1.2) before it has a set-legality.json entry.
+ * @param {string} iso
+ * @param {number} n - days to add (may be negative)
+ * @returns {string}
+ */
+export function addDaysIso(iso, n) {
+  const m = ISO_DATE_RE.exec(iso);
+  if (!m) return iso;
+  const [, year, month, day] = m;
+  const ms = Date.UTC(Number(year), Number(month) - 1, Number(day)) + n * 86400000;
+  const d = new Date(ms);
+  const yy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/**
  * Formats a YYYY-MM-DD string as a readable date, e.g. "2026-06-05" -> "Jun 5, 2026".
  * Done from the string parts (no Date) to stay free of timezone/locale variance.
  * Returns the input unchanged if it isn't an ISO date.
