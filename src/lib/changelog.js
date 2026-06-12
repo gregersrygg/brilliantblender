@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-12',
+    items: [
+      'The “Upcoming sets” table now labels each value (Release / Legal / Status) on mobile, where the column headers were previously missing.',
+    ],
+  },
+  {
     date: '2026-06-10',
     items: [
       'New “Upcoming sets” section on the home page shows announced sets with their release date and when they become legal to play (with a heads-up about the prerelease reprint rule, §4.1.3).',

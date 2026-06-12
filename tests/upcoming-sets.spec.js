@@ -101,6 +101,35 @@ test.describe('Upcoming sets section (landing page)', () => {
   });
 });
 
+test.describe('Upcoming sets section on mobile', () => {
+  test.use({ viewport: { width: 375, height: 800 } });
+  test.skip(upcomingSets.length === 0, 'no upcoming sets in the bundled data');
+
+  test('each value is labelled inline (Release / Legal / Status) when the header collapses', async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await page.goto('/');
+
+    const section = page.getByRole('region', { name: /upcoming sets/i });
+    await expect(section).toBeVisible();
+
+    // The narrow-screen layout swaps the shared header for per-cell labels rendered via
+    // [data-label]::before. Read the generated content for the first row's cells.
+    for (const label of ['Release', 'Legal', 'Status']) {
+      const cell = section.locator(`[role='cell'][data-label="${label}"]`).first();
+      const before = await cell.evaluate(
+        (el) => getComputedStyle(el, '::before').content
+      );
+      expect(before).toMatch(new RegExp(label, 'i'));
+    }
+
+    // The shared column header stays in the DOM (visually hidden) so screen readers keep
+    // the column semantics.
+    await expect(section.getByRole('columnheader', { name: 'Release' })).toHaveCount(1);
+  });
+});
+
 test.describe('Cards from upcoming sets in a pasted deck', () => {
   test('an unresolvable card from an upcoming set shows an amber "coming soon" tile', async ({ page }) => {
     test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
