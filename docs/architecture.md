@@ -185,6 +185,12 @@ under `node --test`, like `legality.js`):
   server-side, but everything date-relative (the status pill, the §4.1.3 note) stays blank
   until an `onMount` flag flips, so the prerendered landing and first client render match
   (no hydration mismatch).
+  **Responsive rule (≤540px):** the row grid collapses to a single column and the shared
+  desktop header is replaced by inline per-cell labels — each data cell carries a
+  `data-label` ("Release" / "Legal" / "Status") surfaced via `::before`, so values stay
+  labelled on mobile. The header `.row.head` is kept in the DOM but visually hidden
+  (`.sr-only` clip technique) rather than `display:none`, so `role="columnheader"` semantics
+  survive for screen readers (generated `::before` content is not reliably announced).
 - **`deck.svelte.js`** — when a pasted deck line can't be resolved and its set code matches
   an upcoming set (`findSetByCode`), the card is tagged `card.upcomingSet` and `CardTile`
   renders an amber "coming soon" tile (release/legal dates) instead of the red error tile.
