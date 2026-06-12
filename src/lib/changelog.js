@@ -6,6 +6,7 @@ export const CHANGELOG = [
   {
     date: '2026-06-12',
     items: [
+      'Pasting a Pokémon from a set that isn’t out yet now shows the “coming soon” notice with its release date, instead of quietly swapping in a different printing of the same card.',
       'The “Upcoming sets” table now labels each value (Release / Legal / Status) on mobile, where the column headers were previously missing.',
     ],
   },

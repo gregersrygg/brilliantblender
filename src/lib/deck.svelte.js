@@ -65,7 +65,19 @@ async function refineLegality(card) {
 // actual print, not be looked up by name. Special energy is normalised after fetch.
 async function resolveDeckCard(card, section, setMap) {
   const isTrainerSection = section.name === 'Trainer';
+  const knownSet = setMap.has(card.setCode);
   try {
+    // #42: a deck line's set code + number identify ONE specific Pokémon. When the set
+    // code isn't in our DB, resolveCard's name-search fallback would silently swap in a
+    // different print of the same name ("Darkrai ex PBL 123" → "Darkrai ex SVP 110").
+    // For Pokémon that's always wrong, so don't resolve — throw into the catch below,
+    // which tags an announced set (amber "coming soon" tile) or shows the red error tile.
+    // Trainers/special Energy are *meant* to normalise to the newest legal print by name
+    // (discarding the pasted code), so they keep the fallback paths below.
+    if (!knownSet && section.name === 'Pokémon') {
+      throw new Error(`Unknown set code: ${card.setCode}`);
+    }
+
     let d;
     let fromNamePrint = false;
 
@@ -80,6 +92,12 @@ async function resolveDeckCard(card, section, setMap) {
 
     if (!d) {
       const data = await resolveCard(card.setCode, card.number, setMap, card.name);
+      // Header-less "Unknown" section: a Pokémon resolved under a set code we don't have
+      // can only have come from the name-search fallback — same wrong substitution as
+      // above (#42). Route it into the catch instead of showing the wrong print.
+      if (!knownSet && data.supertype === 'Pokémon') {
+        throw new Error(`Unknown set code: ${card.setCode}`);
+      }
       // Trainers/special Energy not normalised above (Energy/Unknown section, or a
       // Trainer with no legal reprint): normalise to the newest legal print here.
       const isNonBasicNonPokemon =
