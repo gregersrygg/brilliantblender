@@ -62,9 +62,9 @@
             {/if}
             <span class="set-series">{set.series}</span>
           </span>
-          <span role="cell">{formatLegalDate(set.releaseDate)}</span>
-          <span role="cell" class:unknown={legal === null}>{legal ? formatLegalDate(legal) : '?'}</span>
-          <span role="cell">
+          <span role="cell" data-label="Release">{formatLegalDate(set.releaseDate)}</span>
+          <span role="cell" data-label="Legal" class:unknown={legal === null}>{legal ? formatLegalDate(legal) : '?'}</span>
+          <span role="cell" data-label="Status">
             {#if dateAware && status === 'prerelease'}
               <span class="pill" data-testid="status-prerelease">● Prerelease</span>
             {:else if dateAware && status === 'released'}
@@ -201,14 +201,35 @@
 
   @media (max-width: 540px) {
     .row {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       row-gap: 6px;
     }
+    /* Keep the header in the DOM for screen-reader column semantics, but hide it
+       visually — sighted users get per-cell labels via [data-label]::before instead.
+       (display:none would drop the labels entirely; ::before content isn't announced.) */
     .row.head {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
     }
-    .set {
-      grid-column: 1 / -1;
+    .row span[role='cell'][data-label] {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .row span[role='cell'][data-label]::before {
+      content: attr(data-label);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--text);
+      opacity: 0.7;
     }
   }
 </style>
