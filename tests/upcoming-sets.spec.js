@@ -122,7 +122,35 @@ test.describe('Cards from upcoming sets in a pasted deck', () => {
     await expect(page.locator('.card-notice')).toHaveCount(1);
     await expect(page.locator('.card-warning')).toHaveCount(0);
     await expect(page.locator('.error-card')).toHaveCount(0);
-    await expect(page.getByText(/Releases .* · legal/)).toBeVisible();
+    await expect(page.getByText(/Card data not in yet · releases .* · legal/)).toBeVisible();
+  });
+
+  // #42: the broken case is a Pokémon whose NAME resolves to a print in some other set.
+  // The old name-search fallback silently swapped that print in ("Darkrai ex PBL 123" →
+  // "Darkrai ex SVP 110"); it must now show the amber "coming soon" tile, never an image.
+  test('a Pokémon whose name resolves elsewhere but is pasted with an upcoming set code shows coming-soon (not the wrong print)', async ({ page }) => {
+    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await mockApi(page);
+    await mockPrints(page);
+    await page.goto('/');
+
+    // "Dragapult ex" IS in MOCK_PRINTS_BY_NAME, so the name search returns sv6-130 —
+    // exactly the wrong substitution #42 is about.
+    await loadDeck(
+      page,
+      `Pokémon: 2\n2 Dragapult ex ${codeableSet.setCode} 199\n\nTotal Cards: 2`
+    );
+
+    const tile = page.getByTestId('coming-soon');
+    await expect(tile).toBeVisible();
+    await expect(tile).toContainText(codeableSet.name);
+    await expect(tile).toContainText('Dragapult ex');
+    // The substituted print must NOT be rendered.
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(0);
+    await expect(page.locator('.card-notice')).toHaveCount(1);
+    await expect(page.locator('.card-warning')).toHaveCount(0);
+    await expect(page.locator('.error-card')).toHaveCount(0);
   });
 
   test('an unresolvable card with an unknown (non-upcoming) set code stays a red error tile', async ({ page }) => {

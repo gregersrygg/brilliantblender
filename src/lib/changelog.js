@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-12',
+    items: [
+      'Pasting a Pokémon from a set that isn’t out yet now shows the “coming soon” notice with its release date, instead of quietly swapping in a different printing of the same card.',
+    ],
+  },
+  {
     date: '2026-06-10',
     items: [
       'New “Upcoming sets” section on the home page shows announced sets with their release date and when they become legal to play (with a heads-up about the prerelease reprint rule, §4.1.3).',

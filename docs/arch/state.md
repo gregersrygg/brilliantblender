@@ -127,13 +127,20 @@ Two behaviours cover deck lines whose printed set code belongs to a set in
   discarding the pasted set code. So `Iono PBL 80` (PBL unreleased) resolves to the current
   legal Iono print. Basic energy likewise resolves by name via SVE. (Pinned by
   `tests/upcoming-sets.spec.js`.)
-- **An unresolvable card from an upcoming set gets an amber "coming soon" tile.** A
-  brand-new card (e.g. a new Pokémon, or a genuinely new Trainer name) can't be fetched —
-  the snapshot/API don't have it until release. In `resolveDeckCard`'s `catch` we set
-  `card.cardError` and, when `findSetByCode(upcomingSets, card.setCode)` matches, also
-  `card.upcomingSet` (the entry). `CardTile` then renders an amber (`--notice`) tile with the
-  set name and "Releases … · legal …" (legal = `legalToPlayDate`, or "?" for special sets)
-  instead of the red error tile. Once the set's release date has passed
+- **A card from an upcoming set gets an amber "coming soon" tile.** In `resolveDeckCard`'s
+  `catch` we set `card.cardError` and, when `findSetByCode(upcomingSets, card.setCode)`
+  matches, also `card.upcomingSet` (the entry). Two kinds of card reach that `catch`:
+  (a) a brand-new card whose name the snapshot/API simply don't have yet (it throws on
+  lookup); and (b) **a Pokémon pasted with a set code we don't have — even when a print of
+  the *same name* exists in another set** (#42). For (b) we must *not* let `resolveCard`'s
+  name-search fallback swap in that other print (a deck line's set code + number identify
+  one specific card), so `resolveDeckCard` throws up front for an unknown-set Pokémon
+  (`!setMap.has(card.setCode) && supertype/section is Pokémon`) instead of resolving. (b)
+  is Pokémon-only on purpose: Trainers/special Energy from an upcoming code are *meant* to
+  normalise to the newest legal print by name — see the bullet above. `CardTile` renders an
+  amber (`--notice`) tile with the set name and "Card data not in yet · releases … · legal
+  …" (legal = `legalToPlayDate`, or "?" for special sets) instead of the red error tile.
+  Once the set's release date has passed
   (`upcomingStatus(card.upcomingSet, todayIso()) === 'released'`) but the card DB hasn't
   caught up yet (the snapshot refreshes nightly), the tile instead reads "Card data not in
   yet — usually within a day or two" — a transient "released, data pending" state rather than

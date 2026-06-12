@@ -96,7 +96,7 @@
       </div>
     {:else}
       <div class="warning-text notice">
-        Releases {formatLegalDate(card.upcomingSet.releaseDate)} · legal {upcomingLegal ? formatLegalDate(upcomingLegal) : '?'}
+        Card data not in yet · releases {formatLegalDate(card.upcomingSet.releaseDate)} · legal {upcomingLegal ? formatLegalDate(upcomingLegal) : '?'}
       </div>
     {/if}
   {:else if card.isRotating && card.qty > 0}
