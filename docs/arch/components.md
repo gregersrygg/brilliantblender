@@ -37,6 +37,8 @@ Search input that adds cards to the deck. Input is debounced (300ms) and ignored
 
 Results render as a **responsive grid of card images** (`.search-results`) rather than a list — the grid auto-fills as many columns as fit (~4-up on desktop, ~2-up under 640px), so it uses the full width on wide screens. Each result (`.search-result`) is the card image with a supertype badge (P/T/E) overlaid in the corner and a centered caption below: name (`.result-name`) + set code/number. The input is 16px to avoid iOS focus-zoom (see architecture.md → Mobile zoom behaviour).
 
+**Behavioural rule — dismissing the results dropdown must not be tied to input blur.** The dropdown (`open` state) closes on: result selection, `Escape`, the query dropping under 2 chars, the clear (✕) button, or a `pointerdown` *outside* the component root (`rootEl`, tracked by a `$effect`-scoped document listener). It deliberately does **not** close on the input's `blur`/`focusout` — on iOS, dismissing the on-screen keyboard blurs the input, and closing on blur would hide the results the user just freed up screen space to read (issue #33). The `.search-clear` (✕) button, shown whenever there's a query, is the always-visible affordance for dismissing results on touch where there's no `Escape` key and little tappable space outside the panel.
+
 ---
 
 ## `Features.svelte`

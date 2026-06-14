@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-06-14',
+    items: [
+      'On mobile, closing the keyboard no longer hides your card search results — and there’s now a ✕ button to clear the search.',
+    ],
+  },
+  {
     date: '2026-06-12',
     items: [
       'Pasting a Pokémon from a set that isn’t out yet now shows the “coming soon” notice with its release date, instead of quietly swapping in a different printing of the same card.',
