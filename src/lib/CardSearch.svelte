@@ -16,6 +16,22 @@
   let open = $state(false);
   let debounceTimer;
   let requestId = 0;
+  let rootEl;
+  let inputEl;
+
+  // Close the dropdown on a pointer-down outside the component. This unified
+  // pointer event covers both mouse (desktop "click away") and touch. Crucially
+  // it does NOT fire when the input merely loses focus — e.g. when an iOS user
+  // dismisses the on-screen keyboard — so results survive keyboard dismissal
+  // (issue #33). Active only while the dropdown is open.
+  $effect(() => {
+    if (!open) return;
+    function onPointerDownOutside(e) {
+      if (rootEl && !rootEl.contains(e.target)) open = false;
+    }
+    document.addEventListener('pointerdown', onPointerDownOutside, true);
+    return () => document.removeEventListener('pointerdown', onPointerDownOutside, true);
+  });
 
   function onInput(e) {
     query = e.target.value;
@@ -52,9 +68,11 @@
     open = false;
   }
 
-  function onBlur() {
-    // Small delay so click on result registers before blur closes dropdown
-    setTimeout(() => { open = false; }, 150);
+  function clearSearch() {
+    query = '';
+    results = [];
+    open = false;
+    inputEl?.focus(); // keep focus so the user can immediately retype
   }
 
   function onFocus() {
@@ -76,7 +94,7 @@
   }
 </script>
 
-<div class="card-search">
+<div class="card-search" bind:this={rootEl}>
   <div class="search-input-wrap">
     <span class="search-icon" aria-hidden="true">🔍</span>
     <input
@@ -86,13 +104,15 @@
       value={query}
       oninput={onInput}
       onkeydown={onKeydown}
-      onblur={onBlur}
       onfocus={onFocus}
+      bind:this={inputEl}
       autocomplete="off"
       spellcheck="false"
     />
     {#if loading}
       <span class="search-spinner" aria-label="Searching">⋯</span>
+    {:else if query}
+      <button type="button" class="search-clear" aria-label="Clear search" onclick={clearSearch}>✕</button>
     {/if}
   </div>
 
@@ -171,6 +191,30 @@
     font-size: 18px;
     color: var(--accent);
     animation: spin-dots 1s steps(3) infinite;
+  }
+
+  .search-clear {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: -4px -4px -4px 0;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text);
+    opacity: 0.6;
+    cursor: pointer;
+    transition: opacity 100ms ease, background 100ms ease;
+  }
+
+  .search-clear:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--text) 10%, transparent);
   }
 
   @keyframes spin-dots {
