@@ -22,5 +22,13 @@
     "legalFrom": "2026-04-10",
     "sourceUrl": null,
     "fetchedAt": "2026-05-27T21:33:52Z"
+  },
+  "me5": {
+    "name": "Pitch Black",
+    "releaseDate": "2026-07-17",
+    "isSpecialSet": false,
+    "legalFrom": "2026-07-31",
+    "sourceUrl": null,
+    "fetchedAt": "2026-07-17T23:41:09Z"
   }
 }
