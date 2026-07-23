@@ -39,6 +39,8 @@ tools:
 # Declarative side-effects the agent can request. The runtime applies these with
 # its own trusted credentials — the agent itself has no write/issue token.
 safe-outputs:
+  noop:
+    report-as-issue: false
   create-issue:
     max: 5
     title-prefix: "[upcoming-sets] "
