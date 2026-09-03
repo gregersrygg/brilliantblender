@@ -154,8 +154,15 @@ curl -sL 'https://press.pokemon.com/en/?itemtype=3'
 The listing is paginated (`&page=2`, `&page=3`, …). Newly-announced sets are near
 the top, so you rarely need to go far. Look for **set-announcement** press releases —
 titles like "New Pokémon Trading Card Game: <Series>—<Set> … Coming Soon",
-"First Expansion of New Pokémon Trading Card Game: …", etc. Ignore non-expansion news
-(events, contests, TCG Pocket, organized play).
+"First Expansion of New Pokémon Trading Card Game: …", etc.
+
+Ignore releases whose **subject** is not a TCG expansion — contests, TCG Pocket, video
+games, merchandise, and standalone event coverage (World Championships, tournament
+results, Play! Pokémon season news). Judge the subject, not the vocabulary: an
+expansion announcement *will* talk about Play! Pokémon and Prerelease tournaments, and
+that organized-play content is exactly what you are here to read. Organized play
+mentioned **inside a set announcement is signal**; a press release that is *only* about
+organized play is not.
 
 **Bound the listing by publication date.** Every row carries its publication date as
 `M/D/YYYY` (e.g. `8/20/2026`). Page 1 alone currently reaches back more than half a
@@ -189,18 +196,42 @@ between a word and the date), `&mdash;` (the separator in "Mega Evolution&mdash;
 Reign"), `&eacute;`/`&#233;` (in "Pokémon"). A date can straddle a tag boundary, so
 never match against the raw HTML.
 
-**Dates appear in several human formats — accept all of them:**
+**Dates are written by humans, so expect any human format.** These are *examples of
+what has been seen*, not a list of what is allowed — handle every plausible way a
+person might write a date, including forms not listed here:
 
-| As printed | Meaning |
+| Example | |
 | --- | --- |
 | `November 6, 2026` | full month name |
-| `Nov. 6, 2026` | abbreviated month **with a period** |
+| `Nov. 6, 2026` | abbreviated month, with a period |
 | `Sept. 26, 2026` | four-letter abbreviation (Sept., not Sep.) |
-| `24 October 2026` | **day first**, no comma |
+| `24 October 2026` | day first, no comma |
 
-The two forms differ *within a single release*: the Delta Reign announcement gives its
-release as "beginning Nov. 6, 2026" and its Prerelease as "taking place beginning
-24 October 2026". Convert to `YYYY-MM-DD` — do not eyeball; you may use the `date` CLI.
+Formats vary *within a single release*: the Delta Reign announcement gives its release
+as "beginning Nov. 6, 2026" and its Prerelease as "taking place beginning 24 October
+2026". If a date is written in some way none of these examples cover, read it and
+convert it anyway — that is the whole reason a human-language agent does this job
+instead of a script. Convert to `YYYY-MM-DD` — do not eyeball; you may use the `date`
+CLI.
+
+**A press release usually contains many dates, and most of them are not the ones you
+want.** Work out what each date *refers to* from the sentence around it, rather than
+taking the first or the earliest one. Dates that are commonly present and must **not**
+be used as `releaseDate`:
+
+- **Individual product availability** — "Elite Trainer Box (available Feb. 20, 2026)",
+  "Booster Bundle (available April 24, 2026)". Accessory products ship on their own
+  staggered dates, weeks or months after the expansion itself.
+- **The Pokémon TCG Live date** — "players will be able to play … starting Nov. 5,
+  2026, via the Pokémon TCG Live app". Digital, usually ~1 day before tabletop.
+- **The publication date of the release itself** — the dateline at the top
+  ("Aug. 20, 2026 — The Pokémon Company International announced today …").
+- **Promotional deadlines** — battle pass expiry, event registration cut-offs.
+
+`releaseDate` is the date the expansion itself reaches shops ("available at
+participating retailers … beginning <date>"); `prereleaseDate` is when Prerelease
+tournaments start. If two candidate sentences genuinely conflict about the tabletop
+release date, treat the announcement as ambiguous rather than picking one.
 
 Only include sets whose release date is **strictly after today**. If an announcement
 is genuinely ambiguous or you cannot find a clear physical release date **after reading
