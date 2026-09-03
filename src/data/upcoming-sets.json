@@ -1,22 +1,22 @@
 [
   {
-    "setCode": "PBL",
-    "name": "Pitch Black",
-    "series": "Mega Evolution",
-    "releaseDate": "2026-07-17",
-    "prereleaseDate": "2026-07-04",
-    "isSpecialSet": false,
-    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Mega-EvolutionPitch-Black-Ex",
-    "fetchedAt": "2026-06-09T20:12:25Z"
-  },
-  {
-    "setCode": "30C",
+    "setCode": null,
     "name": "30th Celebration",
     "series": "30th Celebration",
     "releaseDate": "2026-09-16",
     "prereleaseDate": null,
     "isSpecialSet": true,
     "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-Pokemon-Unveils-New-Pokemon-Trading-Card-Game-30th-Celebra",
-    "fetchedAt": "2026-06-09T20:12:25Z"
+    "fetchedAt": "2026-09-03T21:48:47Z"
+  },
+  {
+    "setCode": null,
+    "name": "Delta Reign",
+    "series": "Mega Evolution",
+    "releaseDate": "2026-11-06",
+    "prereleaseDate": "2026-10-24",
+    "isSpecialSet": false,
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Mega-EvolutionDelta-Reign-Ex",
+    "fetchedAt": "2026-09-03T21:48:47Z"
   }
 ]
