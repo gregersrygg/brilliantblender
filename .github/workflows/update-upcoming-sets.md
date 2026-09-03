@@ -154,9 +154,20 @@ curl -sL 'https://press.pokemon.com/en/?itemtype=3'
 The listing is paginated (`&page=2`, `&page=3`, …). Newly-announced sets are near
 the top, so you rarely need to go far. Look for **set-announcement** press releases —
 titles like "New Pokémon Trading Card Game: <Series>—<Set> … Coming Soon",
-"First Expansion of New Pokémon Trading Card Game: …", etc. Ignore launch-day
-"Available Now" / "Launches Today" alerts and non-expansion news (events, contests,
-TCG Pocket, organized play).
+"First Expansion of New Pokémon Trading Card Game: …", etc. Ignore non-expansion news
+(events, contests, TCG Pocket, organized play).
+
+**Bound the listing by publication date.** Every row carries its publication date as
+`M/D/YYYY` (e.g. `8/20/2026`). Page 1 alone currently reaches back more than half a
+year, and anything announced long ago describes a set that has already shipped.
+Announcements land ~10–11 weeks before release, so **skip any row published more than
+120 days before today** without opening it.
+
+**Skip launch-day alerts.** A title containing "Available Now", "Available Today" or
+"Launches Today" announces a set that is shipping *that day* — it is never an upcoming
+set. Skip it outright: do not open it, and do **not** file an ambiguity issue for it
+(it has no future release date to find, so "no release date" is the expected result,
+not a problem worth a human's time).
 
 ### 3. Extract the dates from each announcement body
 
@@ -167,12 +178,34 @@ Open the announcement page and read the body. Find:
   any — its presence means `isSpecialSet: false`; its absence means `true`;
 - ignore the Pokémon TCG Live date.
 
-Press releases give dates in human form ("July 17, 2026"). Convert to `YYYY-MM-DD` —
-do not eyeball; you may use the `date` CLI.
+**Read the body yourself — do not rely on a pattern-matching script.** It is fine to
+use shell tooling to *fetch* the page and strip it down to readable text, but the
+dates must be found by you reading that text. A regex that finds nothing means your
+pattern was too narrow, not that the announcement is ambiguous.
+
+**The page is HTML, and the dates are littered with entities and tags.** Before
+reading, strip tags and decode entities — bodies contain `&nbsp;` (often sitting
+between a word and the date), `&mdash;` (the separator in "Mega Evolution&mdash;Delta
+Reign"), `&eacute;`/`&#233;` (in "Pokémon"). A date can straddle a tag boundary, so
+never match against the raw HTML.
+
+**Dates appear in several human formats — accept all of them:**
+
+| As printed | Meaning |
+| --- | --- |
+| `November 6, 2026` | full month name |
+| `Nov. 6, 2026` | abbreviated month **with a period** |
+| `Sept. 26, 2026` | four-letter abbreviation (Sept., not Sep.) |
+| `24 October 2026` | **day first**, no comma |
+
+The two forms differ *within a single release*: the Delta Reign announcement gives its
+release as "beginning Nov. 6, 2026" and its Prerelease as "taking place beginning
+24 October 2026". Convert to `YYYY-MM-DD` — do not eyeball; you may use the `date` CLI.
 
 Only include sets whose release date is **strictly after today**. If an announcement
-is ambiguous or you cannot find a clear physical release date, **do not guess** —
-emit a `create-issue` safe-output describing the set and what you found, and skip it.
+is genuinely ambiguous or you cannot find a clear physical release date **after reading
+the body text**, do not guess — emit a `create-issue` safe-output describing the set
+and quoting the sentences you did find, and skip it.
 
 ### 4. Write the file
 
@@ -206,6 +239,11 @@ set already tracked (e.g. a later run that merely refreshes its dates). Use the
   tooling is fine, the network restriction is on the host only.
 - Do not report `missing_tool` for curl/wget. You have shell access (`bash: [":*"]`).
 - Do not invent dates. Every date comes from the press release — read it, don't infer.
+- Never conclude "no date found" from a failed regex alone. Strip the HTML to text and
+  read it before you decide an announcement is ambiguous.
+- Only file an ambiguity issue for a genuine *upcoming* set. Launch-day "Available Now"
+  alerts and announcements older than 120 days are expected to have no future release
+  date — skip them silently.
 - Dates are `YYYY-MM-DD`. `sourceUrl` must be on `press.pokemon.com`.
 - Before opening an issue, search existing issues for the set name to avoid duplicates.
 
@@ -229,4 +267,6 @@ Body:
 - Set: series + name as best you can tell
 - The announcement URL(s) you read
 - Which date was unclear (release / prerelease) and why
+- **The sentences you did find**, quoted verbatim from the stripped body text, so a
+  human can see what you were looking at without re-reading the page
 - Suggested next action

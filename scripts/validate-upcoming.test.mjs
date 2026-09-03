@@ -5,6 +5,7 @@ import {
   validateEntry,
   validateUpcomingFile,
   ensureOnlyAllowedPathChanged,
+  parsePorcelainPaths,
   ValidationError,
   ALLOWED_HOSTS,
   ALLOWED_PATH,
@@ -185,4 +186,42 @@ test('ALLOWED_PATH points at upcoming-sets.json', () => {
 
 test('ALLOWED_HOSTS is limited to press.pokemon.com', () => {
   assert.deepEqual(ALLOWED_HOSTS, ['press.pokemon.com']);
+});
+
+// Regression guard for the Sep 2026 run: the porcelain parser used to trim the
+// whole `git status` output, which ate the leading space of an unstaged " M path"
+// line and shifted the path one character ("rc/data/..."), failing the path guard
+// for a file the agent was allowed to change.
+test('parsePorcelainPaths reads an unstaged modification (leading space)', () => {
+  assert.deepEqual(parsePorcelainPaths(' M src/data/upcoming-sets.json\n'), [ALLOWED_PATH]);
+});
+
+test('parsePorcelainPaths reads staged, staged+modified and untracked lines', () => {
+  assert.deepEqual(parsePorcelainPaths('M  src/data/upcoming-sets.json\n'), [ALLOWED_PATH]);
+  assert.deepEqual(parsePorcelainPaths('MM src/data/upcoming-sets.json\n'), [ALLOWED_PATH]);
+  assert.deepEqual(parsePorcelainPaths('?? src/data/upcoming-sets.json\n'), [ALLOWED_PATH]);
+});
+
+test('parsePorcelainPaths keeps every path in a multi-line status', () => {
+  const out = ' M src/data/upcoming-sets.json\n?? scripts/sneaky.mjs\n';
+  assert.deepEqual(parsePorcelainPaths(out), [ALLOWED_PATH, 'scripts/sneaky.mjs']);
+});
+
+test('parsePorcelainPaths takes the destination of a rename', () => {
+  assert.deepEqual(
+    parsePorcelainPaths('R  src/data/old.json -> src/data/upcoming-sets.json\n'),
+    [ALLOWED_PATH],
+  );
+});
+
+test('parsePorcelainPaths returns nothing for a clean tree', () => {
+  assert.deepEqual(parsePorcelainPaths(''), []);
+  assert.deepEqual(parsePorcelainPaths('\n'), []);
+});
+
+// The whole point of the guard: an unstaged edit to the allowed file must pass.
+test('an unstaged edit to the allowed file passes the path guard', () => {
+  assert.doesNotThrow(() =>
+    ensureOnlyAllowedPathChanged(parsePorcelainPaths(' M src/data/upcoming-sets.json\n')),
+  );
 });
