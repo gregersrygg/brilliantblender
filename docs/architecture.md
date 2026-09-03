@@ -215,17 +215,10 @@ under `node --test`, like `legality.js`):
   labelled on mobile. The header `.row.head` is kept in the DOM but visually hidden
   (`.sr-only` clip technique) rather than `display:none`, so `role="columnheader"` semantics
   survive for screen readers (generated `::before` content is not reliably announced).
-  **Testing rule — assert per row, never by section-wide text.** The set name carries
-  `data-testid="set-name"` so tests can target the name itself: a set's `name` and `series`
-  are frequently identical (the "30th Celebration" special set is both), and a bare
-  `getByText(name)` then matches the name link *and* the series line and trips Playwright's
-  strict mode. Likewise, the §4.1.3 note is **page-level, not per-row** — it names the single
-  earliest playable-early set — so an assertion that it is absent only holds while *every*
-  bundled set is still `'announced'`; pin such a test to the day before the earliest
-  `prereleaseDate ?? releaseDate` across all sets, not just the one under test. Both rules
-  exist because `upcoming-sets.json` is rewritten by an agentic workflow: tests read the
-  bundled data rather than hard-coding set names, so any assumption about its *shape* (unique
-  names, only one set active at a time) becomes a CI failure the moment real data violates it.
+  **Testing rule:** assert per row via `data-testid="set-name"` — `name` and `series` are
+  often identical, so section-wide `getByText(name)` trips strict mode. The §4.1.3 note is
+  page-level, so "no note" only holds before the earliest `prereleaseDate ?? releaseDate`
+  across *all* sets.
 - **`deck.svelte.js`** — when a pasted deck line can't be resolved and its set code matches
   an upcoming set (`findSetByCode`), the card is tagged `card.upcomingSet` and `CardTile`
   renders an amber "coming soon" tile (release/legal dates) instead of the red error tile.
