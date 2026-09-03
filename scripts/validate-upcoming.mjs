@@ -148,6 +148,27 @@ function readCurrentUpcomingFile() {
   return JSON.parse(readFileSync(targetPath, 'utf8'));
 }
 
+// `git status --porcelain` lines are a fixed-width two-column status field plus a
+// space, then the path: "M  path" (staged), " M path" (unstaged — LEADING SPACE),
+// "?? path" (untracked). The leading space is significant, so the raw output must
+// NOT be trimmed as a whole: doing so eats the first status column of an unstaged
+// line and shifts its path one character left (" M src/..." -> "rc/..."), which
+// then fails the allow-list comparison for a file the agent was allowed to touch.
+// Trim per path, never across the output. This broke the Sep 2026 run — the agent
+// edits upcoming-sets.json in place (unstaged), the only state with a leading space.
+export function parsePorcelainPaths(out) {
+  return out
+    .split('\n')
+    .filter((line) => line.length > 3)
+    .map((line) => {
+      const path = line.slice(3).trim();
+      // Renames and copies read "R  old -> new"; the destination is what changed.
+      const arrow = path.indexOf(' -> ');
+      return arrow === -1 ? path : path.slice(arrow + 4);
+    })
+    .filter(Boolean);
+}
+
 // Use porcelain status (not `git diff --name-only`, which omits untracked files)
 // so a freshly-created upcoming-sets.json — untracked on the very first run,
 // before the file exists on main — is still seen by the path guard.
@@ -155,9 +176,8 @@ function readChangedPaths() {
   try {
     const out = execSync('git status --porcelain --untracked-files=all', {
       stdio: ['ignore', 'pipe', 'ignore'],
-    }).toString().trim();
-    if (!out) return [];
-    return out.split('\n').map((line) => line.slice(3).trim()).filter(Boolean);
+    }).toString();
+    return parsePorcelainPaths(out);
   } catch {
     return [];
   }

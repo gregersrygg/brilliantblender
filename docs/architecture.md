@@ -152,6 +152,30 @@ post-step validator that fails the job on any out-of-scope change; both push wit
   Dispatched by `update-snapshot.yml` whenever **any** set is newly released
   (`new_count != 0`) — by then the next set is always already announced — plus
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
+  Two rules exist because the Sep 2026 run tripped over both. First, the agent must
+  **read the stripped body text** rather than trust a regex. The press releases are
+  written by humans and are correspondingly inconsistent — dates appear as
+  `Nov. 6, 2026`, `Sept. 26, 2026`, day-first `24 October 2026`, and mixed forms
+  within one release, all buried in HTML entities — which is the whole reason this
+  is an agent and not a scraper; the prompt gives examples explicitly framed as
+  non-exhaustive. A release also carries **many** dates (per-product availability,
+  the TCG Live date, the dateline, promo deadlines), so the agent must identify what
+  each date refers to rather than pattern-match the first one. Second, it must
+  **bound the listing by publication date** (skip rows older than 120 days and
+  "Available Now" launch-day alerts) — page 1 reaches back months, so without that
+  it files ambiguity issues for sets that shipped long ago. Note the listing filter
+  is about a release's *subject*: organized-play content inside a set announcement
+  is the Prerelease data the workflow exists to collect, not noise to skip.
+
+**Behavioural rule — the validators' path guard reads `git status --porcelain`, whose
+lines are a fixed-width 2-column status field plus a space (`"M  path"` staged,
+`" M path"` unstaged, `"?? path"` untracked).** Never trim the output as a whole: that
+eats the leading space of an unstaged line and shifts its path one character
+(`" M src/…"` → `"rc/…"`), so the guard rejects a file the agent was allowed to edit.
+`parsePorcelainPaths` in `scripts/validate-upcoming.mjs` slices the fixed 3-character
+prefix off each raw line and trims per path (and takes the destination of a
+`"R  old -> new"` rename). It is exported purely so this stays unit-tested — the
+untested version of it failed the whole Sep 2026 run.
 
 `upcoming-sets.json` is a **name-keyed array** (the `setCode` isn't known before
 release): `{ setCode|null, name, series, releaseDate, prereleaseDate|null,

@@ -3,11 +3,10 @@
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "if": "Bash(git commit *)",
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx playwright test",
+            "command": "grep -q '\"command\": *\"[^\"]*git commit' || exit 0; cd \"$CLAUDE_PROJECT_DIR\" && npx playwright test",
             "timeout": 300000,
             "statusMessage": "Running Playwright tests before commit..."
           }
