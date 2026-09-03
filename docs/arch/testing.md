@@ -12,6 +12,7 @@ Pure-logic units use Node's built-in runner: `npm test` → `node --test scripts
 | `tests/m3-print-substitution.spec.js` | Print Picker open/close, print list, current highlight, qty controls, >4 validation, export |
 | `tests/legality-warning.spec.js` | Cards with null regulation marks show "Not Standard-legal" warning; basic energy exempt |
 | `tests/set-legality-warning.spec.js` | Not-yet-legal set shows amber "Legal from {date}" notice; reprint of an already-legal card is suppressed (§4.1.3); a red rule violation (>4 copies) takes precedence over the amber notice; uses `page.clock` to pin the date |
+| `src/lib/parser.test.mjs` | Unit tests for `parseDeck` set-code/line parsing, incl. digit-leading codes (`30C`), promo `PR-SV`, and names that could be mistaken for the code |
 | `src/lib/legality.test.mjs` | Unit tests (`node --test`) for `notLegalUntil` (incl. `{isReprint}`), `isSetLegalOn`, `todayIso`, `formatLegalDate` |
 | `src/lib/reprint.test.mjs` | Unit tests for `isFunctionalReprint`, `normalizeAttacks`, `normalizeAbilities` |
 

@@ -22,6 +22,7 @@ src/
     upcoming-sets.json     Announced-but-unreleased sets: name + release/prerelease dates (agentic workflow)
   lib/
     parser.js              Pure function: PTCGL text → deck structure
+    parser.test.mjs        Node unit tests for parser.js
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
     snapshot.js            In-memory access to bundled card/set snapshot data
     legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate, addDaysIso

@@ -1,5 +1,10 @@
 const SECTION_RE = /^(Pokémon|Pokemon|Trainer|Energy)\s*:\s*(\d+)\s*$/i;
-const CARD_RE = /^(\d+)\s+(.+?)\s+([A-Za-z]{2,6}(?:-[A-Za-z0-9]{1,3})?)\s+(\d+)\s*$/;
+// Set codes are alphanumeric and may start with a digit ("30C" for 30th Celebration),
+// so the leading lookahead is what keeps the code apart from the collector number: the
+// alphanumeric run must contain at least one letter. Optional "-XX" suffix covers
+// promo-style codes (e.g. "PR-SV").
+const SET_CODE_RE = '(?=[A-Za-z0-9]{0,5}[A-Za-z])[A-Za-z0-9]{2,6}(?:-[A-Za-z0-9]{1,3})?';
+const CARD_RE = new RegExp(`^(\\d+)\\s+(.+?)\\s+(${SET_CODE_RE})\\s+(\\d+)\\s*$`);
 const TOTAL_RE = /^Total Cards\s*:\s*\d+\s*$/i;
 
 /**

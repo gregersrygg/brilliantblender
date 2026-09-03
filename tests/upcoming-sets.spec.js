@@ -11,9 +11,10 @@ import { sortByReleaseDate, legalToPlayDate } from '../src/lib/upcoming.js';
 const require = createRequire(import.meta.url);
 const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json'));
 
-// PTCGL set codes in deck lines must be letters only (the parser's CARD_RE rejects codes
-// with digits, e.g. "30C"), so pick the first upcoming set with a letters-only code.
-const codeableSet = upcomingSets.find((s) => /^[A-Za-z]{2,6}$/.test(s.setCode ?? ''));
+// Not every upcoming set has its set code known yet (setCode stays null until the code is
+// found), so pick the first entry that has one the parser can read back off a deck line.
+// Codes are alphanumeric and may start with a digit ("30C"), matching parser.js CARD_RE.
+const codeableSet = upcomingSets.find((s) => /^[A-Za-z0-9-]{2,10}$/.test(s.setCode ?? ''));
 const specialSet = upcomingSets.find((s) => s.isSpecialSet);
 const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
 
@@ -87,7 +88,7 @@ test.describe('Upcoming sets section (landing page)', () => {
   });
 
   test('a just-released set shows "Released" status and a data-availability note', async ({ page }) => {
-    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
     // A few days after release (still before the legal date), the set lingers in the
     // list until the pipeline prunes it — it should read "Released", with a note that
     // card data lands within a day or two.
@@ -132,7 +133,7 @@ test.describe('Upcoming sets section on mobile', () => {
 
 test.describe('Cards from upcoming sets in a pasted deck', () => {
   test('an unresolvable card from an upcoming set shows an amber "coming soon" tile', async ({ page }) => {
-    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
     await mockApi(page);
     await mockPrints(page);
@@ -158,7 +159,7 @@ test.describe('Cards from upcoming sets in a pasted deck', () => {
   // The old name-search fallback silently swapped that print in ("Darkrai ex PBL 123" →
   // "Darkrai ex SVP 110"); it must now show the amber "coming soon" tile, never an image.
   test('a Pokémon whose name resolves elsewhere but is pasted with an upcoming set code shows coming-soon (not the wrong print)', async ({ page }) => {
-    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
     await mockApi(page);
     await mockPrints(page);
@@ -198,7 +199,7 @@ test.describe('Cards from upcoming sets in a pasted deck', () => {
   test('a Trainer pasted with an upcoming set code is silently swapped to a legal print', async ({ page }) => {
     // Boss's Orders pasted with an upcoming set code resolves by NAME to the legal
     // reprint (me2pt5/ASC in the mock), discarding the pasted upcoming code — no error.
-    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
     await mockApi(page);
     await mockPrints(page);
@@ -215,7 +216,7 @@ test.describe('Cards from upcoming sets in a pasted deck', () => {
   });
 
   test('a card from a just-released set (data not in yet) shows the data-pending message', async ({ page }) => {
-    test.skip(!codeableSet, 'no upcoming set with a letters-only code in the bundled data');
+    test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
     const after = new Date(`${codeableSet.releaseDate}T12:00:00`);
     after.setDate(after.getDate() + 3);
     await page.clock.setFixedTime(after);
