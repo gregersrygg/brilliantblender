@@ -16,6 +16,13 @@ const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json')
 const codeableSet = upcomingSets.find((s) => /^[A-Za-z]{2,6}$/.test(s.setCode ?? ''));
 const specialSet = upcomingSets.find((s) => s.isSpecialSet);
 const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
+// The earliest date on which any set stops being 'announced' — its prerelease if it has
+// one, otherwise its release. See the "before the prerelease window" test for why this
+// has to span all sets rather than just the one under test.
+const earliestActivation = upcomingSets
+  .map((s) => s.prereleaseDate ?? s.releaseDate)
+  .filter(Boolean)
+  .sort()[0];
 
 async function loadDeck(page, decklist) {
   await page.getByRole('textbox', { name: /paste/i }).fill(decklist);
@@ -32,13 +39,31 @@ test.describe('Upcoming sets section (landing page)', () => {
     const section = page.getByRole('region', { name: /upcoming sets/i });
     await expect(section).toBeVisible();
 
-    const first = upcomingSets[0];
-    await expect(section.getByText(first.name, { exact: false })).toBeVisible();
-    await expect(section.getByText(formatLegalDate(first.releaseDate))).toBeVisible();
+    // Assert per row rather than searching the whole section for the text: a set's name
+    // and series can be identical (e.g. the "30th Celebration" special set), so a bare
+    // getByText(name) matches both the name link and the series line and trips strict
+    // mode. The [data-testid=set-name] hook pins the assertion to the name itself.
+    const names = section.getByTestId('set-name');
+    await expect(names).toHaveCount(upcomingSets.length);
 
-    const legal = legalToPlayDate(first);
-    if (legal) {
-      await expect(section.getByText(formatLegalDate(legal))).toBeVisible();
+    // Data rows only — the header row carries no set-name cell.
+    const rows = section
+      .locator("[role='row']")
+      .filter({ has: page.getByTestId('set-name') });
+    await expect(rows).toHaveCount(upcomingSets.length);
+
+    for (const [i, set] of upcomingSets.entries()) {
+      const row = rows.nth(i);
+      await expect(row.getByTestId('set-name')).toHaveText(set.name);
+
+      await expect(row.locator("[role='cell'][data-label='Release']")).toHaveText(
+        formatLegalDate(set.releaseDate)
+      );
+
+      const legal = legalToPlayDate(set);
+      await expect(row.locator("[role='cell'][data-label='Legal']")).toHaveText(
+        legal ? formatLegalDate(legal) : '?'
+      );
     }
   });
 
@@ -76,8 +101,12 @@ test.describe('Upcoming sets section (landing page)', () => {
 
   test('before the prerelease window, no prerelease status or note is shown', async ({ page }) => {
     test.skip(!prereleaseSet, 'no set with a prerelease date in the bundled data');
-    // One day before the earliest prerelease opens.
-    const dayBefore = new Date(`${prereleaseSet.prereleaseDate}T12:00:00`);
+    // Pin to the day before the EARLIEST activation across every bundled set, not just
+    // the day before this set's prerelease. The §4.1.3 note is a single page-level note
+    // naming the earliest set that is playable early, so it stays absent only while every
+    // set is still 'announced' — an earlier set that has already released (e.g. a special
+    // set with no prerelease of its own) renders the note regardless of this set's window.
+    const dayBefore = new Date(`${earliestActivation}T12:00:00`);
     dayBefore.setDate(dayBefore.getDate() - 1);
     await page.clock.setFixedTime(dayBefore);
     await page.goto('/');
