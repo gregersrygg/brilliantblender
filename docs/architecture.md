@@ -168,7 +168,11 @@ view reads) is written entirely by a deterministic script — there is no legali
   and records it as `legalProductDate` (updating `sourceUrl` to that release) — the
   anchor the app and `apply-set-legality.mjs` use for the legal date. Only the ETB and
   Booster Bundle count (not the Tech Sticker Collection, ex Box, etc.); until the lineup
-  release exists, `legalProductDate` stays `null`. Validator: `scripts/validate-upcoming.mjs`.
+  release exists, `legalProductDate` stays `null`. The agent rewrites the whole file, so
+  two post-steps run before the commit: `scripts/reconcile-upcoming.mjs` first restores
+  fields the rewrite must not touch — a hand-backfilled `setCode` the agent nulled, and a
+  `fetchedAt` bumped on an entry it did not actually change (both matched to the committed
+  HEAD version by `name`) — then `scripts/validate-upcoming.mjs` validates the result.
   Dispatched by `update-snapshot.yml` whenever **any** set is newly released
   (`new_count != 0`) — by then the next set is always already announced — plus
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).

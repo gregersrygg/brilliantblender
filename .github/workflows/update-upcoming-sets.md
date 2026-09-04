@@ -50,6 +50,12 @@ safe-outputs:
 # a no-op run is legitimate here (no newly-announced set), so there is NO
 # "fail if no diff" guard — the commit step simply skips when nothing changed.
 post-steps:
+  # Deterministic guard: undo any setCode/fetchedAt clobbering before validating.
+  # The agent rewrites the whole file, and has nulled a hand-backfilled setCode and
+  # bumped fetchedAt on sets it did not change; this restores both from HEAD.
+  - name: Reconcile untouched fields against HEAD
+    run: node scripts/reconcile-upcoming.mjs
+
   - name: Validate agent output
     run: node scripts/validate-upcoming.mjs
 
@@ -111,11 +117,13 @@ release, so entries cannot yet be keyed by it). Each entry:
 
 - `setCode` — the set code printed on the card next to the collector number (e.g.
   `"CRI"`, `"SSP"`), the join key the app uses (the same `setCode` as deck cards; it
-  is the API's `set.ptcgoCode`). **Always `null` here** — it is hard to pin down
-  before release (sometimes hinted in teaser images, but rarely published cleanly), so
-  the agent always writes `null` and never guesses it. It is a placeholder to be
-  backfilled by hand; the agent opens a tracking issue when it adds
-  a new set (see step 5) so the backfill isn't forgotten.
+  is the API's `set.ptcgoCode`). It is hard to pin down before release (sometimes
+  hinted in teaser images, but rarely published cleanly), so **on a set you add, write
+  `null`** and never guess it — it is a placeholder backfilled by hand later, and the
+  agent opens a tracking issue when it adds a set (see step 5) so the backfill isn't
+  forgotten. **On a set already in the file, keep whatever `setCode` is there — never
+  overwrite a non-null value back to `null`.** Once a human has filled it in, that
+  value is authoritative; nulling it silently drops working set data.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
   set name. **Not** the series-prefixed title.
@@ -136,7 +144,11 @@ release, so entries cannot yet be keyed by it). Each entry:
 - `sourceUrl` — the `press.pokemon.com` announcement URL the dates came from. For a
   special set, prefer the **product-lineup** release you read `legalProductDate` from
   (see step 3b) over the earlier bare reveal — it is the better provenance for the date.
-- `fetchedAt` — current UTC time, ISO 8601.
+- `fetchedAt` — current UTC time, ISO 8601. **Only set this on an entry you actually
+  add or whose data you actually change.** For an existing entry you leave alone (its
+  dates and other fields still match the press release), copy its previous `fetchedAt`
+  through verbatim — do not bump it, or the diff will falsely claim the set was
+  refreshed.
 
 ## Procedure
 
@@ -279,12 +291,15 @@ and quoting the sentences you did find, and skip it.
 
 Merge: keep the still-future existing entries (refresh their dates if the press
 release now has better data — including filling a special set's `legalProductDate` once
-you find its product-lineup release) and add any newly-found upcoming sets. Set `setCode`
-to `null` on every entry (it is never known at this stage). Set `legalProductDate` to
-`null` on main sets and on special sets whose ETB/Booster-Bundle date you could not find;
-otherwise to the date from step 3b. De-duplicate by `name`. Sort the array by
-`releaseDate` ascending. Write valid JSON with 2-space indentation and a trailing newline.
-Set `fetchedAt` to the current UTC time on entries you add or update.
+you find its product-lineup release) and add any newly-found upcoming sets. On a
+**newly-added** entry set `setCode` to `null` (it is never known at this stage); on an
+**existing** entry keep its current `setCode` unchanged — never null out a value a human
+backfilled. Set `legalProductDate` to `null` on main sets and on special sets whose
+ETB/Booster-Bundle date you could not find; otherwise to the date from step 3b.
+De-duplicate by `name`. Sort the array by `releaseDate` ascending. Write valid JSON with
+2-space indentation and a trailing newline. Set `fetchedAt` to the current UTC time
+**only** on entries you add or whose data you changed; for an entry you leave unchanged,
+carry its existing `fetchedAt` through verbatim.
 
 If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
 unchanged) is fine — the workflow will simply not commit.
