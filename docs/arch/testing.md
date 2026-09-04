@@ -112,3 +112,10 @@ const text = await page.evaluate(() => navigator.clipboard.readText());
 ```
 
 Preferred selectors: `getByRole` for buttons/inputs, `data-testid` for specific elements, `img[alt="Card Name"]` for card images.
+
+## No third-party network
+
+`vite.config.js` strips the analytics `<script>` when serving (dev + Playwright); the
+production build keeps it. An external script delays `window.load`, which `page.goto()`
+waits for, so an unreachable CDN times out every test. `no-external-resources.spec.js`
+guards this.
