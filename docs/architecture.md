@@ -216,6 +216,10 @@ under `node --test`, like `legality.js`):
   labelled on mobile. The header `.row.head` is kept in the DOM but visually hidden
   (`.sr-only` clip technique) rather than `display:none`, so `role="columnheader"` semantics
   survive for screen readers (generated `::before` content is not reliably announced).
+  **Testing rule:** assert per row via `data-testid="set-name"` — `name` and `series` are
+  often identical, so section-wide `getByText(name)` trips strict mode. The §4.1.3 note is
+  page-level, so "no note" only holds before the earliest `prereleaseDate ?? releaseDate`
+  across *all* sets.
 - **`deck.svelte.js`** — when a pasted deck line can't be resolved and its set code matches
   an upcoming set (`findSetByCode`), the card is tagged `card.upcomingSet` and `CardTile`
   renders an amber "coming soon" tile (release/legal dates) instead of the red error tile.

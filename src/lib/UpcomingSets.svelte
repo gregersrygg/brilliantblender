@@ -54,11 +54,11 @@
         <div class="row" role="row">
           <span class="set" role="cell">
             {#if set.sourceUrl}
-              <a class="set-name" href={set.sourceUrl} target="_blank" rel="noopener noreferrer">
+              <a class="set-name" data-testid="set-name" href={set.sourceUrl} target="_blank" rel="noopener noreferrer">
                 {set.name}
               </a>
             {:else}
-              <span class="set-name">{set.name}</span>
+              <span class="set-name" data-testid="set-name">{set.name}</span>
             {/if}
             <span class="set-series">{set.series}</span>
           </span>

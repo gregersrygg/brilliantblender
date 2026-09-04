@@ -17,6 +17,11 @@ const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json')
 const codeableSet = upcomingSets.find((s) => /^[A-Za-z0-9-]{2,10}$/.test(s.setCode ?? ''));
 const specialSet = upcomingSets.find((s) => s.isSpecialSet);
 const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
+// Earliest date any set stops being 'announced'.
+const earliestActivation = upcomingSets
+  .map((s) => s.prereleaseDate ?? s.releaseDate)
+  .filter(Boolean)
+  .sort()[0];
 
 async function loadDeck(page, decklist) {
   await page.getByRole('textbox', { name: /paste/i }).fill(decklist);
@@ -33,13 +38,25 @@ test.describe('Upcoming sets section (landing page)', () => {
     const section = page.getByRole('region', { name: /upcoming sets/i });
     await expect(section).toBeVisible();
 
-    const first = upcomingSets[0];
-    await expect(section.getByText(first.name, { exact: false })).toBeVisible();
-    await expect(section.getByText(formatLegalDate(first.releaseDate))).toBeVisible();
+    // Per row, not section-wide: name and series can be identical (e.g. "30th
+    // Celebration"), so getByText(name) would match both and trip strict mode.
+    const rows = section
+      .locator("[role='row']")
+      .filter({ has: page.getByTestId('set-name') });
+    await expect(rows).toHaveCount(upcomingSets.length);
 
-    const legal = legalToPlayDate(first);
-    if (legal) {
-      await expect(section.getByText(formatLegalDate(legal))).toBeVisible();
+    for (const [i, set] of upcomingSets.entries()) {
+      const row = rows.nth(i);
+      await expect(row.getByTestId('set-name')).toHaveText(set.name);
+
+      await expect(row.locator("[role='cell'][data-label='Release']")).toHaveText(
+        formatLegalDate(set.releaseDate)
+      );
+
+      const legal = legalToPlayDate(set);
+      await expect(row.locator("[role='cell'][data-label='Legal']")).toHaveText(
+        legal ? formatLegalDate(legal) : '?'
+      );
     }
   });
 
@@ -77,8 +94,9 @@ test.describe('Upcoming sets section (landing page)', () => {
 
   test('before the prerelease window, no prerelease status or note is shown', async ({ page }) => {
     test.skip(!prereleaseSet, 'no set with a prerelease date in the bundled data');
-    // One day before the earliest prerelease opens.
-    const dayBefore = new Date(`${prereleaseSet.prereleaseDate}T12:00:00`);
+    // The §4.1.3 note is page-level, so it stays absent only while every set is still
+    // 'announced' — hence the earliest activation, not just this set's prerelease.
+    const dayBefore = new Date(`${earliestActivation}T12:00:00`);
     dayBefore.setDate(dayBefore.getDate() - 1);
     await page.clock.setFixedTime(dayBefore);
     await page.goto('/');
