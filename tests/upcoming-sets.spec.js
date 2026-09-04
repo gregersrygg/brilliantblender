@@ -15,7 +15,10 @@ const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json')
 // found), so pick the first entry that has one the parser can read back off a deck line.
 // Codes are alphanumeric and may start with a digit ("30C"), matching parser.js CARD_RE.
 const codeableSet = upcomingSets.find((s) => /^[A-Za-z0-9-]{2,10}$/.test(s.setCode ?? ''));
-const specialSet = upcomingSets.find((s) => s.isSpecialSet);
+// A special set with no scraped ETB/Booster-Bundle date still shows "?"; once
+// legalProductDate is filled its (provisional) legal date is computed and shown.
+const specialSetNoDate = upcomingSets.find((s) => s.isSpecialSet && !s.legalProductDate);
+const specialSetWithDate = upcomingSets.find((s) => s.isSpecialSet && s.legalProductDate);
 const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
 // Earliest date any set stops being 'announced'.
 const earliestActivation = upcomingSets
@@ -72,12 +75,31 @@ test.describe('Upcoming sets section (landing page)', () => {
     await expect(link).toHaveAttribute('rel', /noopener/);
   });
 
-  test('special sets show "?" for the unknown legal date', async ({ page }) => {
-    test.skip(!specialSet, 'no special upcoming set in the bundled data');
+  test('a special set with no scraped ETB date shows "?" for the unknown legal date', async ({ page }) => {
+    test.skip(!specialSetNoDate, 'every special upcoming set already has a scraped ETB date');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
     await page.goto('/');
     const section = page.getByRole('region', { name: /upcoming sets/i });
     await expect(section.getByText('?', { exact: true })).toBeVisible();
+  });
+
+  test('a special set with a scraped ETB date shows a provisional legal date', async ({ page }) => {
+    test.skip(!specialSetWithDate, 'no special upcoming set with a scraped ETB date in the bundled data');
+    await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
+    await page.goto('/');
+
+    const section = page.getByRole('region', { name: /upcoming sets/i });
+    const row = section
+      .locator("[role='row']")
+      .filter({ has: page.getByTestId('set-name').filter({ hasText: specialSetWithDate.name }) });
+    const legalCell = row.locator("[role='cell'][data-label='Legal']");
+
+    // The computed date is shown (not "?") ...
+    await expect(legalCell).toHaveText(formatLegalDate(legalToPlayDate(specialSetWithDate)));
+    // ... and flagged provisional (amber dotted marker with a tooltip).
+    const marker = legalCell.getByTestId('legal-provisional');
+    await expect(marker).toBeVisible();
+    await expect(marker).toHaveAttribute('title', /provisional/i);
   });
 
   test('a set in its prerelease window shows the status pill and §4.1.3 note', async ({ page }) => {

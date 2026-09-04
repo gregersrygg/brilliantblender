@@ -82,6 +82,45 @@ export function addDaysIso(iso, n) {
 }
 
 /**
+ * Snaps a YYYY-MM-DD date forward to the next Friday, returning the date unchanged if it
+ * is already a Friday. Done in UTC (see addDaysIso) so it's timezone-deterministic.
+ * Returns the input unchanged if it isn't an ISO date.
+ *
+ * Play! Pokémon's tournament calendar runs on Fridays — new cards go legal on a Friday so
+ * the weekend Championship-Series card pool is stable. Main sets release on Fridays, so
+ * their `releaseDate + 14` already lands on one; special sets are anchored to an ETB /
+ * Booster-Bundle date that can fall mid-week (e.g. 30th Celebration's global launch on a
+ * Wednesday), so we snap the computed date forward to the following Friday.
+ * @param {string} iso
+ * @returns {string}
+ */
+export function snapToFridayIso(iso) {
+  const m = ISO_DATE_RE.exec(iso);
+  if (!m) return iso;
+  const [, year, month, day] = m;
+  const dow = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).getUTCDay();
+  const daysToFriday = (5 - dow + 7) % 7; // 5 = Friday; 0 when already Friday
+  return addDaysIso(iso, daysToFriday);
+}
+
+/**
+ * Computes the tournament-legal date for a special set from its anchor product date (the
+ * earlier of the Elite Trainer Box / Booster Bundle release date): +14 days, then snapped
+ * to the following Friday.
+ *
+ * Per Handbook §4.1.2.1: "Sets that do not have Sleeved Booster Packs … will follow the
+ * same two-week cadence based on the release date of the expansion's Elite Trainer Box or
+ * Booster Bundle (whichever comes first)." The clause omits "Friday" (unlike the main-set
+ * §4.1.2 "second Friday following"), but we read "same … cadence" as the Friday-anchored
+ * one — see snapToFridayIso. Worked example: Ascended Heroes ETB 2026-02-20 → 2026-03-06.
+ * @param {string} anchorIso - YYYY-MM-DD ETB/Booster-Bundle date
+ * @returns {string} YYYY-MM-DD
+ */
+export function legalDateFromAnchor(anchorIso) {
+  return snapToFridayIso(addDaysIso(anchorIso, 14));
+}
+
+/**
  * Formats a YYYY-MM-DD string as a readable date, e.g. "2026-06-05" -> "Jun 5, 2026".
  * Done from the string parts (no Date) to stay free of timezone/locale variance.
  * Returns the input unchanged if it isn't an ISO date.

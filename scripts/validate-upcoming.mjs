@@ -96,6 +96,18 @@ function ensurePrereleaseBeforeRelease(entry, label) {
   }
 }
 
+// legalProductDate is the ETB/Booster-Bundle anchor for a special set's legal date. It's
+// null until scraped, and only meaningful for special sets — main sets derive their legal
+// date from releaseDate, so theirs must stay null. When present it can't precede release.
+function ensureLegalProductDate(entry, label) {
+  const value = entry.legalProductDate;
+  if (value == null) return; // absent or null — not scraped / not applicable
+  if (!entry.isSpecialSet) {
+    fail(`${label}.legalProductDate must be null for a main set: got ${JSON.stringify(value)}`);
+  }
+  ensureDashDate(value, `${label}.legalProductDate`);
+}
+
 // isSpecialSet is *defined* by Prerelease presence (see the workflow prompt): main
 // sets have a Prerelease (prereleaseDate set), special sets do not (prereleaseDate
 // null). Reject contradictory combinations so we never write self-inconsistent data.
@@ -120,6 +132,7 @@ export function validateEntry(label, entry) {
     ensureDashDate(entry.prereleaseDate, `${label}.prereleaseDate`);
   }
   ensureBoolean(entry.isSpecialSet, `${label}.isSpecialSet`);
+  ensureLegalProductDate(entry, label);
   ensureNonEmptyString(entry.sourceUrl, `${label}.sourceUrl`);
   ensureAllowedHost(entry.sourceUrl, `${label}.sourceUrl`);
   ensureIsoTimestamp(entry.fetchedAt, `${label}.fetchedAt`);

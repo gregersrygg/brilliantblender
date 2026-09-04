@@ -19,14 +19,20 @@ const specialSet = {
   releaseDate: '2026-09-16',
   prereleaseDate: null,
   isSpecialSet: true,
+  legalProductDate: '2026-09-16',
 };
 
 test('legalToPlayDate: main set is legal 14 days after release', () => {
   assert.equal(legalToPlayDate(mainSet), '2026-07-31');
 });
 
-test('legalToPlayDate: special set is unknown (null) until release', () => {
-  assert.equal(legalToPlayDate(specialSet), null);
+test('legalToPlayDate: special set is unknown (null) until its ETB date is scraped', () => {
+  assert.equal(legalToPlayDate({ ...specialSet, legalProductDate: null }), null);
+});
+
+test('legalToPlayDate: special set legal date = ETB anchor + 14, snapped to Friday', () => {
+  // ETB 2026-09-16 (Wed) -> +14 = 2026-09-30 (Wed) -> Fri 2026-10-02.
+  assert.equal(legalToPlayDate(specialSet), '2026-10-02');
 });
 
 test('legalToPlayDate: an explicit legalFrom overrides the computed date', () => {

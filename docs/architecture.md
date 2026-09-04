@@ -130,26 +130,45 @@ reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens l
 
 ---
 
-## Data pipelines (agentic workflows)
+## Data pipelines
 
-Two agentic (gh-aw) workflows keep `src/data/*.json` current. Neither is scheduled
-directly — both are dispatched by the nightly `update-snapshot.yml` run (plus manual
-`workflow_dispatch`). Both write a single data file each, guarded by a strict
-post-step validator that fails the job on any out-of-scope change; both push with
-`SNAPSHOT_PUSH_TOKEN`.
+One **agentic** (gh-aw) workflow keeps `src/data/*.json` current, backed by two
+deterministic scripts. `set-legality.json` (the released-set `legalFrom` dates the deck
+view reads) is written entirely by a deterministic script — there is no legality agent.
 
-- **`update-set-legality`** (`.github/workflows/update-set-legality.md`) — fills
-  `set-legality.json` `legalFrom` dates for **special** sets (ETB/Booster-Bundle
-  date from a press release + 14 days). Dispatched by `update-snapshot.yml` only
-  when a newly-released set is special. Validator: `scripts/validate-legality.mjs`.
+- **`set-legality.json` is filled deterministically at release** by
+  `scripts/apply-set-legality.mjs`, run from `update-snapshot.yml` when a set is newly
+  detected. Main sets: `legalFrom = releaseDate + 14` (they release on a Friday, so this
+  is the "second Friday following" of §4.1.2). Special sets: `legalFrom` is anchored to
+  the ETB/Booster-Bundle date the *pre-release* pipeline already scraped into
+  `upcoming-sets.json` (`legalProductDate`) — the script matches the releasing set to its
+  upcoming entry (by set code, else name) and computes `legalDateFromAnchor` (+14 snapped
+  to Friday, §4.1.2.1). A special set that releases without a scraped `legalProductDate`
+  is printed to stdout and logged as a workflow warning (the gate below should have
+  filled it pre-release). Validator: `scripts/validate-legality.mjs` (still the schema
+  guard; no longer wired to an agent).
 
-- **`update-upcoming-sets`** (`.github/workflows/update-upcoming-sets.md`) — keeps
+- **`gate-special-set-legal.yml`** — a scheduled (~biweekly) gate. A special set's
+  `legalProductDate` lives in a *product-lineup* press release published weeks after the
+  initial reveal, so it isn't available when the set is first announced. The gate checks
+  `upcoming-sets.json` for any announced special set still missing `legalProductDate` and,
+  only then, dispatches `update-upcoming-sets` to go find the lineup release.
+
+- **`update-upcoming-sets`** (`.github/workflows/update-upcoming-sets.md`) — the one
+  agentic workflow (gh-aw). Dispatched by nightly `update-snapshot.yml` (when any set
+  releases), by the biweekly gate, or manually. Writes only `upcoming-sets.json`, guarded
+  by a strict post-step validator; pushes with `SNAPSHOT_PUSH_TOKEN`. It keeps
   `upcoming-sets.json`, the list of **announced-but-unreleased** expansions. The
   card DB (pokemontcg.io) only surfaces a set at release, but The Pokémon Company
   announces each expansion on `press.pokemon.com` ~10–11 weeks earlier with the
   bare set name, **tabletop release date**, and (main sets) **Prerelease start
   date**. The agent scrapes those announcements, drops entries whose release date
-  has passed, and rewrites the file. Validator: `scripts/validate-upcoming.mjs`.
+  has passed, and rewrites the file. For **special** sets it additionally hunts the
+  set's *product-lineup* press release for the earlier of the ETB/Booster-Bundle date
+  and records it as `legalProductDate` (updating `sourceUrl` to that release) — the
+  anchor the app and `apply-set-legality.mjs` use for the legal date. Only the ETB and
+  Booster Bundle count (not the Tech Sticker Collection, ex Box, etc.); until the lineup
+  release exists, `legalProductDate` stays `null`. Validator: `scripts/validate-upcoming.mjs`.
   Dispatched by `update-snapshot.yml` whenever **any** set is newly released
   (`new_count != 0`) — by then the next set is always already announced — plus
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
@@ -180,7 +199,9 @@ untested version of it failed the whole Sep 2026 run.
 
 `upcoming-sets.json` is a **name-keyed array** (the `setCode` isn't known before
 release): `{ setCode|null, name, series, releaseDate, prereleaseDate|null,
-isSpecialSet, sourceUrl, fetchedAt }`. `setCode` is the set code printed on the card
+isSpecialSet, legalProductDate|null, sourceUrl, fetchedAt }`. `legalProductDate` is the
+earlier of the ETB/Booster-Bundle date for a special set (the legal-date anchor); it is
+`null` for main sets and for special sets whose lineup release hasn't been found yet. `setCode` is the set code printed on the card
 — the same `setCode` the app uses on deck cards (the API's `set.ptcgoCode`, and the
 first element of the `sets.json` `[ptcgoCode, setId]` tuples) — always `null` at
 scrape time, since it's hard to pin down this early (sometimes hinted in teaser
@@ -198,8 +219,11 @@ under `node --test`, like `legality.js`):
 - **`UpcomingSets.svelte`** — the landing-page "Upcoming sets" table (Set · Release · Legal
   · Status, one row per set; the set name links to the announcement `sourceUrl` in a new
   tab). Main sets' legal-to-play date is computed in-app as
-  `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2); special sets show
-  "?" (unknown until the `update-set-legality` workflow fills `legalFrom` at release). The
+  `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2). Special sets are
+  computed from their scraped `legalProductDate` via `legalDateFromAnchor` (+14 snapped to
+  the following Friday, §4.1.2.1) and shown **provisionally** — an amber dotted marker with
+  a tooltip (`data-testid="legal-provisional"`), since the official date is only confirmed
+  at release; a special set with no `legalProductDate` yet still shows "?". The
   Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` — the
   last covers a just-released set that hasn't aged out of the JSON yet). A single §4.1.3
   reprint note below the table names whichever set is playable-early-but-not-yet-fully-legal

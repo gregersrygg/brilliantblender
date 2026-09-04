@@ -113,6 +113,36 @@ test('validateEntry rejects non-boolean isSpecialSet', () => {
   );
 });
 
+const goodSpecial = () => ({
+  ...goodEntry(),
+  isSpecialSet: true,
+  prereleaseDate: null,
+});
+
+test('validateEntry accepts a special set with a null legalProductDate (not scraped yet)', () => {
+  assert.doesNotThrow(() => validateEntry('upcoming[0]', { ...goodSpecial(), legalProductDate: null }));
+});
+
+test('validateEntry accepts a special set with a valid legalProductDate', () => {
+  assert.doesNotThrow(() =>
+    validateEntry('upcoming[0]', { ...goodSpecial(), legalProductDate: '2026-09-16' }),
+  );
+});
+
+test('validateEntry rejects a main set carrying a legalProductDate', () => {
+  assertRejects(
+    () => validateEntry('upcoming[0]', { ...goodEntry(), legalProductDate: '2026-07-17' }),
+    'legalProductDate',
+  );
+});
+
+test('validateEntry rejects a slash-formatted legalProductDate', () => {
+  assertRejects(
+    () => validateEntry('upcoming[0]', { ...goodSpecial(), legalProductDate: '2026/09/16' }),
+    'legalProductDate',
+  );
+});
+
 test('validateEntry rejects sourceUrl from outside press.pokemon.com', () => {
   assertRejects(
     () => validateEntry('upcoming[0]', { ...goodEntry(), sourceUrl: 'https://community.pokemon.com/post/1' }),
