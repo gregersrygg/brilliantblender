@@ -1,14 +1,14 @@
 [
   {
-    "setCode": "30C",
+    "setCode": null,
     "name": "30th Celebration",
     "series": "30th Celebration",
     "releaseDate": "2026-09-16",
     "prereleaseDate": null,
     "isSpecialSet": true,
-    "legalProductDate": null,
-    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-Pokemon-Unveils-New-Pokemon-Trading-Card-Game-30th-Celebra",
-    "fetchedAt": "2026-09-03T21:48:47Z"
+    "legalProductDate": "2026-09-16",
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-The-Pokemon-Company-International-Reveals-Product-Lineup-f",
+    "fetchedAt": "2026-09-04T22:18:49Z"
   },
   {
     "setCode": null,
@@ -19,6 +19,6 @@
     "isSpecialSet": false,
     "legalProductDate": null,
     "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Mega-EvolutionDelta-Reign-Ex",
-    "fetchedAt": "2026-09-03T21:48:47Z"
+    "fetchedAt": "2026-09-04T22:18:49Z"
   }
 ]
