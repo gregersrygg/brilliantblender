@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-04',
+    items: [
+      'Deck lines with a set code that starts with a number — like 30th Celebration’s “30C” — now load properly instead of showing up as an unrecognized line.',
+    ],
+  },
+  {
     date: '2026-06-14',
     items: [
       'On mobile, closing the keyboard no longer hides your card search results — and there’s now a ✕ button to clear the search.',

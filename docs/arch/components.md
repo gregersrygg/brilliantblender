@@ -136,6 +136,14 @@ Full-screen backdrop + centered dialog. Heading: "Start over?". Body: "Your curr
 
 Section header regex: `/^(Pokémon|Pokemon|Trainer|Energy)\s*:\s*(\d+)/i`
 
-Card line regex: `/^(\d+)\s+(.+?)\s+([A-Za-z]{2,6})\s+(\d+)\s*$/` → `{ qty, name, setCode, number }`
+Card line regex: `/^(\d+)\s+(.+?)\s+(<set code>)\s+(\d+)\s*$/` → `{ qty, name, setCode, number }`
+
+The set-code part (`SET_CODE_RE`) is `(?=[A-Za-z0-9]{0,5}[A-Za-z])[A-Za-z0-9]{2,6}(?:-[A-Za-z0-9]{1,3})?`:
+2–6 alphanumerics with an optional `-XX` promo suffix (`PR-SV`). Codes may start with a
+digit — 30th Celebration is `30C` — so the leading lookahead is what carries the intent:
+the code must contain **at least one letter**, which is the only thing separating it from
+the collector number that follows. Do not tighten it back to letters-only; digit-leading
+codes then fall through to the "unrecognized line" stub and never reach the upcoming-set
+"coming soon" handling.
 
 Unrecognized lines produce a card stub with `error: true` (rendered with warning icon, skipped in API fetches and export).
