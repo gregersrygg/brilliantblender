@@ -101,7 +101,7 @@ function ensurePrereleaseBeforeRelease(entry, label) {
 // date from releaseDate, so theirs must stay null. When present it can't precede release.
 function ensureLegalProductDate(entry, label) {
   const value = entry.legalProductDate;
-  if (value === null) return;
+  if (value == null) return; // absent or null — not scraped / not applicable
   if (!entry.isSpecialSet) {
     fail(`${label}.legalProductDate must be null for a main set: got ${JSON.stringify(value)}`);
   }

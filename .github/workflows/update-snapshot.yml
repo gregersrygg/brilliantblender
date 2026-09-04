@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  actions: write # required to dispatch the legality workflow for special sets
+  actions: write # required to dispatch the upcoming-sets workflow when a set releases
 
 jobs:
   update:
@@ -22,26 +22,25 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run snapshot
-      - name: Detect newly added sets and apply main-set legality
+      - name: Detect newly added sets and apply legality
         id: legality
         run: |
-          # Compare current snapshot's sets.json to the committed (HEAD) version
-          # to find newly added setIds. Main sets get their legality entry
-          # computed in-place; special sets are emitted to STDOUT for the agent
-          # to handle.
+          # Compare current snapshot's sets.json to the committed (HEAD) version to
+          # find newly added setIds, then write their legalFrom into set-legality.json
+          # deterministically: main sets from releaseDate + 14; special sets from the
+          # legalProductDate the pre-release pipeline already scraped into
+          # upcoming-sets.json. apply-set-legality.mjs prints any special set it could
+          # NOT resolve (no matching upcoming entry / no legalProductDate) to STDOUT.
           git show HEAD:src/data/sets.json > /tmp/prev-sets.json 2>/dev/null || echo '[]' > /tmp/prev-sets.json
           ALL_NEW=$(node scripts/detect-new-sets.mjs /tmp/prev-sets.json src/data/sets.json src/data/cards.json)
           echo "All new sets:"
           echo "$ALL_NEW" | jq .
-          SPECIAL=$(echo "$ALL_NEW" | node scripts/apply-main-set-legality.mjs)
-          echo "Special sets remaining for agent:"
-          echo "$SPECIAL" | jq .
-          {
-            echo "special_sets<<EOF"
-            echo "$SPECIAL"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-          echo "special_count=$(echo "$SPECIAL" | jq 'length')" >> "$GITHUB_OUTPUT"
+          UNRESOLVED=$(echo "$ALL_NEW" | node scripts/apply-set-legality.mjs)
+          UNRESOLVED_COUNT=$(echo "$UNRESOLVED" | jq 'length')
+          if [ "$UNRESOLVED_COUNT" != "0" ]; then
+            echo "::warning::Released special set(s) without a scraped legalProductDate — no legalFrom written. The biweekly gate should have filled these pre-release:"
+            echo "$UNRESOLVED" | jq .
+          fi
           echo "new_count=$(echo "$ALL_NEW" | jq 'length')" >> "$GITHUB_OUTPUT"
       - name: Commit and push if changed
         id: commit
@@ -57,14 +56,6 @@ jobs:
           git commit -m "chore: update card snapshot $(date -u +%Y-%m-%d)"
           git push
           echo "committed=true" >> "$GITHUB_OUTPUT"
-      - name: Dispatch legality workflow for special sets only
-        if: steps.commit.outputs.committed == 'true' && steps.legality.outputs.special_count != '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run update-set-legality.lock.yml \
-            --ref main \
-            -f sets='${{ steps.legality.outputs.special_sets }}'
       - name: Dispatch upcoming-sets workflow when any set was released
         # A released set means the *next* set is already announced on
         # press.pokemon.com (~10-11 week lead), so refresh upcoming-sets.json.

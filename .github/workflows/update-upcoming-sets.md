@@ -103,6 +103,7 @@ release, so entries cannot yet be keyed by it). Each entry:
   "releaseDate": "2026-07-17",
   "prereleaseDate": "2026-07-04",
   "isSpecialSet": false,
+  "legalProductDate": null,
   "sourceUrl": "https://press.pokemon.com/en/releases/...",
   "fetchedAt": "2026-06-09T08:00:00Z"
 }
@@ -126,7 +127,15 @@ release, so entries cannot yet be keyed by it). Each entry:
 - `isSpecialSet` — `false` when the announcement describes Prerelease tournaments
   (main sets ship with sleeved booster packs and have Prereleases); `true`
   otherwise (sub-sets / special sets without sleeved boosters have no Prerelease).
-- `sourceUrl` — the `press.pokemon.com` announcement URL the dates came from.
+- `legalProductDate` — **special sets only** (`null` for main sets). The *earlier* of
+  the set's Elite Trainer Box and Booster Bundle release dates (YYYY-MM-DD). This is the
+  anchor for a special set's tournament-legal date (Handbook §4.1.2.1: special sets are
+  legal two weeks after the earlier of ETB / Booster Bundle). Leave it `null` until you
+  find a press release that lists those product dates — see step 3b. The app shows the
+  legal date only once this is filled; a `null` here is not an error.
+- `sourceUrl` — the `press.pokemon.com` announcement URL the dates came from. For a
+  special set, prefer the **product-lineup** release you read `legalProductDate` from
+  (see step 3b) over the earlier bare reveal — it is the better provenance for the date.
 - `fetchedAt` — current UTC time, ISO 8601.
 
 ## Procedure
@@ -190,6 +199,32 @@ use shell tooling to *fetch* the page and strip it down to readable text, but th
 dates must be found by you reading that text. A regex that finds nothing means your
 pattern was too narrow, not that the announcement is ambiguous.
 
+### 3b. For a special set, find `legalProductDate` (earlier of ETB / Booster Bundle)
+
+Only for entries where `isSpecialSet` is `true`. Main sets keep `legalProductDate: null`.
+
+A special set's tournament-legal date is anchored to its accessory products, not its
+headline release date, so you must find the **Elite Trainer Box** and **Booster Bundle**
+street dates. These are usually in a **separate, later, more detailed press release** — a
+"Product Lineup" / "Product Showcase" reveal — not the first bare "coming soon" reveal.
+Search the listing for that release for this set (it may be published weeks after the
+first announcement). Then:
+
+- Read the product list and take the **earlier of the ETB and the Booster Bundle** release
+  date. If only one of the two is listed, use that. Record it as `legalProductDate` and set
+  `sourceUrl` to this release.
+- If neither the ETB nor the Booster Bundle date is published anywhere yet, leave
+  `legalProductDate: null` — do **not** substitute another product or the headline date, and
+  do **not** file an issue for it. A scheduled gate re-dispatches this workflow every two
+  weeks, so a later run will find the lineup release once it exists.
+
+**Only the ETB and Booster Bundle count — ignore every other product.** Worked example
+(Ascended Heroes): the Tech Sticker Collection released Jan 30, 2026, the ETB Feb 20, 2026,
+the Booster Bundle April 24, 2026. The earliest *product* is the Tech Sticker Collection,
+but it does **not** count — the binding anchor is the earlier of ETB/Booster Bundle, i.e.
+the ETB on **Feb 20** (which gave a legal date of March 6). Do not pick the Tech Sticker,
+Poster Collection, ex Box, Knock Out Collection, promo, or Pokémon TCG Live dates.
+
 **The page is HTML, and the dates are littered with entities and tags.** Before
 reading, strip tags and decode entities — bodies contain `&nbsp;` (often sitting
 between a word and the date), `&mdash;` (the separator in "Mega Evolution&mdash;Delta
@@ -221,7 +256,9 @@ be used as `releaseDate`:
 
 - **Individual product availability** — "Elite Trainer Box (available Feb. 20, 2026)",
   "Booster Bundle (available April 24, 2026)". Accessory products ship on their own
-  staggered dates, weeks or months after the expansion itself.
+  staggered dates, weeks or months after the expansion itself. (These are never
+  `releaseDate` — but for a **special set** the earlier of the ETB/Booster-Bundle date
+  is captured separately as `legalProductDate`; see step 3b.)
 - **The Pokémon TCG Live date** — "players will be able to play … starting Nov. 5,
   2026, via the Pokémon TCG Live app". Digital, usually ~1 day before tabletop.
 - **The publication date of the release itself** — the dateline at the top
@@ -241,10 +278,13 @@ and quoting the sentences you did find, and skip it.
 ### 4. Write the file
 
 Merge: keep the still-future existing entries (refresh their dates if the press
-release now has better data) and add any newly-found upcoming sets. Set `setCode`
-to `null` on every entry (it is never known at this stage). De-duplicate by `name`. Sort
-the array by `releaseDate` ascending. Write valid JSON with 2-space indentation and a
-trailing newline. Set `fetchedAt` to the current UTC time on entries you add or update.
+release now has better data — including filling a special set's `legalProductDate` once
+you find its product-lineup release) and add any newly-found upcoming sets. Set `setCode`
+to `null` on every entry (it is never known at this stage). Set `legalProductDate` to
+`null` on main sets and on special sets whose ETB/Booster-Bundle date you could not find;
+otherwise to the date from step 3b. De-duplicate by `name`. Sort the array by
+`releaseDate` ascending. Write valid JSON with 2-space indentation and a trailing newline.
+Set `fetchedAt` to the current UTC time on entries you add or update.
 
 If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
 unchanged) is fine — the workflow will simply not commit.

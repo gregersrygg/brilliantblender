@@ -1,0 +1,43 @@
+name: Gate special-set legal dates
+
+# A special set's legal date is anchored to its ETB / Booster-Bundle release date
+# (see upcoming-sets.json → legalProductDate). That date lives in a product-lineup
+# press release that is published *after* the initial set reveal, so it isn't
+# available when the set is first announced. This gate runs on a schedule, checks
+# whether any announced special set is still missing its legalProductDate, and — only
+# if so — dispatches the upcoming-sets agent to go looking for the lineup release.
+#
+# Running roughly every two weeks matches the several-week lead time on those lineup
+# releases; there's no value in polling more often.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 1,15 * *' # 12:00 UTC on the 1st and 15th (~biweekly)
+
+permissions:
+  contents: read
+  actions: write # to dispatch update-upcoming-sets
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Dispatch upcoming-sets if any special set lacks a legalProductDate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE=src/data/upcoming-sets.json
+          if [ ! -f "$FILE" ]; then
+            echo "No upcoming-sets.json yet — nothing to gate."
+            exit 0
+          fi
+          MISSING=$(jq '[.[] | select(.isSpecialSet == true and (.legalProductDate // null) == null)] | length' "$FILE")
+          echo "Special sets missing legalProductDate: $MISSING"
+          if [ "$MISSING" -gt 0 ]; then
+            echo "Dispatching update-upcoming-sets to hunt for the product-lineup release(s)."
+            gh workflow run update-upcoming-sets.lock.yml --ref main
+          else
+            echo "All announced special sets have a legalProductDate — nothing to do."
+          fi
