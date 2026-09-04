@@ -6,7 +6,7 @@ export const CHANGELOG = [
   {
     date: '2026-09-04',
     items: [
-      'The “Upcoming sets” table now shows a legal-to-play date for special sets (like 30th Celebration) instead of “?”, worked out from the set’s Elite Trainer Box date. It’s marked as provisional until the official date is confirmed at release.',
+      'The “Upcoming sets” table can now show a legal-to-play date for special sets (like 30th Celebration) once their Elite Trainer Box date is known, instead of always showing “?”. It’s marked as provisional until the official date is confirmed at release.',
       'Deck lines with a set code that starts with a number — like 30th Celebration’s “30C” — now load properly instead of showing up as an unrecognized line.',
     ],
   },
