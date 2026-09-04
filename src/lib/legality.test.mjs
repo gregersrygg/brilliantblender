@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { notLegalUntil, todayIso, formatLegalDate, isSetLegalOn, addDaysIso } from './legality.js';
+import {
+  notLegalUntil,
+  todayIso,
+  formatLegalDate,
+  isSetLegalOn,
+  addDaysIso,
+  snapToFridayIso,
+  legalDateFromAnchor,
+} from './legality.js';
 
 test('notLegalUntil returns legalFrom when the set is not legal yet', () => {
   const entry = { legalFrom: '2026-06-05' };
@@ -76,6 +84,30 @@ test('addDaysIso handles leap day and negative offsets', () => {
 
 test('addDaysIso returns input unchanged when not an ISO date', () => {
   assert.equal(addDaysIso('not-a-date', 14), 'not-a-date');
+});
+
+test('snapToFridayIso leaves a Friday unchanged', () => {
+  assert.equal(snapToFridayIso('2026-03-06'), '2026-03-06'); // Fri
+  assert.equal(snapToFridayIso('2026-10-02'), '2026-10-02'); // Fri
+});
+
+test('snapToFridayIso advances a mid-week date to the following Friday', () => {
+  assert.equal(snapToFridayIso('2026-09-30'), '2026-10-02'); // Wed -> Fri
+  assert.equal(snapToFridayIso('2026-09-19'), '2026-09-25'); // Sat -> next Fri
+  assert.equal(snapToFridayIso('2026-09-14'), '2026-09-18'); // Mon -> Fri
+});
+
+test('snapToFridayIso returns input unchanged when not an ISO date', () => {
+  assert.equal(snapToFridayIso('not-a-date'), 'not-a-date');
+});
+
+// §4.1.2.1: special-set legal date = earlier of ETB/Booster-Bundle + 14, snapped to Friday.
+test('legalDateFromAnchor: 30th Celebration ETB (Wed) -> +14 (Wed) -> Fri', () => {
+  assert.equal(legalDateFromAnchor('2026-09-16'), '2026-10-02');
+});
+
+test('legalDateFromAnchor: Ascended Heroes ETB (Fri) lands exactly +14 on a Friday', () => {
+  assert.equal(legalDateFromAnchor('2026-02-20'), '2026-03-06');
 });
 
 test('isSetLegalOn: untracked set is treated as legal', () => {

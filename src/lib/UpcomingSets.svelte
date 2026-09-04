@@ -50,6 +50,7 @@
       </div>
       {#each sets as set (set.name)}
         {@const legal = legalToPlayDate(set)}
+        {@const provisional = legal !== null && set.isSpecialSet && typeof set.legalFrom !== 'string'}
         {@const status = dateAware ? upcomingStatus(set, today) : 'announced'}
         <div class="row" role="row">
           <span class="set" role="cell">
@@ -63,7 +64,14 @@
             <span class="set-series">{set.series}</span>
           </span>
           <span role="cell" data-label="Release">{formatLegalDate(set.releaseDate)}</span>
-          <span role="cell" data-label="Legal" class:unknown={legal === null}>{legal ? formatLegalDate(legal) : '?'}</span>
+          <span role="cell" data-label="Legal" class:unknown={legal === null}>
+            {#if legal}<span
+                class:provisional
+                data-testid={provisional ? 'legal-provisional' : undefined}
+                title={provisional ? 'Provisional — the official tournament-legal date is confirmed at the set’s release' : undefined}
+                aria-label={provisional ? `${formatLegalDate(legal)} (provisional)` : undefined}
+              >{formatLegalDate(legal)}</span>{:else}?{/if}
+          </span>
           <span role="cell" data-label="Status">
             {#if dateAware && status === 'prerelease'}
               <span class="pill" data-testid="status-prerelease">● Prerelease</span>
@@ -174,6 +182,16 @@
     color: var(--notice);
     font-size: 15px;
     line-height: 1;
+  }
+
+  /* Special sets' legal date is computed from a press-release ETB/Booster-Bundle date
+     and stays provisional until the official date is confirmed at release — flag it with
+     an amber dotted underline (a notice, not an error) and a hover tooltip. */
+  .provisional {
+    color: var(--notice);
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: help;
   }
 
   .pill {

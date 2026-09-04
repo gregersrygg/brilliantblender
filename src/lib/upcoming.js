@@ -5,13 +5,16 @@
 // wiring live in the consumers (UpcomingSets.svelte, deck.svelte.js).
 //
 // An upcoming-sets entry looks like:
-//   { setCode|null, name, series, releaseDate, prereleaseDate|null, isSpecialSet, ... }
+//   { setCode|null, name, series, releaseDate, prereleaseDate|null, isSpecialSet,
+//     legalProductDate|null, ... }
+// legalProductDate is the earlier of the ETB / Booster-Bundle release date, scraped for
+// special sets from the product-lineup press release; it anchors their legal date.
 // Entries are normally dropped from the file once their releaseDate has passed, so an
 // entry is usually "announced" (before prerelease) or "prerelease" (in the window). The
 // pipeline only prunes on its next run, though, so a just-released set can briefly
 // linger — hence the "released" state below.
 
-import { addDaysIso } from './legality.js';
+import { addDaysIso, legalDateFromAnchor } from './legality.js';
 
 // Per Handbook §4.1.2 a new card is tournament-legal ~2 weeks (14 days) after release.
 const DAYS_UNTIL_LEGAL = 14;
@@ -19,19 +22,26 @@ const DAYS_UNTIL_LEGAL = 14;
 /**
  * The date an upcoming set becomes tournament-legal to play, or `null` when unknown.
  *
- * Main sets are legal `releaseDate + 14`. Special sets have no fixed offset (the date
- * is tied to an ETB / Booster-Bundle release only announced at/after launch), so we
- * return `null` ("unknown") until the update-set-legality workflow fills it in. If the
- * entry already carries an explicit `legalFrom` (e.g. a hand-backfilled special date),
- * that wins.
+ * Main sets are legal `releaseDate + 14` (they release on Fridays, so this already lands
+ * on the "second Friday following" of Handbook §4.1.2). Special sets have no sleeved
+ * booster packs, so their legal date is anchored to the ETB / Booster-Bundle release
+ * (§4.1.2.1) — once that `legalProductDate` has been scraped from the product-lineup
+ * press release we compute it via legalDateFromAnchor (+14, snapped to Friday); until
+ * then we return `null` ("unknown", rendered as "?"). This computed special-set date is
+ * provisional — the confirmed value lands in set-legality.json at release. An explicit
+ * `legalFrom` on the entry always wins.
  *
- * @param {{ releaseDate?: string, isSpecialSet?: boolean, legalFrom?: string }} entry
+ * @param {{ releaseDate?: string, isSpecialSet?: boolean, legalProductDate?: string, legalFrom?: string }} entry
  * @returns {string|null} YYYY-MM-DD, or null when not yet known
  */
 export function legalToPlayDate(entry) {
   if (!entry) return null;
   if (typeof entry.legalFrom === 'string') return entry.legalFrom;
-  if (entry.isSpecialSet) return null;
+  if (entry.isSpecialSet) {
+    return typeof entry.legalProductDate === 'string'
+      ? legalDateFromAnchor(entry.legalProductDate)
+      : null;
+  }
   if (typeof entry.releaseDate !== 'string') return null;
   return addDaysIso(entry.releaseDate, DAYS_UNTIL_LEGAL);
 }
