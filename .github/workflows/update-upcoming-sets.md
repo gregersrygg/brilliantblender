@@ -25,7 +25,8 @@ network:
 #   - network firewall: only press.pokemon.com is reachable (network.allowed)
 #   - container: ephemeral, no persistent state
 #   - env: COPILOT_GITHUB_TOKEN / GITHUB_MCP_SERVER_TOKEN excluded
-#   - post-step validator: any diff outside src/data/upcoming-sets.json fails the job
+#   - the agent writes only a proposal file; a trusted post-step merges it into the
+#     canonical upcoming-sets.json, and the validator fails on any other changed path
 tools:
   bash:
     - ":*"
@@ -50,7 +51,11 @@ safe-outputs:
 # a no-op run is legitimate here (no newly-announced set), so there is NO
 # "fail if no diff" guard — the commit step simply skips when nothing changed.
 post-steps:
-  - name: Validate agent output
+  # Only writer of upcoming-sets.json; runs before the validator (see docs/architecture.md).
+  - name: Merge agent proposal into upcoming-sets.json
+    run: node scripts/merge-upcoming.mjs
+
+  - name: Validate merged output
     run: node scripts/validate-upcoming.mjs
 
   - name: Commit and push if changed
@@ -92,8 +97,16 @@ weeks earlier. This workflow harvests those announcements.
 
 ## The data file
 
-`src/data/upcoming-sets.json` is a **JSON array** (the set code isn't known before
-release, so entries cannot yet be keyed by it). Each entry:
+You **read** the current data from `src/data/upcoming-sets.json` and **write** your
+result to `src/data/upcoming-sets.proposed.json` — a *proposal*. You never edit
+`upcoming-sets.json` yourself; after you finish, a trusted merge step combines your
+proposal with the current file and writes the canonical `upcoming-sets.json`. That
+merge owns two things so you don't have to worry about them (details under `setCode`
+and `fetchedAt` below): it carries a hand-backfilled `setCode` across, and it leaves
+`fetchedAt` untouched on any entry whose other fields didn't change.
+
+Both files are a **JSON array** (the set code isn't known before release, so entries
+cannot yet be keyed by it). Each entry:
 
 ```json
 {
@@ -111,11 +124,12 @@ release, so entries cannot yet be keyed by it). Each entry:
 
 - `setCode` — the set code printed on the card next to the collector number (e.g.
   `"CRI"`, `"SSP"`), the join key the app uses (the same `setCode` as deck cards; it
-  is the API's `set.ptcgoCode`). **Always `null` here** — it is hard to pin down
-  before release (sometimes hinted in teaser images, but rarely published cleanly), so
-  the agent always writes `null` and never guesses it. It is a placeholder to be
-  backfilled by hand; the agent opens a tracking issue when it adds
-  a new set (see step 5) so the backfill isn't forgotten.
+  is the API's `set.ptcgoCode`). It is hard to pin down before release (sometimes
+  hinted in teaser images, but rarely published cleanly), so **always write `null`**
+  and never guess it — it is a placeholder backfilled by hand later, and you open a
+  tracking issue when you add a set (see step 5) so the backfill isn't forgotten. You
+  do not need to preserve it: if a human already backfilled a set's code, the merge
+  step carries that value across for you even though your proposal says `null`.
 - `name` — the **bare** expansion name as it appears in-game (the part after the
   `—` in "Mega Evolution—Pitch Black"), so it matches the API/`set-legality.json`
   set name. **Not** the series-prefixed title.
@@ -136,14 +150,19 @@ release, so entries cannot yet be keyed by it). Each entry:
 - `sourceUrl` — the `press.pokemon.com` announcement URL the dates came from. For a
   special set, prefer the **product-lineup** release you read `legalProductDate` from
   (see step 3b) over the earlier bare reveal — it is the better provenance for the date.
-- `fetchedAt` — current UTC time, ISO 8601.
+- `fetchedAt` — current UTC time, ISO 8601. Just set it to now on every entry in your
+  proposal; you don't have to track which entries changed. The merge step compares your
+  proposal against the current file and keeps the old `fetchedAt` on any entry whose
+  other fields are unchanged, so an untouched set is never falsely re-stamped.
 
 ## Procedure
 
 ### 1. Start from the current file and today's date
 
-Read the existing `src/data/upcoming-sets.json` (if the file does not exist yet,
-start from an empty array `[]` — the first run creates it). Get today's date:
+Read the existing `src/data/upcoming-sets.json` for the current data (if the file does
+not exist yet, start from an empty array `[]` — the first run creates it). You will
+write your result to `src/data/upcoming-sets.proposed.json`, not this file. Get today's
+date:
 
 ```bash
 date -u +%Y-%m-%d
@@ -275,19 +294,23 @@ is genuinely ambiguous or you cannot find a clear physical release date **after 
 the body text**, do not guess — emit a `create-issue` safe-output describing the set
 and quoting the sentences you did find, and skip it.
 
-### 4. Write the file
+### 4. Write the proposal file
 
-Merge: keep the still-future existing entries (refresh their dates if the press
-release now has better data — including filling a special set's `legalProductDate` once
-you find its product-lineup release) and add any newly-found upcoming sets. Set `setCode`
-to `null` on every entry (it is never known at this stage). Set `legalProductDate` to
-`null` on main sets and on special sets whose ETB/Booster-Bundle date you could not find;
-otherwise to the date from step 3b. De-duplicate by `name`. Sort the array by
-`releaseDate` ascending. Write valid JSON with 2-space indentation and a trailing newline.
-Set `fetchedAt` to the current UTC time on entries you add or update.
+Build the full array and write it to `src/data/upcoming-sets.proposed.json`: keep the
+still-future existing entries (refresh their dates if the press release now has better
+data — including filling a special set's `legalProductDate` once you find its
+product-lineup release) and add any newly-found upcoming sets. Set `setCode` to `null`
+on **every** entry (it is never known at this stage — the merge step restores a
+human-backfilled code for you). Set `legalProductDate` to `null` on main sets and on
+special sets whose ETB/Booster-Bundle date you could not find; otherwise to the date
+from step 3b. Set `fetchedAt` to the current UTC time on every entry (the merge step
+keeps the old value where nothing else changed). De-duplicate by `name`. Sort the array
+by `releaseDate` ascending. Write valid JSON with 2-space indentation and a trailing
+newline.
 
-If there are no upcoming sets at all, write an empty array `[]`. A no-op run (file
-unchanged) is fine — the workflow will simply not commit.
+Write your proposal even when it is identical to the current data — always emit the
+full array (or `[]` if there are no upcoming sets at all). The merge step diffs it
+against the current file, so an unchanged proposal simply results in no commit.
 
 ### 5. Open a set-code-backfill reminder for each newly-added set
 
@@ -302,9 +325,10 @@ set already tracked (e.g. a later run that merely refreshes its dates). Use the
 
 ## Hard rules
 
-- The only file you may modify is `src/data/upcoming-sets.json`. Do not edit
-  scripts, workflows, or other data files. The post-step validator fails the job on
-  any other change.
+- The only file you may write is `src/data/upcoming-sets.proposed.json`. Do **not** edit
+  `src/data/upcoming-sets.json` directly (the merge step owns it), and do not edit
+  scripts, workflows, or other data files. The post-step validator fails the job on any
+  disallowed change.
 - Only `press.pokemon.com` is reachable. If a fetch fails because of the hostname,
   fix the URL — do not report "missing tool" or "blocked by security policy"; the
   tooling is fine, the network restriction is on the host only.

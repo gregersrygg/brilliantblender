@@ -14,3 +14,6 @@ junit-scripts.xml
 # Playwright MCP / test artifacts
 .playwright-mcp/
 test-results/
+
+# Ephemeral proposal from the update-upcoming-sets agent (merged by merge-upcoming.mjs).
+src/data/upcoming-sets.proposed.json
