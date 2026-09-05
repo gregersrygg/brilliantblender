@@ -3,8 +3,6 @@ import assert from 'node:assert/strict';
 
 import { mergeUpcoming } from './merge-upcoming.mjs';
 
-// mergeUpcoming(proposed, existing): `proposed` is the agent's fresh output,
-// `existing` is the current committed data supplying human-owned fields.
 const base = () => ({
   setCode: '30C',
   name: '30th Celebration',
@@ -25,7 +23,6 @@ test('carries a hand-backfilled setCode across (agent proposes null)', () => {
 });
 
 test('keeps the prior fetchedAt when only setCode differed', () => {
-  // Carrying setCode across makes the entry identical to existing — count as untouched.
   const existing = [base()];
   const proposed = [{ ...base(), setCode: null, fetchedAt: '2026-09-04T22:18:49Z' }];
   const [out] = mergeUpcoming(proposed, existing);

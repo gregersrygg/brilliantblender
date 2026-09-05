@@ -40,3 +40,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full architecture ref
 ## Keeping the Changelog Up to Date
 
 **Part of every user-facing change:** add an entry to the `CHANGELOG` array in `src/lib/changelog.js` (shown on the landing page via `Changelog.svelte`). Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Newest first; group same-day items under one date.
+
+## Code Comments
+
+Keep comments sparse. Don't explain what the code does when that's clear from reading it — comment only what's genuinely unclear (a non-obvious *why*, a gotcha, a workaround). When you do comment, keep it to a single line; if more explanation is needed, put it in `docs/architecture.md`, not inline. This applies to new code from here on, and to any long comments in old code you touch — trim them to match.

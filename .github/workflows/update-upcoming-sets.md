@@ -51,11 +51,7 @@ safe-outputs:
 # a no-op run is legitimate here (no newly-announced set), so there is NO
 # "fail if no diff" guard — the commit step simply skips when nothing changed.
 post-steps:
-  # The agent writes a *proposal* (upcoming-sets.proposed.json), never the canonical
-  # file. This trusted step merges the proposal onto the current committed data and is
-  # the only thing that writes upcoming-sets.json — it carries a hand-backfilled setCode
-  # across and freezes fetchedAt on entries the agent didn't actually change, so the
-  # agent cannot clobber human-owned data. Runs before the validator.
+  # Only writer of upcoming-sets.json; runs before the validator (see docs/architecture.md).
   - name: Merge agent proposal into upcoming-sets.json
     run: node scripts/merge-upcoming.mjs
 

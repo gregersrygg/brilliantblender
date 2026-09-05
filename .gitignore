@@ -15,6 +15,5 @@ junit-scripts.xml
 .playwright-mcp/
 test-results/
 
-# Ephemeral proposal written by the update-upcoming-sets agent, then merged into
-# upcoming-sets.json by scripts/merge-upcoming.mjs. Never committed.
+# Ephemeral proposal from the update-upcoming-sets agent (merged by merge-upcoming.mjs).
 src/data/upcoming-sets.proposed.json
