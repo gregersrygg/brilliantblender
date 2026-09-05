@@ -162,17 +162,22 @@ view reads) is written entirely by a deterministic script — there is no legali
   card DB (pokemontcg.io) only surfaces a set at release, but The Pokémon Company
   announces each expansion on `press.pokemon.com` ~10–11 weeks earlier with the
   bare set name, **tabletop release date**, and (main sets) **Prerelease start
-  date**. The agent scrapes those announcements, drops entries whose release date
-  has passed, and rewrites the file. For **special** sets it additionally hunts the
-  set's *product-lineup* press release for the earlier of the ETB/Booster-Bundle date
-  and records it as `legalProductDate` (updating `sourceUrl` to that release) — the
-  anchor the app and `apply-set-legality.mjs` use for the legal date. Only the ETB and
-  Booster Bundle count (not the Tech Sticker Collection, ex Box, etc.); until the lineup
-  release exists, `legalProductDate` stays `null`. The agent rewrites the whole file, so
-  two post-steps run before the commit: `scripts/reconcile-upcoming.mjs` first restores
-  fields the rewrite must not touch — a hand-backfilled `setCode` the agent nulled, and a
-  `fetchedAt` bumped on an entry it did not actually change (both matched to the committed
-  HEAD version by `name`) — then `scripts/validate-upcoming.mjs` validates the result.
+  date**. The agent scrapes those announcements and drops entries whose release date
+  has passed. For **special** sets it additionally hunts the set's *product-lineup*
+  press release for the earlier of the ETB/Booster-Bundle date and records it as
+  `legalProductDate` (updating `sourceUrl` to that release) — the anchor the app and
+  `apply-set-legality.mjs` use for the legal date. Only the ETB and Booster Bundle count
+  (not the Tech Sticker Collection, ex Box, etc.); until the lineup release exists,
+  `legalProductDate` stays `null`. The agent never writes `upcoming-sets.json` directly —
+  it writes a **proposal** to `src/data/upcoming-sets.proposed.json` (gitignored). Two
+  post-steps then run before the commit: `scripts/merge-upcoming.mjs` merges the proposal
+  onto the current committed data (matched by `name`) — it is the only writer of the
+  canonical file, and it owns the two human/machine fields the agent shouldn't (carries a
+  hand-backfilled `setCode` across even though the proposal says `null`, and keeps the
+  prior `fetchedAt` on any entry whose other fields are unchanged) — then
+  `scripts/validate-upcoming.mjs` validates the merged result. This sandboxes the agent
+  from the canonical file: a bad run can only produce a bad proposal, which the merge and
+  validator reject.
   Dispatched by `update-snapshot.yml` whenever **any** set is newly released
   (`new_count != 0`) — by then the next set is always already announced — plus
   manual `workflow_dispatch`. A no-op run is valid (it simply doesn't commit).
