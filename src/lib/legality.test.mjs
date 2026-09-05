@@ -101,12 +101,12 @@ test('snapToFridayIso returns input unchanged when not an ISO date', () => {
   assert.equal(snapToFridayIso('not-a-date'), 'not-a-date');
 });
 
-// §4.1.2.1: special-set legal date = earlier of ETB/Booster-Bundle + 14, snapped to Friday.
-test('legalDateFromAnchor: 30th Celebration ETB (Wed) -> +14 (Wed) -> Fri', () => {
-  assert.equal(legalDateFromAnchor('2026-09-16'), '2026-10-02');
+// §4.1.2.1 defers to §4.1.2's cadence: the second Friday following the ETB/Booster-Bundle anchor.
+test('legalDateFromAnchor: 30th Celebration ETB (Wed 2026-09-16) -> 2nd Fri following = 2026-09-25', () => {
+  assert.equal(legalDateFromAnchor('2026-09-16'), '2026-09-25');
 });
 
-test('legalDateFromAnchor: Ascended Heroes ETB (Fri) lands exactly +14 on a Friday', () => {
+test('legalDateFromAnchor: Ascended Heroes ETB (Fri 2026-02-20) -> 2nd Fri following = 2026-03-06 (also +14)', () => {
   assert.equal(legalDateFromAnchor('2026-02-20'), '2026-03-06');
 });
 
