@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-05',
+    items: [
+      'Corrected the provisional legal-to-play date for special sets: it’s now the second Friday following the Elite Trainer Box / Booster Bundle date (per Tournament Handbook §4.1.2), matching how judges read the rule. 30th Celebration now shows Sep 25, 2026 instead of Oct 2.',
+    ],
+  },
+  {
     date: '2026-09-04',
     items: [
       'The “Upcoming sets” table can now show a legal-to-play date for special sets (like 30th Celebration) once their Elite Trainer Box date is known, instead of always showing “?”. It’s marked as provisional until confirmed.',

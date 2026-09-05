@@ -30,9 +30,9 @@ test('legalToPlayDate: special set is unknown (null) until its ETB date is scrap
   assert.equal(legalToPlayDate({ ...specialSet, legalProductDate: null }), null);
 });
 
-test('legalToPlayDate: special set legal date = ETB anchor + 14, snapped to Friday', () => {
-  // ETB 2026-09-16 (Wed) -> +14 = 2026-09-30 (Wed) -> Fri 2026-10-02.
-  assert.equal(legalToPlayDate(specialSet), '2026-10-02');
+test('legalToPlayDate: special set legal date = second Friday following the ETB anchor', () => {
+  // ETB 2026-09-16 (Wed) -> 1st Fri following 2026-09-18 -> 2nd Fri 2026-09-25.
+  assert.equal(legalToPlayDate(specialSet), '2026-09-25');
 });
 
 test('legalToPlayDate: an explicit legalFrom overrides the computed date', () => {

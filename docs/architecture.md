@@ -142,8 +142,9 @@ view reads) is written entirely by a deterministic script — there is no legali
   is the "second Friday following" of §4.1.2). Special sets: `legalFrom` is anchored to
   the ETB/Booster-Bundle date the *pre-release* pipeline already scraped into
   `upcoming-sets.json` (`legalProductDate`) — the script matches the releasing set to its
-  upcoming entry (by set code, else name) and computes `legalDateFromAnchor` (+14 snapped
-  to Friday, §4.1.2.1). A special set that releases without a scraped `legalProductDate`
+  upcoming entry (by set code, else name) and computes `legalDateFromAnchor` (the second
+  Friday following the anchor — §4.1.2.1 defers to §4.1.2's Friday cadence). A special set
+  that releases without a scraped `legalProductDate`
   is printed to stdout and logged as a workflow warning (the gate below should have
   filled it pre-release). Validator: `scripts/validate-legality.mjs` (still the schema
   guard; no longer wired to an agent).
@@ -229,8 +230,9 @@ under `node --test`, like `legality.js`):
   · Status, one row per set; the set name links to the announcement `sourceUrl` in a new
   tab). Main sets' legal-to-play date is computed in-app as
   `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2). Special sets are
-  computed from their scraped `legalProductDate` via `legalDateFromAnchor` (+14 snapped to
-  the following Friday, §4.1.2.1) and shown **provisionally** — an amber dotted marker with
+  computed from their scraped `legalProductDate` via `legalDateFromAnchor` (the second
+  Friday following that anchor — §4.1.2.1 defers to §4.1.2's Friday cadence) and shown
+  **provisionally** — an amber dotted marker with
   a tooltip (`data-testid="legal-provisional"`), since the official date is only confirmed
   at release; a special set with no `legalProductDate` yet still shows "?". The
   Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` — the

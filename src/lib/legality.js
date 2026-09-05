@@ -104,20 +104,13 @@ export function snapToFridayIso(iso) {
 }
 
 /**
- * Computes the tournament-legal date for a special set from its anchor product date (the
- * earlier of the Elite Trainer Box / Booster Bundle release date): +14 days, then snapped
- * to the following Friday.
- *
- * Per Handbook §4.1.2.1: "Sets that do not have Sleeved Booster Packs … will follow the
- * same two-week cadence based on the release date of the expansion's Elite Trainer Box or
- * Booster Bundle (whichever comes first)." The clause omits "Friday" (unlike the main-set
- * §4.1.2 "second Friday following"), but we read "same … cadence" as the Friday-anchored
- * one — see snapToFridayIso. Worked example: Ascended Heroes ETB 2026-02-20 → 2026-03-06.
+ * Special-set legal date: the second Friday following the ETB/Booster-Bundle anchor (§4.1.2.1).
  * @param {string} anchorIso - YYYY-MM-DD ETB/Booster-Bundle date
  * @returns {string} YYYY-MM-DD
  */
 export function legalDateFromAnchor(anchorIso) {
-  return snapToFridayIso(addDaysIso(anchorIso, 14));
+  // anchor+1 so a Friday anchor rolls forward to the *next* Friday, then +7 for the second.
+  return addDaysIso(snapToFridayIso(addDaysIso(anchorIso, 1)), 7);
 }
 
 /**

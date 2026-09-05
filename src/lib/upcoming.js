@@ -26,8 +26,8 @@ const DAYS_UNTIL_LEGAL = 14;
  * on the "second Friday following" of Handbook §4.1.2). Special sets have no sleeved
  * booster packs, so their legal date is anchored to the ETB / Booster-Bundle release
  * (§4.1.2.1) — once that `legalProductDate` has been scraped from the product-lineup
- * press release we compute it via legalDateFromAnchor (+14, snapped to Friday); until
- * then we return `null` ("unknown", rendered as "?"). This computed special-set date is
+ * press release we compute it via legalDateFromAnchor (the second Friday following that
+ * anchor); until then we return `null` ("unknown", rendered as "?"). This computed date is
  * provisional — the confirmed value lands in set-legality.json at release. An explicit
  * `legalFrom` on the entry always wins.
  *
