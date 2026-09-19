@@ -7,6 +7,7 @@
   --accent-hover: #6d28d9;
   --error: #ef4444;
   --notice: #b45309;
+  --success: #15803d;
   --skeleton: #ede9fe;
   --subtle: #a78bfa;
   --glow: rgba(124, 58, 237, 0.12);
@@ -30,6 +31,7 @@
     --accent-hover: #7c3aed;
     --error: #f87171;
     --notice: #fbbf24;
+    --success: #4ade80;
     --skeleton: #2a2a3d;
     --subtle: #6d5eb5;
     --glow: rgba(167, 139, 250, 0.18);

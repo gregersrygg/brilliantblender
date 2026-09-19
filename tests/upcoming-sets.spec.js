@@ -129,16 +129,37 @@ test.describe('Upcoming sets section (landing page)', () => {
 
   test('a just-released set shows "Released" status and a data-availability note', async ({ page }) => {
     test.skip(!codeableSet, 'no upcoming set with a known set code in the bundled data');
-    // A few days after release (still before the legal date), the set lingers in the
-    // list until the pipeline prunes it — it should read "Released", with a note that
-    // card data lands within a day or two.
+    // A few days after release but still before the legal date: the set is kept in the
+    // list (dropped only once the next set's prerelease opens) and reads "Released", with
+    // a note that card data lands within a day or two.
+    const legal = legalToPlayDate(codeableSet);
     const after = new Date(`${codeableSet.releaseDate}T12:00:00`);
     after.setDate(after.getDate() + 3);
+    test.skip(!!legal && after.toISOString().slice(0, 10) >= legal, 'set is already legal 3 days after release');
     await page.clock.setFixedTime(after);
     await page.goto('/');
 
     await expect(page.getByTestId('status-released').first()).toBeVisible();
     await expect(page.getByTestId('reprint-note').first()).toContainText(/within a day or two/i);
+  });
+
+  test('a set past its legal date reads "Legal" while it lingers in the list', async ({ page }) => {
+    const legalSet = upcomingSets.find((s) => legalToPlayDate(s));
+    test.skip(!legalSet, 'no upcoming set with a computable legal date in the bundled data');
+    // Pin "today" a week after the set becomes legal — it is kept until the next set's
+    // prerelease, so it should still be listed, now with a green "Legal" status.
+    const after = new Date(`${legalToPlayDate(legalSet)}T12:00:00`);
+    after.setDate(after.getDate() + 7);
+    await page.clock.setFixedTime(after);
+    await page.goto('/');
+
+    const section = page.getByRole('region', { name: /upcoming sets/i });
+    const row = section
+      .locator("[role='row']")
+      .filter({ has: page.getByTestId('set-name').filter({ hasText: legalSet.name }) });
+    await expect(row.getByTestId('status-legal')).toBeVisible();
+    // Once legal, the date is no longer flagged provisional.
+    await expect(row.getByTestId('legal-provisional')).toHaveCount(0);
   });
 });
 

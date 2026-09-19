@@ -38,8 +38,8 @@
 </script>
 
 {#if sets.length > 0}
-  <section class="upcoming" aria-label="Upcoming sets">
-    <h2>Upcoming sets</h2>
+  <section class="upcoming" aria-label="New & upcoming sets">
+    <h2>New &amp; upcoming sets</h2>
 
     <div class="table" role="table">
       <div class="row head" role="row">
@@ -50,7 +50,7 @@
       </div>
       {#each sets as set (set.name)}
         {@const legal = legalToPlayDate(set)}
-        {@const provisional = legal !== null && set.isSpecialSet && typeof set.legalFrom !== 'string'}
+        {@const provisional = dateAware && legal !== null && legal > today && set.isSpecialSet && typeof set.legalFrom !== 'string'}
         {@const status = dateAware ? upcomingStatus(set, today) : 'announced'}
         <div class="row" role="row">
           <span class="set" role="cell">
@@ -77,6 +77,8 @@
               <span class="pill" data-testid="status-prerelease">● Prerelease</span>
             {:else if dateAware && status === 'released'}
               <span class="pill released" data-testid="status-released">● Released</span>
+            {:else if dateAware && status === 'legal'}
+              <span class="pill legal" data-testid="status-legal">● Legal</span>
             {:else}
               <span class="muted">Announced</span>
             {/if}
@@ -203,6 +205,10 @@
 
   .pill.released {
     color: var(--accent);
+  }
+
+  .pill.legal {
+    color: var(--success);
   }
 
   .muted {

@@ -38,7 +38,7 @@ src/
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
     changelog.js           CHANGELOG data: user-facing release notes (landing page)
     Features.svelte        "Why Brilliant Blender?" differentiators grid (landing page)
-    UpcomingSets.svelte    "Upcoming sets" table: announced sets + release/legal dates + status (landing page)
+    UpcomingSets.svelte    "New & upcoming sets" table: announced + recently-released sets, release/legal dates + status (landing page)
     Changelog.svelte       "What's new" release-notes list (landing page)
     DeckView.svelte        Section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
@@ -159,12 +159,15 @@ view reads) is written entirely by a deterministic script — there is no legali
   agentic workflow (gh-aw). Dispatched by nightly `update-snapshot.yml` (when any set
   releases), by the biweekly gate, or manually. Writes only `upcoming-sets.json`, guarded
   by a strict post-step validator; pushes with `SNAPSHOT_PUSH_TOKEN`. It keeps
-  `upcoming-sets.json`, the list of **announced-but-unreleased** expansions. The
+  `upcoming-sets.json`, the list of **announced and recently-released** expansions. The
   card DB (pokemontcg.io) only surfaces a set at release, but The Pokémon Company
   announces each expansion on `press.pokemon.com` ~10–11 weeks earlier with the
   bare set name, **tabletop release date**, and (main sets) **Prerelease start
-  date**. The agent scrapes those announcements and drops entries whose release date
-  has passed. For **special** sets it additionally hunts the set's *product-lineup*
+  date**. The agent scrapes those announcements. A released set is **kept** through the
+  gap between release and its tournament-legal date (so the table can show its "legal
+  on …" countdown), and dropped only once the next expansion (by release date) has
+  reached its own Prerelease — this is why a just-released set stays listed with a
+  `Released`/`Legal` status instead of vanishing on release day. For **special** sets it additionally hunts the set's *product-lineup*
   press release for the earlier of the ETB/Booster-Bundle date and records it as
   `legalProductDate` (updating `sourceUrl` to that release) — the anchor the app and
   `apply-set-legality.mjs` use for the legal date. Only the ETB and Booster Bundle count
@@ -226,7 +229,7 @@ authoritative special/main classification still happens at release via the set-I
 This data is consumed by the app in two places, both via the pure
 [`upcoming.js`](../src/lib/upcoming.js) helpers (kept JSON-import-free so they unit-test
 under `node --test`, like `legality.js`):
-- **`UpcomingSets.svelte`** — the landing-page "Upcoming sets" table (Set · Release · Legal
+- **`UpcomingSets.svelte`** — the landing-page "New & upcoming sets" table (Set · Release · Legal
   · Status, one row per set; the set name links to the announcement `sourceUrl` in a new
   tab). Main sets' legal-to-play date is computed in-app as
   `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2). Special sets are
@@ -235,8 +238,10 @@ under `node --test`, like `legality.js`):
   **provisionally** — an amber dotted marker with
   a tooltip (`data-testid="legal-provisional"`), since the official date is only confirmed
   at release; a special set with no `legalProductDate` yet still shows "?". The
-  Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` — the
-  last covers a just-released set that hasn't aged out of the JSON yet). A single §4.1.3
+  Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` /
+  `'legal'` — `'released'` covers a shipped set before its legal date, `'legal'` once that
+  date has passed while it lingers in the JSON). The provisional amber marker shows only
+  while the legal date is still in the future. A single §4.1.3
   reprint note below the table names whichever set is playable-early-but-not-yet-fully-legal
   (in prerelease, or released before its legal date), phrased per its status; for a released
   set it also notes that card data usually appears within a day or two (the snapshot/DB lags

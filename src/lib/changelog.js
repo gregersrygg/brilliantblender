@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-20',
+    items: [
+      'A set no longer disappears the day it releases — it now stays in the “New & upcoming sets” table through its release-to-legal window (with a “Released”, then “Legal”, status) until the next set’s Prerelease begins, so you can still see when it becomes tournament-legal.',
+    ],
+  },
+  {
     date: '2026-09-05',
     items: [
       'Corrected the provisional legal-to-play date for special sets: it’s now the second Friday following the Elite Trainer Box / Booster Bundle date (per Tournament Handbook §4.1.2), matching how judges read the rule. 30th Celebration now shows Sep 25, 2026 instead of Oct 2.',

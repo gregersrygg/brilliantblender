@@ -168,8 +168,14 @@ date:
 date -u +%Y-%m-%d
 ```
 
-**Drop any entry whose `releaseDate` is on or before today** — it has shipped and is
-no longer "upcoming" (the snapshot workflow takes over from there).
+**Keep a released set until the next expansion begins its Prerelease.** A set stays
+worth showing through the gap between its release and its tournament-legal date (and a
+little beyond), so don't drop it the moment it ships. Sort entries by `releaseDate`;
+drop an entry only once a **later** entry (a set that releases after it) has reached its
+Prerelease — its `prereleaseDate` (or, for a special set with none, its `releaseDate`)
+is on or before today. Until then, keep the released set in the list. A released set
+with no later entry yet stays until one arrives. (Card data is handled separately by the
+snapshot workflow; keeping an entry here only drives the landing-page table.)
 
 ### 2. Find announcements on press.pokemon.com
 
@@ -296,10 +302,12 @@ and quoting the sentences you did find, and skip it.
 
 ### 4. Write the proposal file
 
-Build the full array and write it to `src/data/upcoming-sets.proposed.json`: keep the
-still-future existing entries (refresh their dates if the press release now has better
-data — including filling a special set's `legalProductDate` once you find its
-product-lineup release) and add any newly-found upcoming sets. Set `setCode` to `null`
+Build the full array and write it to `src/data/upcoming-sets.proposed.json`: keep every
+existing entry that hasn't aged out under the retention rule in step 1 (that includes a
+recently-released set still awaiting the next expansion's Prerelease), refresh their
+dates if the press release now has better data — including filling a special set's
+`legalProductDate` once you find its product-lineup release — and add any newly-found
+upcoming sets. Set `setCode` to `null`
 on **every** entry (it is never known at this stage — the merge step restores a
 human-backfilled code for you). Set `legalProductDate` to `null` on main sets and on
 special sets whose ETB/Booster-Bundle date you could not find; otherwise to the date
