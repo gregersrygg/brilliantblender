@@ -50,7 +50,6 @@
       </div>
       {#each sets as set (set.name)}
         {@const legal = legalToPlayDate(set)}
-        {@const provisional = dateAware && legal !== null && legal > today && set.isSpecialSet && typeof set.legalFrom !== 'string'}
         {@const status = dateAware ? upcomingStatus(set, today) : 'announced'}
         <div class="row" role="row">
           <span class="set" role="cell">
@@ -65,12 +64,7 @@
           </span>
           <span role="cell" data-label="Release">{formatLegalDate(set.releaseDate)}</span>
           <span role="cell" data-label="Legal" class:unknown={legal === null}>
-            {#if legal}<span
-                class:provisional
-                data-testid={provisional ? 'legal-provisional' : undefined}
-                title={provisional ? 'Provisional — not yet confirmed' : undefined}
-                aria-label={provisional ? `${formatLegalDate(legal)} (provisional)` : undefined}
-              >{formatLegalDate(legal)}</span>{:else}?{/if}
+            {#if legal}{formatLegalDate(legal)}{:else}?{/if}
           </span>
           <span role="cell" data-label="Status">
             {#if dateAware && status === 'prerelease'}
@@ -184,17 +178,6 @@
     color: var(--notice);
     font-size: 15px;
     line-height: 1;
-  }
-
-  /* Special sets' legal date is computed from a press-release ETB/Booster-Bundle date
-     (§4.1.2.1); Pokémon doesn't publish the legal date itself, so we mark ours
-     provisional until confirmed — flag it with an amber dotted underline (a notice,
-     not an error) and a hover tooltip. */
-  .provisional {
-    color: var(--notice);
-    text-decoration: underline dotted;
-    text-underline-offset: 3px;
-    cursor: help;
   }
 
   .pill {

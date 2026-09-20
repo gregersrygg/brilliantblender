@@ -27,8 +27,7 @@ const DAYS_UNTIL_LEGAL = 14;
  * booster packs, so their legal date is anchored to the ETB / Booster-Bundle release
  * (§4.1.2.1) — once that `legalProductDate` has been scraped from the product-lineup
  * press release we compute it via legalDateFromAnchor (the second Friday following that
- * anchor); until then we return `null` ("unknown", rendered as "?"). This computed date is
- * provisional — the confirmed value lands in set-legality.json at release. An explicit
+ * anchor); until then we return `null` ("unknown", rendered as "?"). An explicit
  * `legalFrom` on the entry always wins.
  *
  * @param {{ releaseDate?: string, isSpecialSet?: boolean, legalProductDate?: string, legalFrom?: string }} entry
