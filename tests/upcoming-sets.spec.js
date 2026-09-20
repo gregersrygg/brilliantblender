@@ -16,7 +16,7 @@ const upcomingSets = sortByReleaseDate(require('../src/data/upcoming-sets.json')
 // Codes are alphanumeric and may start with a digit ("30C"), matching parser.js CARD_RE.
 const codeableSet = upcomingSets.find((s) => /^[A-Za-z0-9-]{2,10}$/.test(s.setCode ?? ''));
 // A special set with no scraped ETB/Booster-Bundle date still shows "?"; once
-// legalProductDate is filled its (provisional) legal date is computed and shown.
+// legalProductDate is filled its legal date is computed and shown.
 const specialSetNoDate = upcomingSets.find((s) => s.isSpecialSet && !s.legalProductDate);
 const specialSetWithDate = upcomingSets.find((s) => s.isSpecialSet && s.legalProductDate);
 const prereleaseSet = upcomingSets.find((s) => s.prereleaseDate);
@@ -83,7 +83,7 @@ test.describe('Upcoming sets section (landing page)', () => {
     await expect(section.getByText('?', { exact: true })).toBeVisible();
   });
 
-  test('a special set with a scraped ETB date shows a provisional legal date', async ({ page }) => {
+  test('a special set with a scraped ETB date shows its computed legal date', async ({ page }) => {
     test.skip(!specialSetWithDate, 'no special upcoming set with a scraped ETB date in the bundled data');
     await page.clock.setFixedTime(new Date('2026-06-15T12:00:00'));
     await page.goto('/');
@@ -94,12 +94,8 @@ test.describe('Upcoming sets section (landing page)', () => {
       .filter({ has: page.getByTestId('set-name').filter({ hasText: specialSetWithDate.name }) });
     const legalCell = row.locator("[role='cell'][data-label='Legal']");
 
-    // The computed date is shown (not "?") ...
+    // The computed date is shown (not "?").
     await expect(legalCell).toHaveText(formatLegalDate(legalToPlayDate(specialSetWithDate)));
-    // ... and flagged provisional (amber dotted marker with a tooltip).
-    const marker = legalCell.getByTestId('legal-provisional');
-    await expect(marker).toBeVisible();
-    await expect(marker).toHaveAttribute('title', /provisional/i);
   });
 
   test('a set in its prerelease window shows the status pill and §4.1.3 note', async ({ page }) => {
@@ -158,8 +154,6 @@ test.describe('Upcoming sets section (landing page)', () => {
       .locator("[role='row']")
       .filter({ has: page.getByTestId('set-name').filter({ hasText: legalSet.name }) });
     await expect(row.getByTestId('status-legal')).toBeVisible();
-    // Once legal, the date is no longer flagged provisional.
-    await expect(row.getByTestId('legal-provisional')).toHaveCount(0);
   });
 });
 

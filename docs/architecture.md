@@ -240,14 +240,11 @@ under `node --test`, like `legality.js`):
   tab). Main sets' legal-to-play date is computed in-app as
   `releaseDate + 14` (`legalToPlayDate` → `addDaysIso`, matching §4.1.2). Special sets are
   computed from their scraped `legalProductDate` via `legalDateFromAnchor` (the second
-  Friday following that anchor — §4.1.2.1 defers to §4.1.2's Friday cadence) and shown
-  **provisionally** — an amber dotted marker with
-  a tooltip (`data-testid="legal-provisional"`), since the official date is only confirmed
-  at release; a special set with no `legalProductDate` yet still shows "?". The
+  Friday following that anchor — §4.1.2.1 defers to §4.1.2's Friday cadence); a special set
+  with no `legalProductDate` yet still shows "?". The
   Status cell reflects `upcomingStatus` (`'announced'` / `'prerelease'` / `'released'` /
   `'legal'` — `'released'` covers a shipped set before its legal date, `'legal'` once that
-  date has passed while it lingers in the JSON). The provisional amber marker shows only
-  while the legal date is still in the future. A single §4.1.3
+  date has passed while it lingers in the JSON). A single §4.1.3
   reprint note below the table names whichever set is playable-early-but-not-yet-fully-legal
   (in prerelease, or released before its legal date), phrased per its status; for a released
   set it also notes that card data usually appears within a day or two (the snapshot/DB lags
