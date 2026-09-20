@@ -34,9 +34,9 @@
   "me55": {
     "name": "30th Celebration",
     "releaseDate": "2026-09-16",
-    "isSpecialSet": false,
-    "legalFrom": "2026-09-30",
-    "sourceUrl": null,
+    "isSpecialSet": true,
+    "legalFrom": "2026-09-25",
+    "sourceUrl": "https://press.pokemon.com/en/releases/MEDIA-ALERT-The-Pokemon-Company-International-Reveals-Product-Lineup-f",
     "fetchedAt": "2026-09-17T00:56:46Z"
   }
 }

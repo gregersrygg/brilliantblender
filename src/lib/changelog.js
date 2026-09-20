@@ -7,6 +7,7 @@ export const CHANGELOG = [
     date: '2026-09-20',
     items: [
       'A set no longer disappears the day it releases — it now stays in the “New & upcoming sets” table through its release-to-legal window (with a “Released”, then “Legal”, status) until the next set’s Prerelease begins, so you can still see when it becomes tournament-legal.',
+      'Fixed 30th Celebration’s legal date: it’s Sep 25, 2026 (confirmed by TPCi), not Sep 30. The set had been mis-detected as a regular set at release, so cards from it were flagged legal five days too late.',
     ],
   },
   {

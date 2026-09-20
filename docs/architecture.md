@@ -143,8 +143,14 @@ view reads) is written entirely by a deterministic script — there is no legali
   the ETB/Booster-Bundle date the *pre-release* pipeline already scraped into
   `upcoming-sets.json` (`legalProductDate`) — the script matches the releasing set to its
   upcoming entry (by set code, else name) and computes `legalDateFromAnchor` (the second
-  Friday following the anchor — §4.1.2.1 defers to §4.1.2's Friday cadence). A special set
-  that releases without a scraped `legalProductDate`
+  Friday following the anchor — §4.1.2.1 defers to §4.1.2's Friday cadence). **Special-ness
+  is taken from the matched upcoming entry's `isSpecialSet`, not the input flag**:
+  `detect-new-sets.mjs` infers it from the API set id (`ptN` suffix), which misclassifies
+  special sets whose id lacks one (30th Celebration = `me55`) — left uncorrected that set
+  gets the main-set `+14` formula (the bug that put `me55` at 2026-09-30 instead of the
+  anchored 2026-09-25). The core is the pure `applyLegality(input, legality, upcoming,
+  fetchedAt)` (unit-tested in `apply-set-legality.test.mjs`); the file's IO runs only as a
+  script. A special set that releases without a scraped `legalProductDate`
   is printed to stdout and logged as a workflow warning (the gate below should have
   filled it pre-release). Validator: `scripts/validate-legality.mjs` (still the schema
   guard; no longer wired to an agent).
