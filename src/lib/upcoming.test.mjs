@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { legalToPlayDate, upcomingStatus, sortByReleaseDate, findSetByCode } from './upcoming.js';
+import { addDaysIso } from './legality.js';
 
 // Mirrors the two live upcoming-sets.json entries at time of writing.
 const mainSet = {
@@ -63,6 +64,13 @@ test('upcomingStatus: a set with no prerelease date is announced until release, 
   assert.equal(upcomingStatus(specialSet, '2026-09-10'), 'announced');
   assert.equal(upcomingStatus(specialSet, '2026-09-16'), 'released');
   assert.equal(upcomingStatus(specialSet, '2026-09-20'), 'released');
+});
+
+test('upcomingStatus: legal once the tournament-legal date has passed (kept visible after release)', () => {
+  const legal = legalToPlayDate(mainSet); // 2026-07-17 + 14 = 2026-07-31
+  assert.equal(upcomingStatus(mainSet, addDaysIso(legal, -1)), 'released');
+  assert.equal(upcomingStatus(mainSet, legal), 'legal');
+  assert.equal(upcomingStatus(mainSet, addDaysIso(legal, 30)), 'legal');
 });
 
 test('sortByReleaseDate: soonest release first, without mutating input', () => {

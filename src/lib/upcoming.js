@@ -47,17 +47,18 @@ export function legalToPlayDate(entry) {
 }
 
 /**
- * Lifecycle status of an upcoming set relative to `today` (YYYY-MM-DD):
- * - `'released'`   — the set has reached its release date (today ≥ releaseDate)
- * - `'prerelease'` — the prerelease window has opened but the set hasn't released yet
- * - `'announced'`  — before any of the above
- *
- * @param {{ prereleaseDate?: string|null, releaseDate?: string }} entry
+ * Lifecycle status of an upcoming set relative to `today` (YYYY-MM-DD).
+ * @param {{ prereleaseDate?: string|null, releaseDate?: string, isSpecialSet?: boolean, legalProductDate?: string, legalFrom?: string }} entry
  * @param {string} today - YYYY-MM-DD (see todayIso)
- * @returns {'announced'|'prerelease'|'released'}
+ * @returns {'announced'|'prerelease'|'released'|'legal'} `'announced'` before anything;
+ *   `'prerelease'` once the prerelease window opens; `'released'` from the release date;
+ *   `'legal'` once its tournament-legal date has passed (kept visible a while after — see
+ *   the retention rule in update-upcoming-sets.md).
  */
 export function upcomingStatus(entry, today) {
   if (!entry || typeof entry.releaseDate !== 'string') return 'announced';
+  const legal = legalToPlayDate(entry);
+  if (legal !== null && today >= legal) return 'legal';
   if (today >= entry.releaseDate) return 'released';
   if (typeof entry.prereleaseDate === 'string' && entry.prereleaseDate <= today) return 'prerelease';
   return 'announced';

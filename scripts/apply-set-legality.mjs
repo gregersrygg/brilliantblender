@@ -11,7 +11,10 @@
 //   - Special sets: legalFrom is anchored to the ETB / Booster-Bundle date, which the
 //                   upcoming-sets pipeline has already scraped into `legalProductDate`.
 //                   We match the releasing set to its upcoming-sets entry (by name, or
-//                   set code) and compute legalDateFromAnchor(legalProductDate).
+//                   set code) and compute legalDateFromAnchor(legalProductDate). The
+//                   matched entry also decides special-ness (its isSpecialSet), since the
+//                   input flag from detect-new-sets misclassifies special sets whose API
+//                   id lacks a `ptN` suffix.
 //
 // Any special set with no matching upcoming-sets entry / no legalProductDate can't be
 // computed here — it's printed to stdout so the caller can flag it. In practice the
@@ -22,18 +25,10 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { legalDateFromAnchor } from '../src/lib/legality.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const legalityPath = resolve(__dirname, '../src/data/set-legality.json');
-const upcomingPath = resolve(__dirname, '../src/data/upcoming-sets.json');
-
 function addDays(yyyymmdd, days) {
   const [y, m, d] = yyyymmdd.split('-').map(Number);
   const t = Date.UTC(y, m - 1, d) + days * 86400_000;
   return new Date(t).toISOString().slice(0, 10);
-}
-
-function nowIso() {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 const norm = (s) => (s ?? '').trim().toLowerCase();
@@ -47,39 +42,61 @@ function findUpcoming(upcoming, set) {
   return byCode ?? upcoming.find((u) => norm(u.name) === norm(set.name)) ?? null;
 }
 
-const input = JSON.parse(readFileSync(0, 'utf8') || '[]');
-const legality = JSON.parse(readFileSync(legalityPath, 'utf8'));
-const upcoming = JSON.parse(readFileSync(upcomingPath, 'utf8'));
-const fetchedAt = nowIso();
+/**
+ * Merges legalFrom for each newly-released set into `legality` (mutated and returned).
+ * @returns {{ legality: object, unresolved: Array }} unresolved = special sets with no
+ *   matching upcoming entry / no legalProductDate, which can't be computed here.
+ */
+export function applyLegality(input, legality, upcoming, fetchedAt) {
+  const unresolved = [];
+  for (const set of input) {
+    const entry = findUpcoming(upcoming, set);
+    // detect-new-sets infers special-ness from the API set id (`ptN` suffix), which misses
+    // special sets whose id lacks it (30th Celebration = me55). The announcement pipeline
+    // marks them reliably, so trust the matched upcoming entry's isSpecialSet over the input.
+    const isSpecial = entry ? entry.isSpecialSet : set.isSpecialSet;
 
-const unresolved = [];
-for (const set of input) {
-  if (!set.isSpecialSet) {
+    if (!isSpecial) {
+      legality[set.setId] = {
+        name: set.name,
+        releaseDate: set.releaseDate,
+        isSpecialSet: false,
+        legalFrom: addDays(set.releaseDate, 14),
+        sourceUrl: null,
+        fetchedAt,
+      };
+      continue;
+    }
+
+    if (!entry || typeof entry.legalProductDate !== 'string') {
+      unresolved.push(set);
+      continue;
+    }
     legality[set.setId] = {
       name: set.name,
       releaseDate: set.releaseDate,
-      isSpecialSet: false,
-      legalFrom: addDays(set.releaseDate, 14),
-      sourceUrl: null,
+      isSpecialSet: true,
+      legalFrom: legalDateFromAnchor(entry.legalProductDate),
+      sourceUrl: entry.sourceUrl ?? null,
       fetchedAt,
     };
-    continue;
   }
-
-  const entry = findUpcoming(upcoming, set);
-  if (!entry || typeof entry.legalProductDate !== 'string') {
-    unresolved.push(set);
-    continue;
-  }
-  legality[set.setId] = {
-    name: set.name,
-    releaseDate: set.releaseDate,
-    isSpecialSet: true,
-    legalFrom: legalDateFromAnchor(entry.legalProductDate),
-    sourceUrl: entry.sourceUrl ?? null,
-    fetchedAt,
-  };
+  return { legality, unresolved };
 }
 
-writeFileSync(legalityPath, JSON.stringify(legality, null, 2) + '\n');
-process.stdout.write(JSON.stringify(unresolved));
+// Entrypoint: run the IO when invoked as a script (not when imported by a test).
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const legalityPath = resolve(__dirname, '../src/data/set-legality.json');
+  const upcomingPath = resolve(__dirname, '../src/data/upcoming-sets.json');
+  const fetchedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  const input = JSON.parse(readFileSync(0, 'utf8') || '[]');
+  const legality = JSON.parse(readFileSync(legalityPath, 'utf8'));
+  const upcoming = JSON.parse(readFileSync(upcomingPath, 'utf8'));
+
+  const { unresolved } = applyLegality(input, legality, upcoming, fetchedAt);
+
+  writeFileSync(legalityPath, JSON.stringify(legality, null, 2) + '\n');
+  process.stdout.write(JSON.stringify(unresolved));
+}
