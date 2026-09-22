@@ -116,4 +116,81 @@ test.describe('Card search', () => {
     await expect(chips(page)).toHaveCount(1);
     await expect(page.locator('.mirror-code')).toHaveText(/^set:/);
   });
+
+  test('the ＋ menu seeds an operator and opens its picker', async ({ page }) => {
+    await loadDeck(page);
+    await page.locator('.card-search .plus').click();
+    await expect(page.locator('.card-search .menu')).toBeVisible();
+    await page.locator('.card-search .menu-item', { hasText: 'Pokémon type' }).click();
+    // Picking a filter drops "type:" into the input and opens its energy picker.
+    await expect(input(page)).toHaveValue('type:');
+    await expect(page.locator('.card-search .picker .egrid')).toBeVisible();
+  });
+
+  test('clicking an energy pip then Done commits a type chip', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('type:');
+    await page.locator('.card-search .picker .egrid button[title="Fire"]').click();
+    await page.locator('.card-search .picker .done').click();
+    await expect(chips(page)).toHaveCount(1);
+    await expect(page.locator('.mirror-code')).toHaveText('type:r');
+  });
+
+  test('the weakness grid omits Dragon, the type grid includes it', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('type:');
+    await expect(page.locator('.card-search .picker .egrid button')).toHaveCount(10);
+    await expect(page.locator('.card-search .picker .egrid button[title="Dragon"]')).toBeVisible();
+    await input(page).fill('weak:');
+    // There is no Dragon energy, so weaknesses never include it — one fewer non-colorless pip.
+    await expect(page.locator('.card-search .picker .egrid button')).toHaveCount(8);
+    await expect(page.locator('.card-search .picker .egrid button[title="Dragon"]')).toHaveCount(0);
+  });
+
+  test('the rarity picker\'s "All rarities" pill commits rarity:all', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('rarity:');
+    await page.locator('.card-search .picker .pill', { hasText: 'All rarities' }).click();
+    await expect(chips(page)).toHaveCount(1);
+    await expect(page.locator('.mirror-code')).toHaveText('rarity:all');
+  });
+
+  test('reg: offers autocomplete suggestions that commit to a chip', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('reg:');
+    const suggests = page.locator('.card-search .suggest');
+    await expect(suggests.first()).toBeVisible();
+    await suggests.first().click();
+    await expect(chips(page)).toHaveCount(1);
+    await expect(page.locator('.mirror-code')).toHaveText(/^reg:/);
+  });
+
+  test('a numeric preset commits an HP chip', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('hp:');
+    await page.locator('.card-search .picker .pill', { hasText: '200+' }).click();
+    await expect(chips(page)).toHaveCount(1);
+    await expect(page.locator('.mirror-code')).toHaveText('hp:200+');
+  });
+
+  test('building an attack cost from the grid commits an ac chip', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('ac:');
+    const fire = page.locator('.card-search .picker .egrid button[title="Fire"]');
+    await fire.click();
+    await fire.click();
+    await page.locator('.card-search .picker .done').click();
+    await expect(chips(page)).toHaveCount(1);
+    await expect(page.locator('.mirror-code')).toHaveText('ac:{r}{r}');
+  });
+
+  test('"edit as text" merges chips into a single editable field', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('type:fire hp:200+ ');
+    await expect(chips(page)).toHaveCount(2);
+    await page.locator('.card-search .mirror-edit').click();
+    // Raw mode collapses the chips back into the input for free-form editing.
+    await expect(chips(page)).toHaveCount(0);
+    await expect(input(page)).toHaveValue('type:fire hp:200+');
+  });
 });

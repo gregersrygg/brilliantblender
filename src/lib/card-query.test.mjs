@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseQuery, matchesQuery, parseAttackCost, appendToken, removeToken,
+  parseQuery, matchesQuery, hasQuery, parseAttackCost, appendToken, removeToken,
 } from './card-query.js';
 
 // --- fixtures ---------------------------------------------------------------
@@ -67,6 +67,18 @@ test('unknown operator does not constrain results', () => {
   assert.deepEqual(names('foo:bar'), ['Charizard ex', 'Budew', "Boss's Orders", 'Mega Lucario ex']);
 });
 
+// --- hasQuery ---------------------------------------------------------------
+test('hasQuery is false for empty / whitespace / incomplete-only queries', () => {
+  assert.equal(hasQuery(parseQuery('')), false);
+  assert.equal(hasQuery(parseQuery('   ')), false);
+  assert.equal(hasQuery(parseQuery('type:')), false);   // incomplete operator only
+});
+test('hasQuery is true once any name term or valid filter is present', () => {
+  assert.equal(hasQuery(parseQuery('char')), true);
+  assert.equal(hasQuery(parseQuery('type:fire')), true);
+  assert.equal(hasQuery(parseQuery('type: char')), true); // one incomplete + one valid
+});
+
 // --- name / text ------------------------------------------------------------
 test('name search is substring, accent- and case-insensitive', () => {
   assert.deepEqual(names('char'), ['Charizard ex']);
@@ -75,6 +87,17 @@ test('text: searches attack/ability/rule text, not the name', () => {
   assert.deepEqual(names('text:"more damage"'), ['Charizard ex']);
   assert.deepEqual(names('text:switch'), ["Boss's Orders"]);
   assert.deepEqual(names('text:charizard'), []); // name only lives in name search
+});
+test('text: also searches ability name and ability text', () => {
+  assert.deepEqual(names('text:infernal'), ['Charizard ex']);        // ability name
+  assert.deepEqual(names('text:"search your deck"'), ['Charizard ex']); // ability text
+});
+test('an unclosed quote is tolerated and still searches', () => {
+  assert.deepEqual(names('text:"more damage'), ['Charizard ex']);
+});
+test('an invalid operator value does not constrain results', () => {
+  // type:bogus is flagged invalid, so it is skipped rather than matching nothing.
+  assert.deepEqual(names('type:bogus').sort(), ['Boss\'s Orders', 'Budew', 'Charizard ex', 'Mega Lucario ex']);
 });
 
 // --- type / weak ------------------------------------------------------------
@@ -94,9 +117,17 @@ test('hp: supports =, +, -', () => {
   assert.deepEqual(names('hp:330+').sort(), ['Charizard ex', 'Mega Lucario ex']);
   assert.deepEqual(names('hp:30-'), ['Budew']);
 });
+test('hp: skips cards without a numeric HP (Trainers)', () => {
+  // Boss's Orders (hp null) never satisfies an HP filter, even a wide-open one.
+  assert.deepEqual(names('hp:1+').sort(), ['Budew', 'Charizard ex', 'Mega Lucario ex']);
+});
 test('rc: only matches Pokémon and respects operators', () => {
   assert.deepEqual(names('rc:3'), ['Mega Lucario ex']);
   assert.deepEqual(names('rc:0'), []); // trainer excluded, no 0-retreat Pokémon here
+  assert.deepEqual(names('rc:2+').sort(), ['Charizard ex', 'Mega Lucario ex']);
+  assert.deepEqual(names('rc:1-'), ['Budew']);
+  // Even a 0-or-more retreat filter excludes the Trainer (rc: is Pokémon-only).
+  assert.deepEqual(names('rc:0+').sort(), ['Budew', 'Charizard ex', 'Mega Lucario ex']);
 });
 
 // --- trainer / stage / prizes / sub ----------------------------------------
@@ -117,6 +148,10 @@ test('pri: 2 = ex (not Mega), 3 = Mega, 1 = single-prize', () => {
 test('set: and reg: match on set code / regulation mark', () => {
   assert.deepEqual(names('set:obf'), ['Charizard ex']);
   assert.deepEqual(names('reg:j'), ['Mega Lucario ex']);
+});
+test('set: and reg: OR their comma-separated values', () => {
+  assert.deepEqual(names('set:obf,pal').sort(), ["Boss's Orders", 'Charizard ex']);
+  assert.deepEqual(names('reg:h,i').sort(), ["Boss's Orders", 'Budew', 'Charizard ex']);
 });
 
 // --- rarity -----------------------------------------------------------------
@@ -139,6 +174,13 @@ test('rarity: parses all / codes / invalid', () => {
   assert.equal(parseQuery('rarity:all').tokens[0].all, true);
   assert.deepEqual(parseQuery('rarity:ir,sir').tokens[0].values, ['Illustration Rare', 'Special Illustration Rare']);
   assert.equal(parseQuery('rarity:bogus').tokens[0].valid, false);
+});
+test('an invalid rarity token still hides chase rarities by default', () => {
+  // rarity: (empty) and rarity:bogus are invalid, so they are skipped and the
+  // default hide-chase rule stays in force — they must NOT reveal alt-art printings.
+  const pool = [charizard, charizardAlt];
+  assert.deepEqual(rarityNames('rarity:', pool), ['Charizard ex']);
+  assert.deepEqual(rarityNames('rarity:bogus', pool), ['Charizard ex']);
 });
 
 // --- sub --------------------------------------------------------------------
@@ -164,6 +206,15 @@ test('parseAttackCost — malformed returns null', () => {
   assert.equal(parseAttackCost('{r'), null);
   assert.equal(parseAttackCost('{r}x'), null);
   assert.equal(parseAttackCost(''), null);
+});
+test('parseAttackCost — repeated symbols and wildcards accumulate', () => {
+  // {r}{r} folds into a single count-2 requirement, same as {r}2.
+  assert.deepEqual(parseAttackCost('{r}{r}'), { mode: 'symbols', concrete: { r: { n: 2, op: 'eq' } }, wildcard: null });
+  assert.deepEqual(parseAttackCost('{*}{*}'), { mode: 'symbols', concrete: {}, wildcard: { n: 2, op: 'eq' } });
+});
+test('ac: {r}{r} (repeated symbol) matches exactly two Fire', () => {
+  // Same result as the count form ac:{r}2 — Charizard's Burning Darkness is {r}{r}.
+  assert.deepEqual(names('ac:{r}{r}'), ['Charizard ex']);
 });
 test('ac: exact base — {r}2 is exactly two Fire, nothing else', () => {
   // Charizard has {r}{r} (Burning Darkness) → matches exactly two Fire
