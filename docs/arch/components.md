@@ -33,11 +33,38 @@ Textarea with placeholder + "Load Deck" button. Button disabled when textarea is
 
 **Props:** `{ onadd: (card) → void }`
 
-Search input that adds cards to the deck. Input is debounced (300ms) and ignored under 2 chars; results come from `searchCards()` and are filtered to legal regulation marks (basic Energy always allowed). Selecting a result calls `onadd` and clears the query.
+Faceted search that adds cards to the deck. It filters the bundled snapshot with the
+card-query language — see architecture.md → **Card search** for the full query grammar,
+the chips/`draft`/`</>`-mirror model, the inline pickers, and the name-only API fallback.
+Selecting a result calls `onadd` with the full snapshot card object. The input is 16px to
+avoid iOS focus-zoom (see architecture.md → Mobile zoom behaviour).
 
-Results render as a **responsive grid of card images** (`.search-results`) rather than a list — the grid auto-fills as many columns as fit (~4-up on desktop, ~2-up under 640px), so it uses the full width on wide screens. Each result (`.search-result`) is the card image with a supertype badge (P/T/E) overlaid in the corner and a centered caption below: name (`.result-name`) + set code/number. The input is 16px to avoid iOS focus-zoom (see architecture.md → Mobile zoom behaviour).
+**Editable chips:** a committed chip is a two-part control — a `.chip-body` button (click to
+re-open it for editing) and a `.chip-x` button (remove). `editChip` drops the chip from
+`committed` and puts its raw source back as the active draft token, which re-opens its
+picker. Backspace or ArrowLeft with the caret at position 0 (empty selection) edits the
+last chip instead of no-op'ing (`onKeydown`).
 
-**Behavioural rule — dismissing the results dropdown must not be tied to input blur.** The dropdown (`open` state) closes on: result selection, `Escape`, the query dropping under 2 chars, the clear (✕) button, or a `pointerdown` *outside* the component root (`rootEl`, tracked by a `$effect`-scoped document listener). It deliberately does **not** close on the input's `blur`/`focusout` — on iOS, dismissing the on-screen keyboard blurs the input, and closing on blur would hide the results the user just freed up screen space to read (issue #33). The `.search-clear` (✕) button, shown whenever there's a query, is the always-visible affordance for dismissing results on touch where there's no `Escape` key and little tappable space outside the panel.
+**Rarity picker:** `rarity:` uses the `options` picker with an added "All rarities" shortcut
+(commits `rarity:all`). Alt-art / chase printings are hidden by default (see architecture.md →
+Card search → Rarity default); the picker's pills opt them back in.
+
+**Autocomplete pickers:** `set:` and `reg:` use the `suggest` picker — an autocomplete list
+(`getSnapshotSetCodes()` for sets, `LEGAL_REGULATION_MARKS` for regulation) filtered by what's
+typed after the colon; clicking a row commits the chip. **Energy grids are context-aware:**
+the `type:` grid offers all ten types (Dragon included), but `weak:` and `ac:` omit Dragon —
+there is no Dragon energy, so it never appears in an attack cost or as a weakness
+(`TYPE_ENERGIES` / `WEAK_ENERGIES` / `COST_ENERGIES`). `currentValue()` reads the typed value
+from the token's raw source (classified tokens don't all carry a `.value`).
+
+Results keep the app's existing look: a responsive **grid of card images** (`.search-results`,
+~4-up desktop / ~2-up under 640px), each (`.search-result`) the card image with a P/T/E
+badge overlaid and a centered name + set/number caption. **Test ids:** `card-search-input`
+(the field), `search-chip` (each committed filter chip), `search-result` (each result card).
+Pickers, chips, and results render **in-flow** (expand in place) — no floating dropdown, so
+results persist until cleared rather than closing on blur or outside-click.
+`card-search.spec.js` runs against the snapshot-enabled dev server (the default one disables
+the snapshot).
 
 ---
 
