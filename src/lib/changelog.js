@@ -4,6 +4,16 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-22',
+    items: [
+      'Rebuilt card search into a proper faceted search. Beyond names, you can now filter by Pokémon type, attack cost, HP, retreat, weakness, trainer type, evolution stage, prizes (ex / Mega), and card text — and combine them.',
+      'Filters you add become clean, removable chips — click one (or backspace into it) to edit it again, and there’s a live “</>” query line that mirrors them all. Click the ＋ (or just start typing, e.g. type:fire hp:200+) and learn the search shorthand as you go.',
+      'Set and regulation-mark filters now autocomplete as you type, so you don’t have to remember set codes.',
+      'Results now show the plain, functional printings by default — the alternate-art, full-art, and gold “chase” rarities are hidden unless you ask for them (add a Rarity filter, e.g. “All rarities”).',
+      'Search now runs instantly offline against the bundled card list, so results appear as you type.',
+    ],
+  },
+  {
     date: '2026-09-20',
     items: [
       'A set no longer disappears the day it releases — it now stays in the “New & upcoming sets” table through its release-to-legal window (with a “Released”, then “Legal”, status) until the next set’s Prerelease begins, so you can still see when it becomes tournament-legal.',

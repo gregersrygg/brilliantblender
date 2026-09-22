@@ -86,7 +86,7 @@ test.describe('Not-yet-legal set warning', () => {
     await page.getByRole('button', { name: /start from scratch/i }).click();
 
     await page.getByPlaceholder(/search cards/i).fill('pikachu');
-    await page.locator('.search-result').first().click();
+    await page.locator('[data-testid="search-result"]').first().click();
 
     // Pikachu (me4/CRI) is a functional reprint of the already-legal TWM Pikachu,
     // so it is legal on me4's release date — no not-yet-legal notice.
@@ -103,7 +103,7 @@ test.describe('Not-yet-legal set warning', () => {
     await page.getByRole('button', { name: /start from scratch/i }).click();
 
     await page.getByPlaceholder(/search cards/i).fill('weedle');
-    await page.locator('.search-result').first().click();
+    await page.locator('[data-testid="search-result"]').first().click();
 
     // Weedle (me4/CRI) has no already-legal twin, so it stays flagged until 2026-06-05.
     await expect(page.locator('[data-testid="card-tile"] img[alt="Weedle"]')).toBeVisible();

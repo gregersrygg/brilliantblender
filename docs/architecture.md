@@ -23,8 +23,10 @@ src/
   lib/
     parser.js              Pure function: PTCGL text → deck structure
     parser.test.mjs        Node unit tests for parser.js
+    card-query.js          Pure card-search query language: parse → structured tokens, matchesQuery, string surgery
+    card-query.test.mjs    Node unit tests for card-query.js
     api.js                 API client: snapshot → sessionStorage → pokemontcg.io v2
-    snapshot.js            In-memory access to bundled card/set snapshot data
+    snapshot.js            In-memory access to bundled card/set snapshot data (searchSnapshot, filterSnapshot)
     legality.js            Pure helpers: notLegalUntil, isSetLegalOn, todayIso, formatLegalDate, addDaysIso
     legality.test.mjs      Node unit tests for legality.js
     upcoming.js            Pure helpers for upcoming-sets.json: legalToPlayDate, upcomingStatus, sortByReleaseDate, findSetByCode
@@ -63,6 +65,7 @@ scripts/
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST
+  card-search.spec.js      Card-search UI: chips, </> mirror, filtering, add-to-deck (snapshot-enabled server)
   m1-paste-preview.spec.js
   m2-quantity-editing.spec.js
   m3-print-substitution.spec.js
@@ -72,7 +75,10 @@ tests/
 ```
 
 `playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can
-run the dev server without colliding.
+run the dev server without colliding. It starts **two** dev servers: the primary on `PORT`
+with `VITE_DISABLE_SNAPSHOT=true` (forces the mocked API path for deck-resolution tests),
+and a second on `PORT+1` (`SNAPSHOT_PORT`, exported) with the snapshot **enabled** — the
+card-search feature filters the bundled snapshot, so `card-search.spec.js` navigates there.
 
 ---
 
@@ -127,6 +133,91 @@ sparkles or hydration mismatches — so positions are deterministic by design (s
 render/visit). The twinkle keyframe is gated behind `@media (prefers-reduced-motion)` — under
 reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens live in
 `app.css` (light + dark variants).
+
+---
+
+## Card search (`CardSearch.svelte` + `card-query.js`)
+
+The search filters the bundled snapshot in-memory (offline, instant) with a small query
+language. `card-query.js` is pure (no imports) and unit-tested; `CardSearch.svelte` is the
+UI; `snapshot.js#filterSnapshot` runs the parsed query over every snapshot card.
+
+**Query language.** Whitespace-separated tokens. A **bare word** searches the card *name*
+(substring, accent- and case-insensitive); a `"quoted phrase"` is one exact-phrase name
+term. Every other filter is `op:value`. Logic is **OR within** a single token's
+comma-separated values, **AND across** tokens. Operators:
+
+| Op | Meaning | Value form |
+|---|---|---|
+| `text:` | printed text (attack/ability names + text, rules) | word or `"phrase"` |
+| `type:` | Pokémon type | energy letter (`r`) or name (`fire`), comma-OR |
+| `weak:` | weakness type | same as `type:` |
+| `ac:` | attack cost — matches if **any one attack** satisfies it | see grammar below |
+| `hp:` / `rc:` | HP / retreat cost | `N`, `N+` (≥), `N-` (≤) |
+| `tr:` | Trainer type | `item` / `supporter` / `stadium` / `tool` |
+| `stage:` | evolution stage | `basic` / `1` / `2` |
+| `pri:` | prizes given | `1` (single) / `2` (ex) / `3` (Mega) |
+| `sub:` | mechanic subtype | `tera` / `ancient` / `future` / `ace` |
+| `set:` | set code | ptcgoCode, comma-OR |
+| `reg:` | regulation mark | letter, comma-OR |
+| `rarity:` | rarity (opts alt-art back in) | `all`, or codes `common`/`rare`/`double`/`ace`/`ir`/`sir`/`ur`/`hyper`/… (comma-OR) |
+
+An unrecognized operator, or an incomplete/malformed token (e.g. `ac:{r` mid-type), is
+kept in the string but flagged `valid:false` and **ignored when matching** — so results
+stay live while the user types.
+
+**Rarity default.** Chase / alternate-art printings (`CHASE_RARITIES` in `card-query.js`:
+Illustration Rare, Special Illustration Rare, Ultra Rare, Hyper Rare, Mega Hyper Rare,
+Futuristic Rare, …) are **hidden from results by default** so a search returns the plain
+functional printings. A `rarity:` token opts them back in: `rarity:all` shows every printing,
+`rarity:sir,ur` narrows to specific rarities (short codes → snapshot `rarity` via
+`RARITY_MAP`). This is enforced in `matchesQuery` (not `matchToken`), which pulls the rarity
+token aside and applies the default-hide only when none is present. Requires the snapshot's
+`rarity` field.
+
+**`ac:` grammar.** The energy count goes *outside* the braces so the braces are optional:
+`ac:{r}2{c}` = exactly two Fire + one Colorless. A trailing `+`/`-` on a symbol relaxes it
+to ≥/≤ (`ac:{r}2+`). `{*}` is a wildcard for any type. A bare number is the *total* energy
+count (`ac:2`, `ac:2+`, and `ac:0` for a free attack — costs are matched with the literal
+`"Free"` symbol stripped, alongside empty `cost:[]`). With no modifier and no wildcard the
+match is **exact** (no extra energy); any `+`/`-`/`{*}` makes it open (extra energy of other
+types allowed). Parsed by `parseAttackCost`.
+
+**Component model.** The full query string is the single source of truth (shown, and
+editable, in the `</>` mirror). Internally it is split into `committed` (finished operator
+tokens, rendered as removable **plain-language chips** inside the field) and `draft` (the
+live `<input>` text — name terms plus the token being typed). On each keystroke `promote()`
+moves any *complete* operator token (valid, and either not last or space-terminated) from
+`draft` into `committed`; name terms stay in `draft`. Because a promotion can empty `draft`
+back to its previous value, `onInput` re-assigns `e.target.value = draft` so Svelte doesn't
+skip syncing the DOM (a net-zero state change leaves the typed text lingering otherwise).
+"Edit as text" collapses everything back into one editable input (`rawMode`).
+
+Typing an operator opens its **picker inline** (energy grid for `type:`/`weak:`/`ac:`,
+option pills for `tr:`/`stage:`/`pri:`/`sub:`, presets for `hp:`/`rc:`, autocomplete list for
+`set:`/`reg:`); the **＋** button opens the same pickers for pointer users. The energy grids
+are context-aware: `type:` offers all ten types, but `weak:` and `ac:` omit **Dragon** —
+Dragon is a Pokémon type with no energy of its own, so it never appears in an attack cost or
+weakness (`TYPE_ENERGIES` / `WEAK_ENERGIES` / `COST_ENERGIES`). `set:`/`reg:` autocomplete off
+`getSnapshotSetCodes()` / `LEGAL_REGULATION_MARKS`, filtered by the typed value. A committed
+chip is **editable**: clicking its body (or Backspace/ArrowLeft with the caret at the field's
+start) drops it back into `draft` as the active token via `editChip`, re-opening its picker.
+Pickers and results render **in-flow** (expand in place), not as floating popovers — no
+clipping, and mobile-safe. Results keep the app's
+existing presentation — a **responsive grid of card images** (`.search-results`, ~4-up
+desktop / ~2-up under 640px) with a P/T/E supertype badge and a name + set/number caption
+(`filterSnapshot` returns up to 60, newest-first, floating name-prefix matches). Selecting a
+card calls `onadd(card)` with the full snapshot card object `deck.svelte.js#addCard` expects.
+Energy-pip colours are scoped CSS vars on `.card-search` (`--e-r`, `--e-g`, …).
+
+**Name-only API fallback.** A pure name query (no operators) with **zero** snapshot hits
+falls back to a debounced `searchCards()` API call (`isLegalCard`-filtered) — graceful
+degradation when the snapshot is disabled (`VITE_DISABLE_SNAPSHOT`, used in tests) or is
+missing a just-released card. Rich operator queries require the snapshot.
+
+The snapshot carries the fields the language needs: `trimCard` (in
+`scripts/build-card-snapshot.mjs`) keeps `types`, `weaknesses`, `resistances`, and
+`convertedRetreatCost` in addition to `attacks`/`subtypes`/`hp`.
 
 ---
 

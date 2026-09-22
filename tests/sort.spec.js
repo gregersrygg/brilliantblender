@@ -342,7 +342,7 @@ Total Cards: 2`;
     await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(2);
 
     await page.getByPlaceholder(/search cards/i).fill('pikachu');
-    const result = page.locator('.search-result', { hasText: 'Pikachu ex' });
+    const result = page.locator('[data-testid="search-result"]', { hasText: 'Pikachu ex' });
     await expect(result).toBeVisible();
     await result.click();
 

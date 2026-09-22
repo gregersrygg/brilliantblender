@@ -87,5 +87,17 @@ Fields from pokemontcg.io used in the app:
     expanded: "legal",
     unlimited: "legal",
   },
+  // Pokémon-only, used by card search (see architecture.md "Card search"):
+  types: ["Fire"],                // Pokémon type(s)
+  hp: "330",
+  weaknesses: [{ type: "Water", value: "×2" }],
+  resistances: [],
+  convertedRetreatCost: 2,
+  attacks: [{ name, cost: ["Fire","Fire"], convertedEnergyCost, damage, text }],
 }
 ```
+
+The **bundled snapshot** (`cards.json`, written by `trimCard` in
+`scripts/build-card-snapshot.mjs`) keeps this same subset — including `types`,
+`weaknesses`, `resistances`, and `convertedRetreatCost` — so the offline card search can
+filter on them without hitting the API.
