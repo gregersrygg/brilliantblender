@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { matchesBasicEnergyName, BASIC_ENERGY_API_NAMES, BASIC_ENERGY_NAME_RE } from './energy.js';
+import { matchesBasicEnergyName, basicEnergyApiName, BASIC_ENERGY_API_NAMES, BASIC_ENERGY_NAME_RE } from './energy.js';
 
 test('matchesBasicEnergyName matches the "Basic " prefixed snapshot/API name', () => {
   // SVE energies are named e.g. "Basic Psychic Energy" in both the snapshot and the
@@ -26,4 +26,22 @@ test('BASIC_ENERGY_API_NAMES maps every PTCGL energy letter', () => {
 test('BASIC_ENERGY_NAME_RE captures the energy letter', () => {
   assert.equal('Basic {P} Energy'.match(BASIC_ENERGY_NAME_RE)?.[1], 'P');
   assert.equal(BASIC_ENERGY_NAME_RE.test('Boss\'s Orders'), false);
+});
+
+test('basicEnergyApiName resolves the PTCGL bracketed form', () => {
+  assert.equal(basicEnergyApiName('Basic {G} Energy'), 'Grass Energy');
+});
+
+test('basicEnergyApiName resolves the plain name (e.g. from a "MEE" line)', () => {
+  assert.equal(basicEnergyApiName('Grass Energy'), 'Grass Energy');
+  assert.equal(basicEnergyApiName('Fighting Energy'), 'Fighting Energy');
+});
+
+test('basicEnergyApiName resolves the "Basic " prefixed SVE name', () => {
+  assert.equal(basicEnergyApiName('Basic Water Energy'), 'Water Energy');
+});
+
+test('basicEnergyApiName rejects special energy and non-energy cards', () => {
+  assert.equal(basicEnergyApiName('Jet Energy'), null);
+  assert.equal(basicEnergyApiName('Boss\'s Orders'), null);
 });

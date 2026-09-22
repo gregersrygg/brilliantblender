@@ -18,6 +18,22 @@ export const BASIC_ENERGY_API_NAMES = {
   Y: 'Fairy Energy',
 };
 
+const BASIC_ENERGY_NAMES = new Set(Object.values(BASIC_ENERGY_API_NAMES));
+
+/**
+ * Canonical basic-energy API name for a deck-line card name, or null if it isn't a
+ * basic energy. Matches PTCGL's "Basic {G} Energy" form and the plain "Grass Energy"
+ * form (with or without a leading "Basic "), so both route to the SVE snapshot lookup.
+ * @param {string} name - the deck line's card name
+ * @returns {string|null}
+ */
+export function basicEnergyApiName(name) {
+  const bracketed = name.match(BASIC_ENERGY_NAME_RE);
+  if (bracketed) return BASIC_ENERGY_API_NAMES[bracketed[1]];
+  const plain = name.replace(/^Basic /, '');
+  return BASIC_ENERGY_NAMES.has(plain) ? plain : null;
+}
+
 /**
  * True when a card's name refers to the same basic energy as `apiName`.
  * SVE basic energies are named with a "Basic " prefix in both the snapshot and the

@@ -33,7 +33,7 @@ src/
     upcoming.test.mjs      Node unit tests for upcoming.js
     reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
     reprint.test.mjs       Node unit tests for reprint.js
-    energy.js              Pure basic-energy helpers (name regex, letter→name map, SVE name match)
+    energy.js              Pure basic-energy helpers (name regex, letter→name map, SVE name match, basicEnergyApiName)
     energy.test.mjs        Node unit tests for energy.js
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)

@@ -141,22 +141,28 @@ test('Test 7: basic energy has no qty warning even when exceeding 4', async ({ p
       }),
     });
   });
-  await page.route('**/v2/cards/sve-1', (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          id: 'sve-1',
-          name: 'Grass Energy',
-          supertype: 'Energy',
-          subtypes: ['Basic'],
-          images: { small: 'https://images.pokemontcg.io/sve/1.png' },
-          set: { id: 'sve', ptcgoCode: 'SVE' },
-          number: '1',
-        },
-      }),
-    });
+  // Basic energy resolves by name against SVE, not by the pasted exact id.
+  await page.route('**/v2/cards*', (route) => {
+    const q = new URL(route.request().url()).searchParams.get('q') ?? '';
+    if (q.includes('name:"Grass Energy"') && q.includes('set.id:sve')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            id: 'sve-1',
+            name: 'Grass Energy',
+            supertype: 'Energy',
+            subtypes: ['Basic'],
+            images: { small: 'https://images.pokemontcg.io/sve/1.png' },
+            set: { id: 'sve', ptcgoCode: 'SVE' },
+            number: '1',
+          }],
+          totalCount: 1,
+        }),
+      });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
   });
 
   await page.goto('/');
@@ -211,5 +217,52 @@ test('Test 8: PTCGL "Basic {X} Energy" line resolves to SVE and has no qty warni
   await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
   await expect(page.locator('[data-testid="card-tile"] .error-card')).toHaveCount(0);
   // Basic energy is exempt from the 4-copy rule.
+  await expect(page.locator('.card-warning')).toHaveCount(0);
+});
+
+test('Test 9: plain-named basic energy with an unknown set code resolves via SVE', async ({ page }) => {
+  // Regression: "Grass Energy MEE 1" (plain name, non-existent MEE set) previously took the
+  // exact-print path and hit a flaky live name-search; it must now route to the SVE snapshot.
+  await page.route('**/v2/sets*', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [{ id: 'sve', name: 'Scarlet & Violet Energies', ptcgoCode: 'SVE' }],
+      }),
+    });
+  });
+  // Only the SVE basic-energy-by-name lookup is allowed to succeed. If resolution instead
+  // fell through to an exact-print or general name search, this returns [] and the test fails.
+  await page.route('**/v2/cards*', (route) => {
+    const url = new URL(route.request().url());
+    const q = url.searchParams.get('q') ?? '';
+    if (q.includes('name:"Grass Energy"') && q.includes('set.id:sve')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            id: 'sve-1',
+            name: 'Grass Energy',
+            supertype: 'Energy',
+            subtypes: ['Basic'],
+            images: { small: 'https://images.pokemontcg.io/sve/1.png' },
+            set: { id: 'sve', ptcgoCode: 'SVE' },
+            number: '1',
+          }],
+          totalCount: 1,
+        }),
+      });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) });
+  });
+
+  await page.goto('/');
+  await page.getByRole('textbox', { name: /paste/i }).fill('Energy: 6\n6 Grass Energy MEE 1');
+  await page.getByRole('button', { name: /load deck/i }).click();
+
+  await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(1);
+  await expect(page.locator('[data-testid="card-tile"] .error-card')).toHaveCount(0);
   await expect(page.locator('.card-warning')).toHaveCount(0);
 });

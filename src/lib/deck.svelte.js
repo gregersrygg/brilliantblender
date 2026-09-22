@@ -5,7 +5,7 @@ import { LEGAL_REGULATION_MARKS } from './config.js';
 import { sortDeck } from './sort.js';
 import { notLegalUntil, todayIso, isSetLegalOn } from './legality.js';
 import { isFunctionalReprint } from './reprint.js';
-import { BASIC_ENERGY_NAME_RE, BASIC_ENERGY_API_NAMES } from './energy.js';
+import { basicEnergyApiName } from './energy.js';
 import { findSetByCode } from './upcoming.js';
 import setLegality from '../data/set-legality.json';
 import upcomingSets from '../data/upcoming-sets.json';
@@ -60,9 +60,9 @@ async function refineLegality(card) {
 // fetchNewestLegalPrint and skip the slow exact-print API fetch. Trainers without a
 // legal reprint (genuinely rotated out) fall back to the exact print.
 //
-// The Energy section is left on the resolve-then-normalise path: it also contains
-// plain-named basic energies (e.g. "Grass Energy SVE 1") which must resolve to their
-// actual print, not be looked up by name. Special energy is normalised after fetch.
+// Basic energies (plain "Grass Energy" or PTCGL "Basic {G} Energy") never reach here —
+// loadDeck routes them to the SVE snapshot lookup. The Energy section otherwise stays on
+// the resolve-then-normalise path; special energy is normalised to its newest print after fetch.
 async function resolveDeckCard(card, section, setMap) {
   const isTrainerSection = section.name === 'Trainer';
   const knownSet = setMap.has(card.setCode);
@@ -166,7 +166,7 @@ export function createDeck() {
         card.image = null;
         card.cardLoading = !card.error;
         card.cardError = card.error ? 'Unrecognized card line' : null;
-        card.isBasicEnergy = BASIC_ENERGY_NAME_RE.test(card.name);
+        card.isBasicEnergy = basicEnergyApiName(card.name) != null;
       }
     }
     deck = parsed;
@@ -187,8 +187,7 @@ export function createDeck() {
       for (const card of section.cards) {
         if (card.error) continue;
 
-        const basicMatch = card.name.match(BASIC_ENERGY_NAME_RE);
-        const basicApiName = basicMatch ? BASIC_ENERGY_API_NAMES[basicMatch[1]] : null;
+        const basicApiName = basicEnergyApiName(card.name);
         if (basicApiName) {
           promises.push(
             fetchBasicEnergyFromSve(basicApiName)

@@ -37,7 +37,8 @@ loadDeck(text)
   → parseDeck(text)           sets deck with cardLoading:true on each card
   → fetchSets()               builds ptcgoCode→setId map
   → Promise.all(per-card resolution)
-      Basic {X} Energy lines → fetchBasicEnergyFromSve(name) (snapshot SVE)
+      basic energy lines     → fetchBasicEnergyFromSve(name) (snapshot SVE)
+                               (both "Basic {X} Energy" and plain "Grass Energy")
       everything else        → resolveDeckCard(card, section, setMap)
       each card: updates image, setId, isBasicEnergy, isAceSpec, regulationMark,
                  isRotating, notLegalUntil, cardLoading:false
@@ -55,11 +56,12 @@ miss the snapshot, cards in the **Trainer** section resolve straight from
 Trainer with no legal reprint (genuinely rotated out) falls back to `resolveCard` for
 the exact print and is flagged `isRotating`.
 
-The **Energy** section stays on the `resolveCard`-then-normalise path: it also holds
-plain-named basic energies (e.g. `Grass Energy SVE 1`) that must resolve to their
-actual print rather than be looked up by name; special energy is normalised after the
-fetch. Pokémon (and unlabelled-section cards) likewise use `resolveCard`, keeping
-their exact print — only Trainer/special-Energy supertypes get normalised.
+The **Energy** section stays on the `resolveCard`-then-normalise path for *special*
+energy, which is normalised to its newest legal print after the fetch. Basic energies
+never reach `resolveDeckCard` — `loadDeck` detects them by name (see below) and resolves
+them via the SVE snapshot regardless of the pasted set code. Pokémon (and
+unlabelled-section cards) use `resolveCard`, keeping their exact print — only
+Trainer/special-Energy supertypes get normalised.
 
 ## Set-legality annotation (`notLegalUntil`)
 
@@ -149,6 +151,6 @@ Two behaviours cover deck lines whose printed set code belongs to a set in
 
 ## `getWarnings()` rules
 
-- Basic Energy cards are excluded from all warnings. PTCGL `Basic {X} Energy` lines are detected by name pattern at parse time (`isBasicEnergy = true`) and resolved directly via `fetchBasicEnergyFromSve()` using a curly-brace symbol → API name map (`{G}` → Grass Energy, etc.) — bypassing the normal `setCode`/`number` lookup, since PTCGL set codes like `MEE` don't correspond to a fetchable API card. The name regex (`BASIC_ENERGY_NAME_RE`) and letter→name map (`BASIC_ENERGY_API_NAMES`) live in [`energy.js`](../../src/lib/energy.js). SVE energies are named with a `"Basic "` prefix in both the snapshot and the API, so `getSnapshotBasicEnergy` matches via `matchesBasicEnergyName` (strips the prefix) — otherwise every basic energy would miss the snapshot and make a slow live API call.
+- Basic Energy cards are excluded from all warnings. Basic energy lines are detected by name via `basicEnergyApiName()` (in [`energy.js`](../../src/lib/energy.js)) — which matches **both** the PTCGL curly-brace form (`Basic {G} Energy`, via `BASIC_ENERGY_NAME_RE` + the letter→name map `BASIC_ENERGY_API_NAMES`) **and** the plain name form (`Grass Energy`, or `Basic Grass Energy`) — and resolved directly via `fetchBasicEnergyFromSve()`, bypassing the normal `setCode`/`number` lookup. **Why match the plain form too:** deck exports often write basics as `Grass Energy MEE 1`, and set codes like `MEE` don't correspond to a fetchable API card; routing them through the exact-print path meant a live `resolveCard` name-fallback that intermittently failed on API 5xx. Sending both forms through the snapshot makes basic energy resolve offline and reliably. SVE energies are named with a `"Basic "` prefix in both the snapshot and the API, so `getSnapshotBasicEnergy` matches via `matchesBasicEnergyName` (strips the prefix) — otherwise every basic energy would miss the snapshot and make a slow live API call.
 - Non-ACE SPEC card with total qty by name > 4 → `"Max 4 copies of {name} (you have {n})"`
 - ACE SPEC cards with total ACE SPEC qty > 1 → `"Only 1 Ace Spec allowed (you have {n})"`

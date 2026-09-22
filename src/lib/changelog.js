@@ -6,6 +6,7 @@ export const CHANGELOG = [
   {
     date: '2026-09-22',
     items: [
+      'Basic energy lines now load instantly and reliably regardless of the set code you paste (e.g. "Grass Energy MEE 1") — they resolve from the bundled card list instead of a live lookup, so they no longer intermittently fail when the card API is flaky.',
       'Rebuilt card search into a proper faceted search. Beyond names, you can now filter by Pokémon type, attack cost, HP, retreat, weakness, trainer type, evolution stage, prizes (ex / Mega), and card text — and combine them.',
       'Filters you add become clean, removable chips — click one (or backspace into it) to edit it again, and there’s a live “</>” query line that mirrors them all. Click the ＋ (or just start typing, e.g. type:fire hp:200+) and learn the search shorthand as you go.',
       'Set and regulation-mark filters now autocomplete as you type, so you don’t have to remember set codes.',

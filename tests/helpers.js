@@ -228,6 +228,20 @@ export async function mockApi(page) {
 // --- M3: Print mock data ---
 
 const MOCK_PRINTS_BY_NAME = {
+  // Basic energies resolve by name against SVE via fetchBasicEnergyFromSve.
+  'Grass Energy': [
+    {
+      id: 'sve-1',
+      name: 'Grass Energy',
+      number: '1',
+      supertype: 'Energy',
+      subtypes: ['Basic'],
+      set: { id: 'sve', ptcgoCode: 'SVE', name: 'Scarlet & Violet Energies' },
+      images: { small: 'https://images.pokemontcg.io/sve/1.png' },
+      legalities: { standard: 'legal', expanded: 'legal', unlimited: 'legal' },
+      regulationMark: null,
+    },
+  ],
   'Buddy-Buddy Poffin': [
     {
       id: 'me2pt5-184',
