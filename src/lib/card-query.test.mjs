@@ -83,9 +83,9 @@ test('hasQuery is true once any name term or valid filter is present', () => {
 test('name search is substring, accent- and case-insensitive', () => {
   assert.deepEqual(names('char'), ['Charizard ex']);
 });
-test('text: searches attack/ability/rule text, not the name', () => {
+test('text: searches attack/ability text, not the name or rule box', () => {
   assert.deepEqual(names('text:"more damage"'), ['Charizard ex']);
-  assert.deepEqual(names('text:switch'), ["Boss's Orders"]);
+  assert.deepEqual(names('text:switch'), []); // rule-box text is not searched
   assert.deepEqual(names('text:charizard'), []); // name only lives in name search
 });
 test('text: also searches ability name and ability text', () => {

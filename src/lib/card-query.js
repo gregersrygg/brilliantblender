@@ -251,7 +251,6 @@ function cardText(card) {
   const parts = [];
   for (const a of card.attacks || []) { if (a.name) parts.push(a.name); if (a.text) parts.push(a.text); }
   for (const a of card.abilities || []) { if (a.name) parts.push(a.name); if (a.text) parts.push(a.text); }
-  for (const r of card.rules || []) parts.push(r);
   return norm(parts.join(' '));
 }
 
