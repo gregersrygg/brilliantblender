@@ -7,6 +7,7 @@ export const CHANGELOG = [
     date: '2026-09-24',
     items: [
       'Card-text search now looks only at attacks and abilities — the rule box (e.g. an ex’s “when this Pokémon is Knocked Out…” text) no longer produces unexpected matches.',
+      'Deck lines from the upcoming Mega Evolution — Delta Reign set now resolve by its set code “DLR”, so they’re recognized as an announced set instead of an unknown one.',
     ],
   },
   {
