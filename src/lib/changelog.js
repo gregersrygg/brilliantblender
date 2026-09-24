@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-24',
+    items: [
+      'Card-text search now looks only at attacks and abilities — the rule box (e.g. an ex’s “when this Pokémon is Knocked Out…” text) no longer produces unexpected matches.',
+    ],
+  },
+  {
     date: '2026-09-22',
     items: [
       'Basic energy lines now load instantly and reliably regardless of the set code you paste (e.g. "Grass Energy MEE 1") — they resolve from the bundled card list instead of a live lookup, so they no longer intermittently fail when the card API is flaky.',

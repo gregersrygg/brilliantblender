@@ -149,7 +149,7 @@ comma-separated values, **AND across** tokens. Operators:
 
 | Op | Meaning | Value form |
 |---|---|---|
-| `text:` | printed text (attack/ability names + text, rules) | word or `"phrase"` |
+| `text:` | attack/ability names + text (rule box excluded) | word or `"phrase"` |
 | `type:` | Pokémon type | energy letter (`r`) or name (`fire`), comma-OR |
 | `weak:` | weakness type | same as `type:` |
 | `ac:` | attack cost — matches if **any one attack** satisfies it | see grammar below |
