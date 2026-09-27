@@ -203,11 +203,17 @@ weakness (`TYPE_ENERGIES` / `WEAK_ENERGIES` / `COST_ENERGIES`). `set:`/`reg:` au
 chip is **editable**: clicking its body (or Backspace/ArrowLeft with the caret at the field's
 start) drops it back into `draft` as the active token via `editChip`, re-opening its picker.
 Pickers and results render **in-flow** (expand in place), not as floating popovers — no
-clipping, and mobile-safe. Results keep the app's
+clipping, and mobile-safe. The results grid has **no inner scroll** (no `max-height`), so it
+grows the page and scrolls with it wherever the pointer is. A capture-phase `pointerdown`
+outside `.card-search` closes both the ＋ menu and the results (`resultsOpen`, query kept);
+any `focusin` inside the component reopens them. Results keep the app's
 existing presentation — a **responsive grid of card images** (`.search-results`, ~4-up
 desktop / ~2-up under 640px) with a P/T/E supertype badge and a name + set/number caption
 (`filterSnapshot` returns up to 60, newest-first, floating name-prefix matches). Selecting a
 card calls `onadd(card)` with the full snapshot card object `deck.svelte.js#addCard` expects.
+Each result shows its **deck count** left of the name with −/+ buttons (`qtyof(card)` /
+`onremove(card)` → `deckState.qtyOf` / `removeOne`, matched by set code + number via
+`findPrint`), and is outlined when in the deck — so adding from search gives visible feedback.
 Energy-pip colours are scoped CSS vars on `.card-search` (`--e-r`, `--e-g`, …).
 
 **Name-only API fallback.** A pure name query (no operators) with **zero** snapshot hits

@@ -4,6 +4,13 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-09-27',
+    items: [
+      'Each search result now shows how many copies are in your deck, with − / + buttons to adjust it right there — so clicking a result visibly adds it.',
+      'Search results now scroll with the rest of the page instead of inside their own box, and clicking anywhere outside the search closes them (click back into the search box to bring them back).',
+    ],
+  },
+  {
     date: '2026-09-24',
     items: [
       'Card-text search now looks only at attacks and abilities — the rule box (e.g. an ex’s “when this Pokémon is Knocked Out…” text) no longer produces unexpected matches.',

@@ -195,7 +195,7 @@
         <button onclick={() => (dismissedParseWarning = true)} aria-label="Dismiss">✕</button>
       </div>
     {/if}
-    <CardSearch onadd={deckState.addCard} />
+    <CardSearch onadd={deckState.addCard} onremove={deckState.removeOne} qtyof={deckState.qtyOf} />
     <DeckView
       sections={deckState.deck.sections}
       onincrement={deckState.incrementCard}
