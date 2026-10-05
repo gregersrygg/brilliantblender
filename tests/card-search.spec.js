@@ -66,6 +66,41 @@ test.describe('Card search', () => {
     await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(5);
   });
 
+  test('results grow the page instead of scrolling in their own container', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('type:fire ');
+    await expect(results(page).first()).toBeVisible();
+    const overflowY = await page.locator('.search-results').evaluate(el => getComputedStyle(el).overflowY);
+    expect(overflowY).toBe('visible');
+  });
+
+  test('clicking outside closes the results; focusing the input reopens them', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('pikachu');
+    await expect(results(page).first()).toBeVisible();
+    await page.locator('h1').first().click();
+    await expect(results(page)).toHaveCount(0);
+    await expect(input(page)).toHaveValue('pikachu');
+    await input(page).click();
+    await expect(results(page).first()).toBeVisible();
+  });
+
+  test('a result shows its deck count with +/- controls', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('pikachu');
+    const first = results(page).first();
+    const qty = first.locator('[data-testid="search-qty"]');
+    await expect(qty).toHaveText('0');
+    await expect(first.locator('[data-testid="search-decrement"]')).toBeDisabled();
+    await first.click();
+    await expect(qty).toHaveText('1');
+    await first.locator('[data-testid="search-increment"]').click();
+    await expect(qty).toHaveText('2');
+    await first.locator('[data-testid="search-decrement"]').click();
+    await expect(qty).toHaveText('1');
+    await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(5);
+  });
+
   test('clear button empties the search', async ({ page }) => {
     await loadDeck(page);
     await input(page).fill('type:fire ');

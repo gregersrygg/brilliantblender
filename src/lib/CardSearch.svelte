@@ -4,7 +4,7 @@
   import { LEGAL_REGULATION_MARKS } from './config.js';
   import { parseQuery, appendToken, removeToken, ENERGY_LETTER_TO_NAME } from './card-query.js';
 
-  let { onadd } = $props();
+  let { onadd, onremove, qtyof } = $props();
 
   function isLegalCard(card) {
     if (card.supertype === 'Energy' && (card.subtypes ?? []).includes('Basic')) return true;
@@ -18,6 +18,7 @@
   let draft = $state('');
   let rawMode = $state(false); // "edit as text": the whole query lives in one input
   let menuOpen = $state(false);
+  let resultsOpen = $state(true);
   let inputEl;
   let rootEl;
 
@@ -218,8 +219,9 @@
   }
 
   $effect(() => {
-    if (!menuOpen) return;
-    function away(e) { if (rootEl && !rootEl.contains(e.target)) menuOpen = false; }
+    function away(e) {
+      if (rootEl && !rootEl.contains(e.target)) { menuOpen = false; resultsOpen = false; }
+    }
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
   });
@@ -236,7 +238,7 @@
   }
 </script>
 
-<div class="card-search" bind:this={rootEl}>
+<div class="card-search" bind:this={rootEl} onfocusin={() => (resultsOpen = true)}>
   <div class="field" class:focused={activeOp || menuOpen}>
     <span class="search-icon" aria-hidden="true">🔍</span>
     {#if !rawMode}
@@ -348,7 +350,7 @@
     </div>
   {/if}
 
-  {#if query}
+  {#if query && resultsOpen}
     <div class="rescount">
       {result.total === 0 ? 'No cards match' : `${result.total} card${result.total === 1 ? '' : 's'}`}
       {#if result.total > result.cards.length}<span class="dim">· showing first {result.cards.length}</span>{/if}
@@ -356,8 +358,10 @@
     {#if result.cards.length}
       <ul class="search-results" role="listbox">
         {#each result.cards as card (card.id)}
-          <li class="search-result" role="option" aria-selected="false" data-testid="search-result"
-            title={card.name} onmousedown={() => onadd(card)}>
+          {@const qty = qtyof(card)}
+          <!-- svelte-ignore a11y_click_events_have_key_events (the + button is the keyboard path) -->
+          <li class="search-result" class:in-deck={qty > 0} role="option" aria-selected={qty > 0} data-testid="search-result"
+            title={card.name} onclick={() => onadd(card)}>
             <div class="result-image">
               {#if card.images?.small}
                 <img class="result-thumb" src={card.images.small} alt={card.name} loading="lazy" />
@@ -365,7 +369,16 @@
               <span class="result-type-badge {supertypeClass(card.supertype)}">{supertypeBadge(card.supertype)}</span>
             </div>
             <div class="result-info">
-              <span class="result-name">{card.name}</span>
+              <div class="result-title">
+                <span class="result-qty">
+                  <button class="qty-btn" aria-label="Remove one" data-testid="search-decrement" disabled={qty === 0}
+                    onclick={e => { e.stopPropagation(); onremove(card); }}>−</button>
+                  <span class="qty-display" data-testid="search-qty">{qty}</span>
+                  <button class="qty-btn" aria-label="Add one" data-testid="search-increment"
+                    onclick={e => { e.stopPropagation(); onadd(card); }}>+</button>
+                </span>
+                <span class="result-name">{card.name}</span>
+              </div>
               <span class="result-set">{card.set?.ptcgoCode ?? card.set?.id ?? '?'} {card.number}</span>
             </div>
           </li>
@@ -564,8 +577,6 @@
     border: 1.5px solid var(--border);
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    max-height: 70vh;
-    overflow-y: auto;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 12px;
@@ -581,6 +592,17 @@
     transition: background 100ms ease;
   }
   .search-result:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .search-result.in-deck { box-shadow: inset 0 0 0 2px var(--accent); }
+  .result-title { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+  .result-qty { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .qty-btn {
+    padding: 0 7px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); color: var(--text); font-size: 13px; font-weight: 600;
+    line-height: 1.5; cursor: pointer;
+  }
+  .qty-btn:disabled { opacity: 0.35; cursor: default; }
+  .qty-display { min-width: 16px; text-align: center; font-size: 14px; font-weight: 700; color: var(--text-h); }
+  .in-deck .qty-display { color: var(--accent); }
   .result-image { position: relative; width: 100%; }
   .result-thumb { width: 100%; display: block; border-radius: 6px; }
   .result-thumb-placeholder {
@@ -591,7 +613,7 @@
   }
   .result-name {
     font-size: 14px; font-weight: 600; color: var(--text-h);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 100%;
   }
   .result-set { font-size: 12px; color: var(--text); opacity: 0.7; }
   .result-type-badge {
@@ -608,7 +630,6 @@
     .search-results {
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 8px;
-      max-height: 65vh;
     }
     .result-name { font-size: 13px; }
     .result-set { font-size: 11px; }

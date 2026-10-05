@@ -291,6 +291,24 @@ export function createDeck() {
     return lines.join('\n');
   }
 
+  function findPrint(apiCard) {
+    const setCode = apiCard.set?.ptcgoCode ?? getPtcgoCode(apiCard.set?.id) ?? '';
+    for (const section of deck?.sections ?? []) {
+      const card = section.cards.find(c => c.setCode === setCode && c.number === apiCard.number);
+      if (card) return card;
+    }
+    return null;
+  }
+
+  function qtyOf(apiCard) {
+    return findPrint(apiCard)?.qty ?? 0;
+  }
+
+  function removeOne(apiCard) {
+    const card = findPrint(apiCard);
+    if (card) decrementCard(card);
+  }
+
   function addCard(apiCard) {
     if (!deck) return;
     const supertypeMap = { 'Pokémon': 'Pokémon', 'Trainer': 'Trainer', 'Energy': 'Energy' };
@@ -422,6 +440,8 @@ export function createDeck() {
     incrementCard,
     decrementCard,
     addCard,
+    qtyOf,
+    removeOne,
     removeCard,
     getWarnings,
     applyPrintPicker,
