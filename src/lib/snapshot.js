@@ -97,12 +97,10 @@ export function getSnapshotSetCodes() {
   return [...map.values()].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
 }
 
-const FILTER_LIMIT = 60;
-
 /**
  * Filter the whole snapshot with the card-query language.
  * @param {string} query - the raw query string
- * @returns {{ cards: object[], total: number }} matches (capped) and the full match count
+ * @returns {{ cards: object[], total: number }} all matches and their count
  */
 export function filterSnapshot(query) {
   if (DISABLED) return { cards: [], total: 0 };
@@ -128,5 +126,5 @@ export function filterSnapshot(query) {
     return (b.set?.releaseDate ?? '').localeCompare(a.set?.releaseDate ?? '');
   });
 
-  return { cards: matches.slice(0, FILTER_LIMIT), total: matches.length };
+  return { cards: matches, total: matches.length };
 }

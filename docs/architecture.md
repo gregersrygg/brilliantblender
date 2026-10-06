@@ -209,7 +209,7 @@ outside `.card-search` closes both the ＋ menu and the results (`resultsOpen`, 
 any `focusin` inside the component reopens them. Results keep the app's
 existing presentation — a **responsive grid of card images** (`.search-results`, ~4-up
 desktop / ~2-up under 640px) with a P/T/E supertype badge and a name + set/number caption
-(`filterSnapshot` returns up to 60, newest-first, floating name-prefix matches). Selecting a
+(`filterSnapshot` returns all matches, newest-first, floating name-prefix matches). Selecting a
 card calls `onadd(card)` with the full snapshot card object `deck.svelte.js#addCard` expects.
 Each result shows its **deck count** left of the name with −/+ buttons (`qtyof(card)` /
 `onremove(card)` → `deckState.qtyOf` / `removeOne`, matched by set code + number via
