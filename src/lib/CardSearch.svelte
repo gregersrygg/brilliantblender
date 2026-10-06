@@ -93,7 +93,7 @@
       ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'],
       ['double', 'Double Rare'], ['ace', 'ACE SPEC'], ['promo', 'Promo'],
       ['ir', 'Illustration Rare'], ['sir', 'Special Illust.'],
-      ['ur', 'Ultra Rare'], ['hyper', 'Hyper Rare'],
+      ['ur', 'Ultra Rare'], ['hyper', 'Hyper Rare'], ['rgb', 'RGB Rare'],
     ],
   };
   const NUM_PRESETS = {

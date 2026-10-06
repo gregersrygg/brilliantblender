@@ -28,14 +28,14 @@ const RARITY_MAP = {
   ace: 'ACE SPEC Rare', promo: 'Promo',
   ir: 'Illustration Rare', sir: 'Special Illustration Rare',
   ur: 'Ultra Rare', hyper: 'Hyper Rare', hr: 'Hyper Rare',
-  pikachu: 'Pikachu Rare', future: 'Futuristic Rare',
+  pikachu: 'Pikachu Rare', future: 'Futuristic Rare', rgb: 'RGB Rare',
 };
 
 // Chase / alternate-art printings hidden from results unless a `rarity:` filter opts in.
 const CHASE_RARITIES = new Set([
   'Illustration Rare', 'Special Illustration Rare', 'Ultra Rare',
   'Hyper Rare', 'Mega Hyper Rare', 'MEGA_ATTACK_RARE',
-  'Futuristic Rare', 'Black White Rare', 'Pikachu Rare', 'Rainbow Rare',
+  'Futuristic Rare', 'Black White Rare', 'Pikachu Rare', 'Rainbow Rare', 'RGB Rare',
 ]);
 
 const OPERATORS = new Set(['text', 'type', 'weak', 'tr', 'stage', 'pri', 'sub', 'hp', 'rc', 'ac', 'set', 'reg', 'rarity']);

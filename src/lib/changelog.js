@@ -6,6 +6,7 @@ export const CHANGELOG = [
   {
     date: '2026-10-06',
     items: [
+      'The 30th Celebration Mew “R”, “G” and “B” chase cards no longer show up in search results by default — like other chase rarities, add a Rarity filter (“All rarities”, or the new “RGB Rare”) to see them.',
       'Search now shows every matching card instead of stopping at the first 60 — broad searches like type:d list all Darkness Pokémon.',
     ],
   },

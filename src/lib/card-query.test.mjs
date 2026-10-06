@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseQuery, matchesQuery, hasQuery, parseAttackCost, appendToken, removeToken,
 } from './card-query.js';
+import cards from '../data/cards.json' with { type: 'json' };
 
 // --- fixtures ---------------------------------------------------------------
 const charizard = {
@@ -181,6 +182,13 @@ test('an invalid rarity token still hides chase rarities by default', () => {
   const pool = [charizard, charizardAlt];
   assert.deepEqual(rarityNames('rarity:', pool), ['Charizard ex']);
   assert.deepEqual(rarityNames('rarity:bogus', pool), ['Charizard ex']);
+});
+test('30C Mew R/G/B chase printings are hidden by default', () => {
+  const mews = ['me55-R', 'me55-G', 'me55-B'].map(id => cards[id]);
+  assert.deepEqual(rarityNames('mew', mews), []);
+  assert.equal(rarityNames('mew rarity:all', mews).length, 3);
+  assert.equal(rarityNames('mew rarity:rgb', mews).length, 3);
+  assert.deepEqual(rarityNames('mew rarity:hyper', mews), []);
 });
 
 // --- sub --------------------------------------------------------------------
