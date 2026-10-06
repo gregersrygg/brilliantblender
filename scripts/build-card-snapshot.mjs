@@ -9,6 +9,13 @@ import { tmpdir } from 'os';
 const LEGAL_MARKS = ['H', 'I', 'J'];
 const REPO_URL = 'https://github.com/PokemonTCG/pokemon-tcg-data.git';
 
+// Upstream mislabels these chase printings; correct so search hides them by default.
+const RARITY_OVERRIDES = {
+  'me55-R': 'RGB Rare',
+  'me55-G': 'RGB Rare',
+  'me55-B': 'RGB Rare',
+};
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = resolve(__dirname, '../src/data');
 
@@ -28,7 +35,7 @@ function trimCard(card, set) {
     abilities: card.abilities ?? [],
     evolvesFrom: card.evolvesFrom ?? null,
     regulationMark: card.regulationMark ?? null,
-    rarity: card.rarity ?? null,
+    rarity: RARITY_OVERRIDES[card.id] ?? card.rarity ?? null,
     rules: card.rules ?? [],
     legalities: card.legalities ?? {},
     set: {

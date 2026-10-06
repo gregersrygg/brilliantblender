@@ -173,7 +173,9 @@ functional printings. A `rarity:` token opts them back in: `rarity:all` shows ev
 `rarity:sir,ur` narrows to specific rarities (short codes → snapshot `rarity` via
 `RARITY_MAP`). This is enforced in `matchesQuery` (not `matchToken`), which pulls the rarity
 token aside and applies the default-hide only when none is present. Requires the snapshot's
-`rarity` field.
+`rarity` field. Cards upstream mislabels (e.g. 30C Mew R/G/B tagged `Common`) are corrected at
+build time via `RARITY_OVERRIDES` in `scripts/build-card-snapshot.mjs`; the 30C Mews get our own
+`RGB Rare` label (no official term exists; code `rgb`).
 
 **`ac:` grammar.** The energy count goes *outside* the braces so the braces are optional:
 `ac:{r}2{c}` = exactly two Fire + one Colorless. A trailing `+`/`-` on a symbol relaxes it
