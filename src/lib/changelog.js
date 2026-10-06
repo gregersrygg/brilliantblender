@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-10-06',
+    items: [
+      'Search now shows every matching card instead of stopping at the first 60 — broad searches like type:d list all Darkness Pokémon.',
+    ],
+  },
+  {
     date: '2026-09-27',
     items: [
       'Each search result now shows how many copies are in your deck, with − / + buttons to adjust it right there — so clicking a result visibly adds it.',
