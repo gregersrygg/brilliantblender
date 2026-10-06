@@ -353,7 +353,6 @@
   {#if query && resultsOpen}
     <div class="rescount">
       {result.total === 0 ? 'No cards match' : `${result.total} card${result.total === 1 ? '' : 's'}`}
-      {#if result.total > result.cards.length}<span class="dim">· showing first {result.cards.length}</span>{/if}
     </div>
     {#if result.cards.length}
       <ul class="search-results" role="listbox">
