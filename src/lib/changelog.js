@@ -4,12 +4,6 @@
 
 export const CHANGELOG = [
   {
-    date: '2026-10-07',
-    items: [
-      'Card-text search finds Trainer and Energy effects again — e.g. text:"special energy" now finds Enhanced Hammer and Ruffian. Generic reminder lines (“You may play only 1 Supporter…”) and the ex rule box still don’t match.',
-    ],
-  },
-  {
     date: '2026-10-06',
     items: [
       'The 30th Celebration Mew “R”, “G” and “B” chase cards no longer show up in search results by default — like other chase rarities, add a Rarity filter (“All rarities”, or the new “RGB Rare”) to see them.',
