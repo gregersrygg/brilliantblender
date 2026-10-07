@@ -167,9 +167,6 @@
   </div>
   {#if deckState.deck}
     <div class="header-actions">
-      <span class="deck-total" class:invalid={deckState.deckTotal !== 60}>
-        {deckState.deckTotal} / 60
-      </span>
       <button class="btn-outline" onclick={() => (showConfirm = true)}>New Deck</button>
       <ExportButton onexport={() => deckState.exportDeck()} />
     </div>
@@ -198,6 +195,7 @@
     <CardSearch onadd={deckState.addCard} onremove={deckState.removeOne} qtyof={deckState.qtyOf} />
     <DeckView
       sections={deckState.deck.sections}
+      total={deckState.deckTotal}
       onincrement={deckState.incrementCard}
       ondecrement={deckState.decrementCard}
       warnings={deckState.getWarnings()}
@@ -351,15 +349,6 @@
     gap: 8px;
   }
 
-  .deck-total {
-    font-size: 13px;
-    font-weight: 700;
-    background: var(--border);
-    color: var(--accent);
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-
   footer {
     margin-top: 40px;
     padding: 16px 0;
@@ -373,11 +362,6 @@
     max-width: 640px;
     margin: 0 auto;
     line-height: 1.5;
-  }
-
-  .deck-total.invalid {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--error);
   }
 
   .btn-outline {

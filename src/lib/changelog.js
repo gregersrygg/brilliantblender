@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-10-07',
+    items: [
+      'The deck’s total card count (e.g. “58 / 60”) now sits right above your card list instead of up in the page header.',
+    ],
+  },
+  {
     date: '2026-10-06',
     items: [
       'The 30th Celebration Mew “R”, “G” and “B” chase cards no longer show up in search results by default — like other chase rarities, add a Rarity filter (“All rarities”, or the new “RGB Rare”) to see them.',
