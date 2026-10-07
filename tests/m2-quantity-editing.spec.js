@@ -77,6 +77,27 @@ test('Test 4: deck total shows and has invalid styling when not 60', async ({ pa
   await expect(page.locator('.deck-total')).toHaveClass(/invalid/);
 });
 
+test('Test 4b: deck total sits directly above the card list, not in the page header', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/');
+  await page.getByRole('textbox', { name: /paste/i }).fill(SAMPLE_DECKLIST);
+  await page.getByRole('button', { name: /load deck/i }).click();
+  await expect(page.locator('[data-testid="card-tile"] img')).toHaveCount(4);
+
+  await expect(page.locator('header .deck-total')).toHaveCount(0);
+  const summary = page.getByTestId('deck-summary');
+  await expect(summary.locator('.deck-total')).toHaveText('4 / 60');
+
+  const summaryBox = await summary.boundingBox();
+  const firstHeading = await page.locator('.deck-section h2').first().boundingBox();
+  const searchBox = await page.getByRole('textbox').first().boundingBox();
+  expect(summaryBox.y).toBeLessThan(firstHeading.y);
+  expect(summaryBox.y).toBeGreaterThan(searchBox.y);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(summary.locator('.deck-total')).toBeVisible();
+});
+
 test('Test 5: over-4 warning shown after incrementing beyond limit', async ({ page }) => {
   await page.route('**/v2/sets*', (route) => {
     route.fulfill({

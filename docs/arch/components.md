@@ -82,9 +82,11 @@ No props. "What's new" section shown on the landing page (empty state only). Ren
 
 ## `DeckView.svelte`
 
-**Props:** `{ sections, onincrement, ondecrement, warnings: Map<name, string>, onpick: fn|null, onremove: fn|null }`
+**Props:** `{ sections, total: number, onincrement, ondecrement, warnings: Map<name, string>, onpick: fn|null, onremove: fn|null }`
 
-Renders one `<section>` per deck section with a header (`name (count)`) and a CSS grid of `CardTile` components. Passes `onpick` only to Pokémon section tiles (`section.name === 'Pokémon'`); Trainer/Energy tiles receive `onpick={null}` (not clickable).
+Starts with a `.deck-summary` row (`data-testid="deck-summary"`): a "Deck" label plus the `.deck-total` pill (`{total} / 60`, `.invalid` styling when `total !== 60`). `App.svelte` passes `deckState.deckTotal`. **Behavioural rule — the deck total lives with the card list:** it was previously in the page header next to New Deck / Export, which read as unrelated to the cards (#79); keeping it directly above the sections ties the count to what it counts, and it flows naturally at narrow widths.
+
+Then renders one `<section>` per deck section with a header (`name (count)`) and a CSS grid of `CardTile` components. Passes `onpick` only to Pokémon section tiles (`section.name === 'Pokémon'`); Trainer/Energy tiles receive `onpick={null}` (not clickable).
 
 Visible cards: `section.cards.filter(c => c.qty > 0 || c.error)` — zero-qty cards are hidden but not removed.
 

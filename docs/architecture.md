@@ -41,7 +41,7 @@ src/
     Features.svelte        "Why Brilliant Blender?" differentiators grid (landing page)
     UpcomingSets.svelte    "New & upcoming sets" table: announced + recently-released sets, release/legal dates + status (landing page)
     Changelog.svelte       "What's new" release-notes list (landing page), data from `virtual:changelog`
-    DeckView.svelte        Section headers + card grid
+    DeckView.svelte        Deck total + section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
     ExportButton.svelte    Copy-to-clipboard export button
     ConfirmDialog.svelte   "Start over?" confirmation dialog (used by App.svelte)
