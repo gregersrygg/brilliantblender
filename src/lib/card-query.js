@@ -65,18 +65,20 @@ function tokenize(str) {
       valueStart = j;
     }
     let quoted = false;
+    let open = false;
     if (str[j] === '"') {
       quoted = true;
       let k = j + 1;
       while (k < n && str[k] !== '"') k++;
-      j = k < n ? k + 1 : k; // include closing quote when present
+      open = k >= n;
+      j = open ? k : k + 1; // include closing quote when present
     } else {
       while (j < n && str[j] !== ' ' && str[j] !== '\t') j++;
     }
     const raw = str.slice(start, j);
     let value = str.slice(valueStart, j);
     if (quoted) value = value.replace(/^"/, '').replace(/"$/, '');
-    out.push({ raw, index: start, op, value, quoted });
+    out.push({ raw, index: start, op, value, quoted, open });
     i = j;
   }
   return out;
@@ -169,7 +171,7 @@ function prizeClass(card) {
 
 function classify(t) {
   const { op, value, quoted } = t;
-  const base = { raw: t.raw, index: t.index, op, valid: false };
+  const base = { raw: t.raw, index: t.index, op, open: t.open, valid: false };
 
   if (op === null) {
     if (!value) return { ...base, kind: 'name', value: '', label: '' };

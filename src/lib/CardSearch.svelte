@@ -127,7 +127,8 @@
     const keep = [];
     let moved = false;
     toks.forEach((t, i) => {
-      const complete = t.op && t.valid && t.kind !== 'unknown' && (i < toks.length - 1 || endsSpace);
+      // An open quote may still gain words, so it only completes once closed (#81).
+      const complete = t.op && t.valid && !t.open && t.kind !== 'unknown' && (i < toks.length - 1 || endsSpace);
       if (complete) { committed = appendToken(committed, t.raw); moved = true; }
       else keep.push(t.raw);
     });

@@ -4,6 +4,12 @@
 
 export const CHANGELOG = [
   {
+    date: '2026-10-07',
+    items: [
+      'Typing a quoted phrase like text:"special condition" no longer turns into a filter chip at the first space — it stays editable text until you type the closing quote.',
+    ],
+  },
+  {
     date: '2026-10-06',
     items: [
       'The 30th Celebration Mew “R”, “G” and “B” chase cards no longer show up in search results by default — like other chase rarities, add a Rarity filter (“All rarities”, or the new “RGB Rare”) to see them.',
