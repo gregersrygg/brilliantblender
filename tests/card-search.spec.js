@@ -42,6 +42,16 @@ test.describe('Card search', () => {
     await expect(results(page).first()).toBeVisible();
   });
 
+  test('text: finds Trainer effect text but not rule-box boilerplate (#80, #74)', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).fill('text:"Special Energy"');
+    await expect(results(page).filter({ hasText: 'Enhanced Hammer' }).first()).toBeVisible();
+    await expect(results(page).filter({ hasText: 'Ruffian' }).first()).toBeVisible();
+    await input(page).fill('text:"opponent takes 2 Prize cards"');
+    await expect(page.locator('.mirror-code')).toHaveText('text:"opponent takes 2 Prize cards"');
+    await expect(results(page)).toHaveCount(0);
+  });
+
   test('an open quote keeps typing as text until the closing quote (#81)', async ({ page }) => {
     await loadDeck(page);
     await input(page).pressSequentially('text:"special ');

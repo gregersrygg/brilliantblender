@@ -249,10 +249,22 @@ export function parseQuery(str) {
   return { tokens: tokenize(str || '').map(classify) };
 }
 
+// Generic reminder lines printed on every card of a kind; not the card's own effect.
+const BOILERPLATE_RULES = [
+  /^you may play (only 1|any number of) /i,
+  /^you may attach any number of pok.mon tools/i,
+  /^attach a pok.mon tool to 1 of your pok.mon that doesn.t already have/i,
+  /ace spec card in your deck/i,
+];
+
 function cardText(card) {
   const parts = [];
   for (const a of card.attacks || []) { if (a.name) parts.push(a.name); if (a.text) parts.push(a.text); }
   for (const a of card.abilities || []) { if (a.name) parts.push(a.name); if (a.text) parts.push(a.text); }
+  // Trainer/Energy effects live in `rules`; a Pokémon's `rules` is only its rule box.
+  if (card.supertype !== 'Pokémon') {
+    for (const r of card.rules || []) if (!BOILERPLATE_RULES.some(re => re.test(r))) parts.push(r);
+  }
   return norm(parts.join(' '));
 }
 

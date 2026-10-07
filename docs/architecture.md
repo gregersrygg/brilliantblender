@@ -215,7 +215,7 @@ comma-separated values, **AND across** tokens. Operators:
 
 | Op | Meaning | Value form |
 |---|---|---|
-| `text:` | attack/ability names + text (rule box excluded) | word or `"phrase"` |
+| `text:` | attack/ability names + text, and Trainer/Energy effect text (rule box excluded — see below) | word or `"phrase"` |
 | `type:` | Pokémon type | energy letter (`r`) or name (`fire`), comma-OR |
 | `weak:` | weakness type | same as `type:` |
 | `ac:` | attack cost — matches if **any one attack** satisfies it | see grammar below |
@@ -231,6 +231,14 @@ comma-separated values, **AND across** tokens. Operators:
 An unrecognized operator, or an incomplete/malformed token (e.g. `ac:{r` mid-type), is
 kept in the string but flagged `valid:false` and **ignored when matching** — so results
 stay live while the user types.
+
+**`text:` and the rule box.** The API puts a Trainer's or Energy's *effect* in `card.rules[]`,
+alongside the generic reminder lines; on a Pokémon, `rules[]` holds only the rule box (ex /
+Mega ex / Tera wording). Intent: `text:` should find what a card *does* — so `cardText()` folds
+in `rules[]` for non-Pokémon cards (so `text:"special energy"` finds Enhanced Hammer, #80) but
+skips it entirely for Pokémon, and drops boilerplate lines matching `BOILERPLATE_RULES`
+("You may play only 1 Supporter…", Item/Stadium/Tool reminders, ACE SPEC limit) so a rule-box
+phrase never produces a match (#74).
 
 **Rarity default.** Chase / alternate-art printings (`CHASE_RARITIES` in `card-query.js`:
 Illustration Rare, Special Illustration Rare, Ultra Rare, Hyper Rare, Mega Hyper Rare,
