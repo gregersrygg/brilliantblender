@@ -18,7 +18,8 @@ const pick = (list, rand) => list[Math.floor(rand() * list.length)];
 /** Return a random `<adj>-<adj>-<noun>.txt` name for which `taken(name)` is false. */
 export function newFragmentName(taken, rand = Math.random, maxTries = 100) {
   for (let i = 0; i < maxTries; i++) {
-    const name = `${pick(ADJECTIVES, rand)}-${pick(ADJECTIVES, rand)}-${pick(NOUNS, rand)}.txt`;
+    const a = pick(ADJECTIVES, rand);
+    const name = `${a}-${pick(ADJECTIVES.filter((x) => x !== a), rand)}-${pick(NOUNS, rand)}.txt`;
     if (!taken(name)) return name;
   }
   throw new Error(`changelog: no free fragment name after ${maxTries} tries`);
