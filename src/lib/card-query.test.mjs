@@ -84,10 +84,25 @@ test('hasQuery is true once any name term or valid filter is present', () => {
 test('name search is substring, accent- and case-insensitive', () => {
   assert.deepEqual(names('char'), ['Charizard ex']);
 });
-test('text: searches attack/ability text, not the name or rule box', () => {
+test('text: searches attack/ability text, not the name', () => {
   assert.deepEqual(names('text:"more damage"'), ['Charizard ex']);
-  assert.deepEqual(names('text:switch'), []); // rule-box text is not searched
   assert.deepEqual(names('text:charizard'), []); // name only lives in name search
+});
+test('text: searches Trainer effect text, case-insensitively (#80)', () => {
+  assert.deepEqual(names('text:switch'), ["Boss's Orders"]);
+  assert.deepEqual(names('text:"BENCHED POKEMON"'), ["Boss's Orders"]);
+});
+test('text: skips a Pokémon rule box and generic Trainer reminder lines (#74)', () => {
+  const exWithRule = { ...charizard, rules: ['Pokémon ex rule: When your Pokémon ex is Knocked Out, your opponent takes 2 Prize cards.'] };
+  const bossWithReminder = { ...bossOrders, rules: [...bossOrders.rules, 'You may play only 1 Supporter card during your turn.'] };
+  assert.equal(matchesQuery(exWithRule, parseQuery('text:"knocked out"')), false);
+  assert.equal(matchesQuery(bossWithReminder, parseQuery('text:supporter')), false);
+  assert.equal(matchesQuery(bossWithReminder, parseQuery('text:switch')), true);
+});
+test('text: finds real Enhanced Hammer and Ruffian via "special energy" (#80)', () => {
+  const hits = new Set(Object.values(cards).filter(c => matchesQuery(c, parseQuery('text:"special energy"'))).map(c => c.name));
+  assert.ok(hits.has('Enhanced Hammer'));
+  assert.ok(hits.has('Ruffian'));
 });
 test('text: also searches ability name and ability text', () => {
   assert.deepEqual(names('text:infernal'), ['Charizard ex']);        // ability name
