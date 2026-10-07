@@ -38,10 +38,9 @@ src/
     sort.js                Pure function: sortDeck(deck) — deterministic per-section card ordering
     deck.svelte.js         Svelte 5 reactive state manager (createDeck)
     DeckInput.svelte       Textarea + "Load Deck" button (empty state)
-    changelog.js           CHANGELOG data: user-facing release notes (landing page)
     Features.svelte        "Why Brilliant Blender?" differentiators grid (landing page)
     UpcomingSets.svelte    "New & upcoming sets" table: announced + recently-released sets, release/legal dates + status (landing page)
-    Changelog.svelte       "What's new" release-notes list (landing page)
+    Changelog.svelte       "What's new" release-notes list (landing page), data from `virtual:changelog`
     DeckView.svelte        Section headers + card grid
     CardTile.svelte        Individual card: image, qty badge, +/− controls
     ExportButton.svelte    Copy-to-clipboard export button
@@ -62,6 +61,15 @@ scripts/
   build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
   og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
   prerender.mjs            Post-build: injects the SSR-rendered landing HTML into dist/index.html
+  changelog.mjs            Builds CHANGELOG from changelog/ fragments, dated by git (used by vite.config.js)
+  new-changelog.mjs        `npm run changelog -- "text"`: writes a randomly named one-line fragment
+  changelog.test.mjs       Node unit tests for changelog.mjs + new-changelog.mjs
+
+changelog/                 User-facing release notes (see "Changelog" below)
+  <adj>-<adj>-<noun>.txt   One fragment per user-facing change: a single line of plain text, no date
+  history.json             Frozen legacy entries ({ date, items }[]) from before fragments — never edit
+
+vite.config.js             Svelte plugin, dev-only analytics strip, `virtual:changelog` plugin
 
 tests/
   helpers.js               Shared mock API setup + SAMPLE_DECKLIST
@@ -136,6 +144,64 @@ reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens l
 
 ---
 
+## Changelog (`changelog/` → `virtual:changelog`)
+
+**Intent:** the "What's new" list should show *when a change went live*, and parallel PRs
+must never conflict on it. A single shared `changelog.js` array failed both: every PR
+edited the same lines, and the hand-written dates were authoring dates, not ship dates.
+
+**Authoring:** `npm run changelog -- "Item text"` (`scripts/new-changelog.mjs`) writes
+`changelog/<adj>-<adj>-<noun>.txt` (e.g. `brave-otters-jump.txt`) from small built-in word
+lists, retrying if the name exists, and prints the path; it rejects empty or multi-line text.
+Each fragment holds **exactly one item**: one non-empty line of plain text (surrounding blank
+lines/whitespace trimmed). A PR with several user-facing changes adds several fragments. Only
+`*.txt` files are fragments, so a README or other file in the folder is ignored.
+`changelog/history.json` holds the pre-fragment entries verbatim and is frozen.
+
+- **Why random names, not branch names:** branch names get reused. A fragment named after a
+  reused branch would *modify* the earlier fragment — keeping its old date and overwriting its
+  text — instead of adding a new item. Random names make every fragment a fresh add.
+- **Why single-line `.txt`:** one file = one item keeps the format trivially unambiguous (no
+  bullet/wrapping rules, no markdown that the plain-text renderer would show literally), and
+  the build — not the author — assembles and orders the list. An empty or multi-line fragment
+  fails the build with an error naming the file.
+
+**Build (`scripts/changelog.mjs`):**
+- `gitAddedTimes(dir)` runs one `git log --first-parent --no-renames --diff-filter=A
+  --relative --format=@%ct --name-only -- .` in `changelog/` and maps each file to the commit
+  time of the first-parent commit on `main` that added it (earliest add wins). With squash
+  merges that commit *is* the merge, so the date is when the change landed. Git failure →
+  `{}`.
+- `buildChangelog(fragments, times, history, now)` (pure) dates each fragment (`now` if it
+  has no git time — uncommitted, or a PR branch in dev), buckets by **Europe/Oslo** calendar
+  day (`Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Oslo' })`), orders items newest
+  merge first (same-commit ties, e.g. several fragments from one squash merge, by file name), appends `history.json`
+  items to any same-date bucket (generated first), and returns the old
+  `{ date: 'YYYY-MM-DD', items }[]` shape, dates descending.
+- `parseFragment(text, file)` returns the fragment's single line or throws.
+- `loadChangelog(dir)` reads the folder's `*.txt` + `history.json` and returns `{ changelog, files }`.
+
+**Wiring:** a plugin in `vite.config.js` resolves `virtual:changelog` to
+`export const CHANGELOG = [...]`, so it's baked into both the client build and the SSR bundle
+that `scripts/prerender.mjs` renders (no runtime git, no extra step in `package.json`). In
+dev it `addWatchFile`s every fragment + `history.json`, and a `configureServer` watcher
+invalidates the module and full-reloads when a fragment is added/removed.
+
+**Why git dates, not a bot:** a post-merge bot that stamps dates into a file would push to
+`main` (racing other pushes and needing a write token) and still be one shared file. The
+date is already recorded by git, so it's derived at build time instead.
+
+**Gotchas:**
+- **Renaming a fragment re-dates it** — `--no-renames` makes the rename an *add* at the
+  rename commit's time. Never rename or move fragments; edit content in place (edits don't
+  change the date).
+- **CI needs full history:** `ci.yml` checks out with `fetch-depth: 0` + `filter: blob:none`
+  (trees/commits only, no blobs — enough for `--name-only`). With a shallow clone every
+  fragment would be dated at the single fetched commit. Any new workflow that builds the
+  site must do the same.
+
+---
+
 ## Card search (`CardSearch.svelte` + `card-query.js`)
 
 The search filters the bundled snapshot in-memory (offline, instant) with a small query
@@ -198,7 +264,11 @@ editable, in the `</>` mirror). Internally it is split into `committed` (finishe
 tokens, rendered as removable **plain-language chips** inside the field) and `draft` (the
 live `<input>` text — name terms plus the token being typed). On each keystroke `promote()`
 moves any *complete* operator token (valid, and either not last or space-terminated) from
-`draft` into `committed`; name terms stay in `draft`. Because a promotion can empty `draft`
+`draft` into `committed`; name terms stay in `draft`. A quoted value with no closing `"`
+is flagged `open` by the tokenizer and is never promoted, even when space-terminated — the
+space is part of a multi-word phrase still being typed (`text:"special condition"`), so the
+chip appears only once the quote is closed (#81). An open quote is still `valid`, so results
+keep filtering live. Because a promotion can empty `draft`
 back to its previous value, `onInput` re-assigns `e.target.value = draft` so Svelte doesn't
 skip syncing the DOM (a net-zero state change leaves the typed text lingering otherwise).
 "Edit as text" collapses everything back into one editable input (`rawMode`).

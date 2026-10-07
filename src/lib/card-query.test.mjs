@@ -108,6 +108,11 @@ test('text: also searches ability name and ability text', () => {
   assert.deepEqual(names('text:infernal'), ['Charizard ex']);        // ability name
   assert.deepEqual(names('text:"search your deck"'), ['Charizard ex']); // ability text
 });
+test('an unclosed quote is flagged open; a closed one is not', () => {
+  assert.equal(parseQuery('text:"special ').tokens[0].open, true);
+  assert.equal(parseQuery('text:"special condition"').tokens[0].open, false);
+  assert.equal(parseQuery('text:special').tokens[0].open, false);
+});
 test('an unclosed quote is tolerated and still searches', () => {
   assert.deepEqual(names('text:"more damage'), ['Charizard ex']);
 });

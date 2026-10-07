@@ -39,7 +39,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full architecture ref
 
 ## Keeping the Changelog Up to Date
 
-**Part of every user-facing change:** add an entry to the `CHANGELOG` array in `src/lib/changelog.js` (shown on the landing page via `Changelog.svelte`). Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Newest first; group same-day items under one date.
+**Part of every user-facing change:** run `npm run changelog -- "<summary>"` to add a one-line fragment in `changelog/` (one file per change; add several for several changes). Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Never edit `changelog/history.json` or a fragment that's already on `main`, never rename a fragment, and don't add dates: each item is dated automatically by when its file landed on `main`.
 
 ## Code Comments
 
