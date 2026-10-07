@@ -256,7 +256,11 @@ editable, in the `</>` mirror). Internally it is split into `committed` (finishe
 tokens, rendered as removable **plain-language chips** inside the field) and `draft` (the
 live `<input>` text — name terms plus the token being typed). On each keystroke `promote()`
 moves any *complete* operator token (valid, and either not last or space-terminated) from
-`draft` into `committed`; name terms stay in `draft`. Because a promotion can empty `draft`
+`draft` into `committed`; name terms stay in `draft`. A quoted value with no closing `"`
+is flagged `open` by the tokenizer and is never promoted, even when space-terminated — the
+space is part of a multi-word phrase still being typed (`text:"special condition"`), so the
+chip appears only once the quote is closed (#81). An open quote is still `valid`, so results
+keep filtering live. Because a promotion can empty `draft`
 back to its previous value, `onInput` re-assigns `e.target.value = draft` so Svelte doesn't
 skip syncing the DOM (a net-zero state change leaves the typed text lingering otherwise).
 "Edit as text" collapses everything back into one editable input (`rawMode`).

@@ -42,6 +42,17 @@ test.describe('Card search', () => {
     await expect(results(page).first()).toBeVisible();
   });
 
+  test('an open quote keeps typing as text until the closing quote (#81)', async ({ page }) => {
+    await loadDeck(page);
+    await input(page).pressSequentially('text:"special ');
+    await expect(chips(page)).toHaveCount(0);
+    await expect(input(page)).toHaveValue('text:"special ');
+    await input(page).pressSequentially('condition" ');
+    await expect(chips(page)).toHaveCount(1);
+    await expect(chips(page).first()).toContainText('special condition');
+    await expect(input(page)).toHaveValue('');
+  });
+
   test('the </> mirror reflects chips plus draft text', async ({ page }) => {
     await loadDeck(page);
     await input(page).fill('type:fire hp:200+ char');
