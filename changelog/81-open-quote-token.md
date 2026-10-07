@@ -1,1 +1,0 @@
-- Typing a quoted phrase like text:"special condition" no longer turns into a filter chip at the first space — it stays editable text until you type the closing quote.
