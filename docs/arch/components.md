@@ -76,7 +76,7 @@ No props. Static "Why Brilliant Blender?" section shown on the landing page (emp
 
 ## `Changelog.svelte`
 
-No props. "What's new" section shown on the landing page (empty state only). Renders `CHANGELOG` from `virtual:changelog` (generated at build time from `changelog/` fragments + `history.json`; see "Changelog" in `docs/architecture.md`), newest first, each with a locale-formatted date and a bullet list of user-facing changes. **Add a `changelog/<branch-name>.md` fragment whenever you ship something a user would notice** — keep it player-focused, not internal/CI churn. Dates are `YYYY-MM-DD` strings parsed as local dates to avoid timezone drift.
+No props. "What's new" section shown on the landing page (empty state only). Renders `CHANGELOG` from `virtual:changelog` (generated at build time from `changelog/` fragments + `history.json`; see "Changelog" in `docs/architecture.md`), newest first, each with a locale-formatted date and a bullet list of user-facing changes. **Run `npm run changelog -- "<summary>"` (one fragment per change) whenever you ship something a user would notice** — keep it player-focused, not internal/CI churn. Dates are `YYYY-MM-DD` strings parsed as local dates to avoid timezone drift.
 
 ---
 

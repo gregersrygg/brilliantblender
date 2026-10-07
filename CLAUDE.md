@@ -39,7 +39,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full architecture ref
 
 ## Keeping the Changelog Up to Date
 
-**Part of every user-facing change:** add a new file `changelog/<branch-name-without-prefix>.md` (e.g. `changelog/79-deck-count-position.md`) with one `- ` bullet per change. Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Never edit `changelog/history.json` or another PR's file, never rename a fragment, and don't add dates: each item is dated automatically by when its file landed on `main`.
+**Part of every user-facing change:** run `npm run changelog -- "<summary>"` to add a one-line fragment in `changelog/` (one file per change; add several for several changes). Write a short, user-relevant summary — what a player would notice — not internal/CI/refactor churn. Never edit `changelog/history.json` or a fragment that's already on `main`, never rename a fragment, and don't add dates: each item is dated automatically by when its file landed on `main`.
 
 ## Code Comments
 

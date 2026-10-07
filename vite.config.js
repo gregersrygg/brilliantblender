@@ -21,7 +21,7 @@ const stripAnalyticsInDev = {
 const CHANGELOG_DIR = fileURLToPath(new URL('./changelog', import.meta.url));
 const CHANGELOG_ID = '\0virtual:changelog';
 
-// Builds CHANGELOG from changelog/*.md + history.json, dated by git (see docs/architecture.md).
+// Builds CHANGELOG from changelog/*.txt + history.json, dated by git (see docs/architecture.md).
 const changelog = {
   name: 'changelog',
   resolveId(id) {

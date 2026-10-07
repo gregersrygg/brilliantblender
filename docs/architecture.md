@@ -62,10 +62,11 @@ scripts/
   og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
   prerender.mjs            Post-build: injects the SSR-rendered landing HTML into dist/index.html
   changelog.mjs            Builds CHANGELOG from changelog/ fragments, dated by git (used by vite.config.js)
-  changelog.test.mjs       Node unit tests for changelog.mjs
+  new-changelog.mjs        `npm run changelog -- "text"`: writes a randomly named one-line fragment
+  changelog.test.mjs       Node unit tests for changelog.mjs + new-changelog.mjs
 
 changelog/                 User-facing release notes (see "Changelog" below)
-  <branch-name>.md         One fragment per user-facing PR: `- ` bullets, no dates
+  <adj>-<adj>-<noun>.txt   One fragment per user-facing change: a single line of plain text, no date
   history.json             Frozen legacy entries ({ date, items }[]) from before fragments — never edit
 
 vite.config.js             Svelte plugin, dev-only analytics strip, `virtual:changelog` plugin
@@ -149,11 +150,21 @@ reduced-motion the sparkles stay visible but static. `--glow`/`--spark` tokens l
 must never conflict on it. A single shared `changelog.js` array failed both: every PR
 edited the same lines, and the hand-written dates were authoring dates, not ship dates.
 
-**Authoring:** each user-facing PR adds its own `changelog/<branch-name-without-prefix>.md`
-(e.g. `79-deck-count-position.md`) with one `- ` bullet per item; wrapped continuation lines
-are joined, blank lines ignored, and text before the first bullet (or no bullets) fails the
-build. No dates in the file. `changelog/history.json` holds the pre-fragment entries verbatim
-and is frozen.
+**Authoring:** `npm run changelog -- "Item text"` (`scripts/new-changelog.mjs`) writes
+`changelog/<adj>-<adj>-<noun>.txt` (e.g. `brave-otters-jump.txt`) from small built-in word
+lists, retrying if the name exists, and prints the path; it rejects empty or multi-line text.
+Each fragment holds **exactly one item**: one non-empty line of plain text (surrounding blank
+lines/whitespace trimmed). A PR with several user-facing changes adds several fragments. Only
+`*.txt` files are fragments, so a README or other file in the folder is ignored.
+`changelog/history.json` holds the pre-fragment entries verbatim and is frozen.
+
+- **Why random names, not branch names:** branch names get reused. A fragment named after a
+  reused branch would *modify* the earlier fragment — keeping its old date and overwriting its
+  text — instead of adding a new item. Random names make every fragment a fresh add.
+- **Why single-line `.txt`:** one file = one item keeps the format trivially unambiguous (no
+  bullet/wrapping rules, no markdown that the plain-text renderer would show literally), and
+  the build — not the author — assembles and orders the list. An empty or multi-line fragment
+  fails the build with an error naming the file.
 
 **Build (`scripts/changelog.mjs`):**
 - `gitAddedTimes(dir)` runs one `git log --first-parent --no-renames --diff-filter=A
@@ -164,10 +175,11 @@ and is frozen.
 - `buildChangelog(fragments, times, history, now)` (pure) dates each fragment (`now` if it
   has no git time — uncommitted, or a PR branch in dev), buckets by **Europe/Oslo** calendar
   day (`Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Oslo' })`), orders items newest
-  merge first (bullet order kept within a file, ties by file name), appends `history.json`
+  merge first (same-commit ties, e.g. several fragments from one squash merge, by file name), appends `history.json`
   items to any same-date bucket (generated first), and returns the old
   `{ date: 'YYYY-MM-DD', items }[]` shape, dates descending.
-- `loadChangelog(dir)` reads the folder and returns `{ changelog, files }`.
+- `parseFragment(text, file)` returns the fragment's single line or throws.
+- `loadChangelog(dir)` reads the folder's `*.txt` + `history.json` and returns `{ changelog, files }`.
 
 **Wiring:** a plugin in `vite.config.js` resolves `virtual:changelog` to
 `export const CHANGELOG = [...]`, so it's baked into both the client build and the SSR bundle

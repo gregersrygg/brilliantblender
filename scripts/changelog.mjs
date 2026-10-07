@@ -4,18 +4,14 @@ import { join } from 'node:path';
 
 const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Oslo' });
 
-/** Parse a changelog fragment's markdown into its bullet items. */
+/** Return a fragment's single item, throwing if it is empty or spans several lines. */
 export function parseFragment(text, file = 'fragment') {
-  const items = [];
-  for (const raw of text.split('\n')) {
-    const line = raw.trim();
-    if (!line) continue;
-    if (line.startsWith('- ')) items.push(line.slice(2).trim());
-    else if (items.length) items[items.length - 1] += ` ${line}`;
-    else throw new Error(`${file}: text before the first "- " bullet: ${line}`);
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) throw new Error(`changelog: ${file} is empty — a fragment holds exactly one line`);
+  if (lines.length > 1) {
+    throw new Error(`changelog: ${file} has ${lines.length} lines — a fragment holds exactly one item; add one file per change`);
   }
-  if (!items.length) throw new Error(`${file}: no "- " bullets found`);
-  return items;
+  return lines[0];
 }
 
 /**
@@ -28,12 +24,12 @@ export function parseFragment(text, file = 'fragment') {
  */
 export function buildChangelog(fragments, times, history, now) {
   const dated = fragments
-    .map(({ file, text }) => ({ file, time: times[file] ?? now, items: parseFragment(text, file) }))
+    .map(({ file, text }) => ({ file, time: times[file] ?? now, item: parseFragment(text, file) }))
     .sort((a, b) => b.time - a.time || a.file.localeCompare(b.file));
 
   const byDate = new Map();
   const bucket = (date) => byDate.get(date) ?? byDate.set(date, []).get(date);
-  for (const f of dated) bucket(dayFmt.format(new Date(f.time))).push(...f.items);
+  for (const f of dated) bucket(dayFmt.format(new Date(f.time))).push(f.item);
   for (const entry of history) bucket(entry.date).push(...entry.items);
 
   return [...byDate]
@@ -64,7 +60,7 @@ export function gitAddedTimes(dir) {
 
 /** Read `dir`'s fragments + history.json and build the CHANGELOG, dated from git. */
 export function loadChangelog(dir, now = Date.now()) {
-  const names = readdirSync(dir).filter((f) => f.endsWith('.md')).sort();
+  const names = readdirSync(dir).filter((f) => f.endsWith('.txt')).sort();
   const fragments = names.map((file) => ({ file, text: readFileSync(join(dir, file), 'utf8') }));
   const history = JSON.parse(readFileSync(join(dir, 'history.json'), 'utf8'));
   return {
