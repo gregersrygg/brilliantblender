@@ -1,1 +1,0 @@
-- The deck’s total card count (e.g. “58 / 60”) now sits right above your card list instead of up in the page header.
