@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        # Full history (trees only) so the changelog can date fragments by the commit that added them.
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
