@@ -1,5 +1,5 @@
 <script>
-  import { CHANGELOG } from './changelog.js';
+  import { CHANGELOG } from 'virtual:changelog';
 
   const fmt = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
