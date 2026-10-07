@@ -1,1 +1,0 @@
-- Card-text search finds Trainer and Energy effects again — e.g. text:"special energy" now finds Enhanced Hammer and Ruffian. Generic reminder lines (“You may play only 1 Supporter…”) and the ex rule box still don’t match.
