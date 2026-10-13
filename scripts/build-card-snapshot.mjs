@@ -5,12 +5,14 @@ import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { tmpdir } from 'os';
-import { loadSupplement, SUPPLEMENT_SETS } from './tcgdex-supplement.mjs';
+import { buildSupplement, SUPPLEMENT_SETS } from './tcgdex-supplement.mjs';
 
 const LEGAL_MARKS = ['H', 'I', 'J'];
 const REPO_URL = 'https://github.com/PokemonTCG/pokemon-tcg-data.git';
 // Codes other tools (e.g. Limitless) export that differ from the upstream ptcgoCode.
 const SET_CODE_ALIASES = { SVP: 'svp' };
+// Written by export-tcgdex.mjs (a separate, secret-less CI job); see docs/architecture.md.
+const TCGDEX_EXPORT = resolve(process.argv[2] ?? 'tcgdex-promos.json');
 
 // Upstream mislabels these chase printings; correct so search hides them by default.
 const RARITY_OVERRIDES = {
@@ -57,7 +59,6 @@ function trimCard(card, set) {
 
 function main() {
   const tmp = mkdtempSync(join(tmpdir(), 'ptcg-data-'));
-  const tcgdexTmp = mkdtempSync(join(tmpdir(), 'tcgdex-data-'));
   console.log('Cloning pokemon-tcg-data (shallow)...');
   execSync(`git clone --depth 1 ${REPO_URL} ${tmp}`, { stdio: 'pipe' });
 
@@ -107,7 +108,8 @@ function main() {
   console.log(`  ${sveEnergyCount} SVE energy cards`);
 
   try {
-    const { cards, codes } = loadSupplement({ tmp: tcgdexTmp, cardsById, setsById, byName, legalMarks: LEGAL_MARKS });
+    const exported = JSON.parse(readFileSync(TCGDEX_EXPORT, 'utf8'));
+    const { cards, codes } = buildSupplement({ exported, cardsById, setsById, byName, legalMarks: LEGAL_MARKS });
     for (const card of cards) cardsById[card.id] = card;
     for (const [code, id] of codes) seen[code] = id;
   } catch (err) {
@@ -143,7 +145,6 @@ function main() {
   console.log(`  sets.json: ${Math.round(Buffer.byteLength(JSON.stringify(setEntries)) / 1024)} KB`);
 
   rmSync(tmp, { recursive: true, force: true });
-  rmSync(tcgdexTmp, { recursive: true, force: true });
   console.log('Done.');
 }
 

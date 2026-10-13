@@ -13,7 +13,7 @@ Pure-logic units use Node's built-in runner: `npm test` → `node --test scripts
 | `tests/legality-warning.spec.js` | Cards with null regulation marks show "Not Standard-legal" warning; basic energy exempt |
 | `tests/set-legality-warning.spec.js` | Not-yet-legal set shows amber "Legal from {date}" notice; reprint of an already-legal card is suppressed (§4.1.3); a red rule violation (>4 copies) takes precedence over the amber notice; uses `page.clock` to pin the date |
 | `tests/promo-import.spec.js` | MEP and SVP 166+ promos (TCGdex supplement) resolve with images on the snapshot-enabled server |
-| `scripts/tcgdex-supplement.test.mjs` | Unit tests for `tcgdexToCard` (subtypes incl. `MEGA`, Trainer effect → `rules`, weakness ×), `findTwin`, and the data-only `parseTcgdexModule` |
+| `scripts/tcgdex-supplement.test.mjs` | Unit tests for `tcgdexToCard` (subtypes incl. `MEGA`, Trainer effect → `rules`, weakness ×), `findTwin`, `localize`, and `buildSupplement` |
 | `scripts/changelog.test.mjs` | Unit tests for `buildChangelog` (Oslo-day grouping, ordering + same-commit ties, missing git date → now, history merge), single-line `parseFragment` validation, `.txt`-only `loadChangelog`, generator name format/collision retry/text validation (`new-changelog.mjs`), and `gitAddedTimes` against a throwaway git repo |
 | `src/lib/parser.test.mjs` | Unit tests for `parseDeck` set-code/line parsing, incl. digit-leading codes (`30C`), promo `PR-SV`, and names that could be mistaken for the code |
 | `src/lib/legality.test.mjs` | Unit tests (`node --test`) for `notLegalUntil` (incl. `{isReprint}`), `isSetLegalOn`, `todayIso`, `formatLegalDate` |

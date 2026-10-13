@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { tcgdexToCard, findTwin, parseTcgdexModule } from './tcgdex-supplement.mjs';
+import { tcgdexToCard, findTwin, localize, buildSupplement } from './tcgdex-supplement.mjs';
 
 const set = { id: 'mep', ptcgoCode: 'MEP', name: 'Mega Evolution Black Star Promos', releaseDate: '2025/09/26', printedTotal: 112 };
 
@@ -61,50 +61,38 @@ test('no twin when gameplay differs', () => {
   assert.equal(findTwin(megaLatias, byName), null);
 });
 
-const MODULE = `import { Card } from "../../../interfaces"
-import Set from "../MEP Black Star Promos"
-
-const card: Card = {
-	set: Set,
-
-	name: {
-		en: "Paradise Resort",
-		fr: "Hôtel « Au paradis des Pokémon »",
-		'es-mx': "Hotel \\"Paraíso\\"",
-	},
-
-	hp: 140,
-	trainerType: "Stadium",
-	effect: {
-		en: "Retreat Cost " +
-			"is {C} less.",
-	},
-	weaknesses: [{
-		type: "Darkness",
-		value: "x2"
-	}],
-	variants: [
-		{ type: "holo", stamp: ["staff"], },
-	],
-}
-
-export default card
-`;
-
-test('parses a cards-database module as data and picks English text', () => {
-  assert.deepEqual(parseTcgdexModule(MODULE), {
-    set: null,
-    name: 'Paradise Resort',
-    hp: 140,
-    trainerType: 'Stadium',
-    effect: 'Retreat Cost is {C} less.',
-    weaknesses: [{ type: 'Darkness', value: 'x2' }],
-    variants: [{ type: 'holo', stamp: ['staff'] }],
-  });
+test('localize keeps English text from per-language objects', () => {
+  assert.deepEqual(
+    localize({ name: { en: 'Alakazam', fr: 'Alakazam' }, attacks: [{ name: { en: 'Powerful Hand', de: 'Mächtige Hand' }, cost: ['Psychic'] }] }),
+    { name: 'Alakazam', attacks: [{ name: 'Powerful Hand', cost: ['Psychic'] }] },
+  );
 });
 
-test('rejects syntax outside the data-only subset instead of executing it', () => {
-  assert.throws(() => parseTcgdexModule('const card: Card = { name: (() => 1)() }'));
-  assert.throws(() => parseTcgdexModule('export default {}'));
-  assert.throws(() => parseTcgdexModule('const card: Card = { name: "a" + b }'));
+test('buildSupplement adds legal cards missing upstream and registers unknown set codes', () => {
+  const exported = [
+    { setId: 'svp', releaseDate: '2023-03-31', cards: [
+      { ...megaLatias, localId: '010', name: 'Upstream Has Me' },
+      { ...megaLatias, localId: '166' },
+    ] },
+    { setId: 'mep', releaseDate: '2025-09-26', cards: [
+      { ...megaLatias, localId: '011' },
+      { ...megaLatias, localId: '012', regulationMark: 'G' },
+    ] },
+  ];
+  const svpSet = { id: 'svp', ptcgoCode: 'PR-SV', name: 'SV Promos', releaseDate: '2023/01/01', printedTotal: 102 };
+  const { cards, codes } = buildSupplement({
+    exported,
+    cardsById: { 'svp-10': {} },
+    setsById: { svp: svpSet },
+    byName: new Map(),
+    legalMarks: ['H', 'I', 'J'],
+  });
+  assert.deepEqual(cards.map(c => c.id), ['svp-166', 'mep-11']);
+  assert.equal(cards[0].set.ptcgoCode, 'PR-SV');
+  assert.deepEqual(cards[1].set, { id: 'mep', ptcgoCode: 'MEP', name: 'Mega Evolution Black Star Promos', releaseDate: '2025/09/26', printedTotal: 2 });
+  assert.deepEqual(codes, [['MEP', 'mep']]);
+});
+
+test('buildSupplement fails loudly when the export lacks a set', () => {
+  assert.throws(() => buildSupplement({ exported: [], cardsById: {}, setsById: {}, byName: new Map(), legalMarks: ['I'] }));
 });

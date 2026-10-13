@@ -1,11 +1,6 @@
 // Fills promo sets that pokemon-tcg-data lacks or lags behind on, using TCGdex.
 // See docs/architecture.md "Promo supplement (TCGdex)".
 
-import { readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-import { execFileSync } from 'child_process';
-
-const REPO_URL = 'https://github.com/tcgdex/cards-database.git';
 const SCRYDEX = 'https://images.scrydex.com/pokemon';
 
 export const SUPPLEMENT_SETS = [
@@ -105,112 +100,25 @@ export function localize(value) {
   return value;
 }
 
-const LITERALS = { true: true, false: false, null: null, undefined: null };
-
-// cards-database files are TS modules whose body is a plain object literal. Parse that literal as
-// data (strings incl. "a" + "b", numbers, objects, arrays) rather than executing third-party
-// code; other bare identifiers (the `set: Set` import) become null.
-export function parseTcgdexModule(src) {
-  const decl = /^const \w+: \w+ = /m.exec(src);
-  if (!decl) throw new Error('no object literal found');
-  let i = decl.index + decl[0].length;
-
-  const ws = () => { while (/\s/.test(src[i])) i++; };
-  const expect = ch => {
-    ws();
-    if (src[i] !== ch) throw new Error(`expected "${ch}" at ${i}, got "${src[i]}"`);
-    i++;
-  };
-  const string = () => {
-    const quote = src[i++];
-    let out = '';
-    while (src[i] !== quote) {
-      if (i >= src.length) throw new Error('unterminated string');
-      if (src[i] === '\\') {
-        const esc = src[++i];
-        out += { n: '\n', t: '\t', r: '\r' }[esc] ?? esc;
-      } else {
-        out += src[i];
-      }
-      i++;
-    }
-    i++;
-    return out;
-  };
-  const word = () => {
-    const m = /^[\w$-]+/.exec(src.slice(i));
-    if (!m) throw new Error(`unexpected "${src[i]}" at ${i}`);
-    i += m[0].length;
-    return m[0];
-  };
-  const value = () => {
-    ws();
-    const ch = src[i];
-    if (ch === '{') {
-      i++;
-      const obj = {};
-      for (ws(); src[i] !== '}'; ws()) {
-        const key = src[i] === '"' || src[i] === "'" ? string() : word();
-        expect(':');
-        obj[key] = value();
-        ws();
-        if (src[i] === ',') i++;
-      }
-      i++;
-      return obj;
-    }
-    if (ch === '[') {
-      i++;
-      const arr = [];
-      for (ws(); src[i] !== ']'; ws()) {
-        arr.push(value());
-        ws();
-        if (src[i] === ',') i++;
-      }
-      i++;
-      return arr;
-    }
-    if (ch === '"' || ch === "'") {
-      let out = string();
-      for (ws(); src[i] === '+'; ws()) {
-        i++;
-        ws();
-        if (src[i] !== '"' && src[i] !== "'") throw new Error(`expected string after "+" at ${i}`);
-        out += string();
-      }
-      return out;
-    }
-    const w = word();
-    if (/^-?\d/.test(w)) return Number(w);
-    return w in LITERALS ? LITERALS[w] : null;
-  };
-  return localize(value());
-}
-
-// Returns { cards: [...trimmed cards], codes: [[ptcgoCode, setId], ...] } for cards missing upstream.
-export function loadSupplement({ tmp, cardsById, setsById, byName, legalMarks }) {
-  console.log('Cloning tcgdex/cards-database (shallow, sparse)...');
-  execFileSync('git', ['clone', '--depth', '1', '--filter=blob:none', '--sparse', REPO_URL, tmp], { stdio: 'pipe' });
-  execFileSync('git', ['-C', tmp, 'sparse-checkout', 'set', ...SUPPLEMENT_SETS.map(d => d.dir)], { stdio: 'pipe' });
-
+// `exported` is export-tcgdex.mjs output (untrusted data); returns cards missing upstream plus
+// [ptcgoCode, setId] entries for sets upstream doesn't know.
+export function buildSupplement({ exported, cardsById, setsById, byName, legalMarks }) {
   const cards = [];
   const codes = [];
   for (const def of SUPPLEMENT_SETS) {
-    const tset = parseTcgdexModule(readFileSync(join(tmp, `${def.dir}.ts`), 'utf8'));
-    const files = readdirSync(join(tmp, def.dir)).filter(f => /^\d+\.ts$/.test(f));
+    const entry = exported.find(e => e.setId === def.setId);
+    if (!entry) throw new Error(`export has no ${def.setId} set`);
     const upstream = setsById[def.setId];
     const set = {
       id: def.setId,
       ptcgoCode: upstream?.ptcgoCode ?? def.ptcgoCode,
       name: upstream?.name ?? def.name,
-      releaseDate: upstream?.releaseDate ?? tset.releaseDate.replaceAll('-', '/'),
-      printedTotal: upstream?.printedTotal ?? files.length,
+      releaseDate: upstream?.releaseDate ?? String(entry.releaseDate).replaceAll('-', '/'),
+      printedTotal: upstream?.printedTotal ?? entry.cards.length,
     };
     let added = 0;
-    for (const file of files) {
-      const localId = file.replace('.ts', '');
-      if (cardsById[`${def.setId}-${parseInt(localId, 10)}`]) continue;
-      const tc = { ...parseTcgdexModule(readFileSync(join(tmp, def.dir, file), 'utf8')), localId };
+    for (const tc of entry.cards) {
+      if (cardsById[`${def.setId}-${parseInt(tc.localId, 10)}`]) continue;
       if (!legalMarks.includes(tc.regulationMark)) continue;
       cards.push(tcgdexToCard(tc, set, findTwin(tc, byName)));
       added++;

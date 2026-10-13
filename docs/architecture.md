@@ -59,7 +59,8 @@ public/                    Copied verbatim into dist/ at build time
 
 scripts/
   build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
-  tcgdex-supplement.mjs    Fills promo sets missing/lagging upstream (MEP, SVP) from TCGdex
+  export-tcgdex.mjs        Imports TCGdex promo modules (tsx, sandboxed CI job) → tcgdex-promos.json
+  tcgdex-supplement.mjs    Maps that export into promo cards missing/lagging upstream (MEP, SVP)
   tcgdex-supplement.test.mjs  Node unit tests for the TCGdex → snapshot mapping
   og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
   prerender.mjs            Post-build: injects the SSR-rendered landing HTML into dist/index.html
@@ -315,14 +316,22 @@ The snapshot carries the fields the language needs: `trimCard` (in
 pokemon-tcg-data (the snapshot's source) has **no Mega Evolution promo set** (PTCGL code
 `MEP`) and its SV promos (`svp`) stop well short of the real list, so deck lines like
 "Alakazam MEP 9" or "Teal Mask Ogerpon ex SVP 166" had no card to resolve to.
-`scripts/tcgdex-supplement.mjs` (called by `build-card-snapshot.mjs`) fills the gap from a
-shallow, sparse clone of [tcgdex/cards-database](https://github.com/tcgdex/cards-database)
-(only the `SUPPLEMENT_SETS` folders, a few MB) — no per-card HTTP requests:
+The gap is filled from [tcgdex/cards-database](https://github.com/tcgdex/cards-database) in
+two steps (`npm run snapshot` runs both):
 
-- Card files are TS modules (`const card: Card = { … }`) with per-language text. The literal
-  is **parsed as data, never executed** (`parseTcgdexModule`: strings incl. `"a" + "b"`,
-  numbers, objects, arrays; bare identifiers → null; anything else throws), then `localize`
-  keeps the `en` strings.
+1. **`npm run snapshot:tcgdex`** (`scripts/export-tcgdex.mjs`, run with `tsx`) shallow,
+   sparse-clones only the `SUPPLEMENT_SETS` folders (a few MB, no per-card HTTP requests),
+   **imports** the card TS modules, keeps the `en` text (`localize`) and writes
+   `tcgdex-promos.json` (gitignored).
+2. **`npm run snapshot:build`** (`build-card-snapshot.mjs`) reads that JSON as plain data and
+   maps it with `buildSupplement` / `tcgdexToCard` (`scripts/tcgdex-supplement.mjs`).
+
+**Behavioural rule — keep step 1 sandboxed.** Importing the modules executes third-party code,
+so in `update-snapshot.yml` it runs in its own `tcgdex` job: `contents: read` only, no
+secrets, `persist-credentials: false`, and **no npm cache** (the privileged job restores the
+cache, so a poisoned one would cross over). Only the JSON artifact reaches the `update` job,
+which holds `SNAPSHOT_PUSH_TOKEN`. Never import TCGdex files (or run `npm run snapshot` /
+`snapshot:tcgdex`) in a job with secrets or write permissions.
 
 - Only cards **missing upstream** are added (upstream wins once it catches up), and only
   with a legal regulation mark. Card ids follow the upstream form (`mep-9`, unpadded).
@@ -336,7 +345,7 @@ shallow, sparse clone of [tcgdex/cards-database](https://github.com/tcgdex/cards
   many promos. Scrydex had every supplemented card when checked (2026-10-13), but serves a
   **card-back placeholder with HTTP 200** for ids it doesn't have, so a brand-new promo can show
   a card back until scrydex adds it.
-- If the clone or parse fails, the build logs a warning and **carries over** the previously
+- If the `tcgdex` job fails or its export is missing/malformed, the build logs a warning and **carries over** the previously
   snapshotted supplement cards instead of dropping them.
 
 `SET_CODE_ALIASES` in `build-card-snapshot.mjs` adds extra codes other tools export

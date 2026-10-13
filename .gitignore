@@ -17,3 +17,6 @@ test-results/
 
 # Ephemeral proposal from the update-upcoming-sets agent (merged by merge-upcoming.mjs).
 src/data/upcoming-sets.proposed.json
+
+# TCGdex promo export handed from the sandboxed CI job to the snapshot build.
+tcgdex-promos.json
