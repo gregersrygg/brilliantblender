@@ -1,0 +1,1 @@
+Mega Evolution promos (e.g. “Alakazam MEP 9”) and newer Scarlet & Violet promos (SVP 166 and up) now load in pasted decks and show up in search; SV promos written as “SVP” work too, not just “PR-SV”.

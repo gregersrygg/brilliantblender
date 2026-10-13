@@ -12,7 +12,7 @@ Snapshot access is via `src/lib/snapshot.js`. Set `VITE_DISABLE_SNAPSHOT=true` t
 
 ## Snapshot refresh
 
-Run `npm run snapshot` (requires `VITE_POKEMONTCG_API_KEY` in env) to regenerate `src/data/*.json` from the live API. Do this when new sets release or when `LEGAL_REGULATION_MARKS` changes. The snapshot files are checked into git so deploys include them.
+Run `npm run snapshot` to regenerate `src/data/*.json` (pokemon-tcg-data plus the TCGdex promo supplement — see "Promo supplement (TCGdex)" in `docs/architecture.md`). Do this when new sets release or when `LEGAL_REGULATION_MARKS` changes. The snapshot files are checked into git so deploys include them.
 
 ## Cache keys (sessionStorage)
 
