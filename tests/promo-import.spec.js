@@ -16,5 +16,5 @@ test('resolves MEP and recent SVP promos from the snapshot', async ({ page }) =>
   await expect(imgs).toHaveCount(3);
   await expect(page.locator('[data-testid="card-tile"] .warning-icon')).toHaveCount(0);
   await expect(page.locator('[data-testid="coming-soon"]')).toHaveCount(0);
-  await expect(page.locator('img[src*="mep/009"]')).toHaveCount(1);
+  await expect(page.locator('img[src*="pokemon/mep-9/"]')).toHaveCount(1);
 });

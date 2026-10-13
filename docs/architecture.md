@@ -315,8 +315,14 @@ The snapshot carries the fields the language needs: `trimCard` (in
 pokemon-tcg-data (the snapshot's source) has **no Mega Evolution promo set** (PTCGL code
 `MEP`) and its SV promos (`svp`) stop well short of the real list, so deck lines like
 "Alakazam MEP 9" or "Teal Mask Ogerpon ex SVP 166" had no card to resolve to.
-`scripts/tcgdex-supplement.mjs` (called by `build-card-snapshot.mjs`) fills the gap from
-TCGdex for every set in `SUPPLEMENT_SETS`:
+`scripts/tcgdex-supplement.mjs` (called by `build-card-snapshot.mjs`) fills the gap from a
+shallow, sparse clone of [tcgdex/cards-database](https://github.com/tcgdex/cards-database)
+(only the `SUPPLEMENT_SETS` folders, a few MB) — no per-card HTTP requests:
+
+- Card files are TS modules (`const card: Card = { … }`) with per-language text. The literal
+  is **parsed as data, never executed** (`parseTcgdexModule`: strings incl. `"a" + "b"`,
+  numbers, objects, arrays; bare identifiers → null; anything else throws), then `localize`
+  keeps the `en` strings.
 
 - Only cards **missing upstream** are added (upstream wins once it catches up), and only
   with a legal regulation mark. Card ids follow the upstream form (`mep-9`, unpadded).
@@ -325,10 +331,12 @@ TCGdex for every set in `SUPPLEMENT_SETS`:
   ability names — `findTwin`) so text/rules/subtypes match the rest of the snapshot; with no
   twin they're mapped from TCGdex (`tcgdexToCard`: stage/suffix → `subtypes` incl. `MEGA`,
   Trainer effect → `rules`, synthesized ex/Mega prize rule).
-- Images: TCGdex assets when they exist, else scrydex (pokemontcg.io's own host). Scrydex
-  returns a **card-back placeholder with HTTP 200** for unknown ids, so its image is used only
-  if its hash differs from the placeholder's.
-- If TCGdex is unreachable, the build logs a warning and **carries over** the previously
+- Images are scrydex URLs (`images.scrydex.com/pokemon/<setId>-<n>/small|large`, pokemontcg.io's
+  own host), built without requests — the repo has no image URLs, and TCGdex's asset host lacks
+  many promos. Scrydex had every supplemented card when checked (2026-10-13), but serves a
+  **card-back placeholder with HTTP 200** for ids it doesn't have, so a brand-new promo can show
+  a card back until scrydex adds it.
+- If the clone or parse fails, the build logs a warning and **carries over** the previously
   snapshotted supplement cards instead of dropping them.
 
 `SET_CODE_ALIASES` in `build-card-snapshot.mjs` adds extra codes other tools export

@@ -5,7 +5,7 @@ import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { tmpdir } from 'os';
-import { fetchSupplement, SUPPLEMENT_SETS } from './tcgdex-supplement.mjs';
+import { loadSupplement, SUPPLEMENT_SETS } from './tcgdex-supplement.mjs';
 
 const LEGAL_MARKS = ['H', 'I', 'J'];
 const REPO_URL = 'https://github.com/PokemonTCG/pokemon-tcg-data.git';
@@ -55,8 +55,9 @@ function trimCard(card, set) {
   };
 }
 
-async function main() {
+function main() {
   const tmp = mkdtempSync(join(tmpdir(), 'ptcg-data-'));
+  const tcgdexTmp = mkdtempSync(join(tmpdir(), 'tcgdex-data-'));
   console.log('Cloning pokemon-tcg-data (shallow)...');
   execSync(`git clone --depth 1 ${REPO_URL} ${tmp}`, { stdio: 'pipe' });
 
@@ -105,9 +106,8 @@ async function main() {
   console.log(`  ${legalCount} legal cards`);
   console.log(`  ${sveEnergyCount} SVE energy cards`);
 
-  console.log('Supplementing promos from TCGdex...');
   try {
-    const { cards, codes } = await fetchSupplement({ cardsById, setsById, byName, legalMarks: LEGAL_MARKS });
+    const { cards, codes } = loadSupplement({ tmp: tcgdexTmp, cardsById, setsById, byName, legalMarks: LEGAL_MARKS });
     for (const card of cards) cardsById[card.id] = card;
     for (const [code, id] of codes) seen[code] = id;
   } catch (err) {
@@ -143,7 +143,8 @@ async function main() {
   console.log(`  sets.json: ${Math.round(Buffer.byteLength(JSON.stringify(setEntries)) / 1024)} KB`);
 
   rmSync(tmp, { recursive: true, force: true });
+  rmSync(tcgdexTmp, { recursive: true, force: true });
   console.log('Done.');
 }
 
-await main();
+main();

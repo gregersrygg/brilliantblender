@@ -1,14 +1,16 @@
 // Fills promo sets that pokemon-tcg-data lacks or lags behind on, using TCGdex.
 // See docs/architecture.md "Promo supplement (TCGdex)".
 
-import { createHash } from 'crypto';
+import { readFileSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { execFileSync } from 'child_process';
 
-const TCGDEX_API = 'https://api.tcgdex.net/v2/en';
+const REPO_URL = 'https://github.com/tcgdex/cards-database.git';
 const SCRYDEX = 'https://images.scrydex.com/pokemon';
 
 export const SUPPLEMENT_SETS = [
-  { tcgdexId: 'svp', setId: 'svp' },
-  { tcgdexId: 'mep', setId: 'mep', ptcgoCode: 'MEP', name: 'Mega Evolution Black Star Promos' },
+  { dir: 'data/Scarlet & Violet/SVP Black Star Promos', setId: 'svp' },
+  { dir: 'data/Mega Evolution/MEP Black Star Promos', setId: 'mep', ptcgoCode: 'MEP', name: 'Mega Evolution Black Star Promos' },
 ];
 
 const STAGES = { Basic: 'Basic', Stage1: 'Stage 1', Stage2: 'Stage 2' };
@@ -49,7 +51,8 @@ function deriveRules(tc, subtypes) {
 
 const mapWeakness = w => ({ type: w.type, value: String(w.value ?? '').replace(/^x/, '×') });
 
-export function tcgdexToCard(tc, set, images, twin) {
+// Callers only pass cards with a Standard regulation mark; promos are all Expanded-legal.
+export function tcgdexToCard(tc, set, twin) {
   const number = String(parseInt(tc.localId, 10));
   const subtypes = deriveSubtypes(tc);
   const gameplay = twin
@@ -78,6 +81,7 @@ export function tcgdexToCard(tc, set, images, twin) {
         evolvesFrom: tc.evolveFrom ?? null,
         rules: deriveRules(tc, subtypes),
       };
+  const image = `${SCRYDEX}/${set.id}-${number}`;
   return {
     id: `${set.id}-${number}`,
     name: tc.name,
@@ -85,80 +89,134 @@ export function tcgdexToCard(tc, set, images, twin) {
     ...gameplay,
     regulationMark: tc.regulationMark ?? null,
     rarity: tc.rarity ?? null,
-    legalities: {
-      ...(tc.legal?.standard ? { standard: 'Legal' } : {}),
-      ...(tc.legal?.expanded ? { expanded: 'Legal' } : {}),
-    },
+    legalities: { standard: 'Legal', expanded: 'Legal' },
     set,
-    images: images ?? { small: null, large: null },
+    images: { small: `${image}/small`, large: `${image}/large` },
   };
 }
 
-async function getJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
-  return res.json();
+// Picks the English string out of TCGdex's per-language objects ({ en, fr, de, … }).
+export function localize(value) {
+  if (Array.isArray(value)) return value.map(localize);
+  if (value && typeof value === 'object') {
+    if (typeof value.en === 'string') return value.en;
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, localize(v)]));
+  }
+  return value;
 }
 
-async function sha1Of(url) {
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  return createHash('sha1').update(Buffer.from(await res.arrayBuffer())).digest('hex');
-}
+const LITERALS = { true: true, false: false, null: null, undefined: null };
 
-// TCGdex assets first; scrydex (pokemontcg.io's own host) answers unknown ids with a
-// card-back placeholder, so its image only counts when it differs from that placeholder.
-async function findImages(tc, def, serie, scrydexPlaceholder) {
-  const tcgdex = tc.image ?? `https://assets.tcgdex.net/en/${serie}/${def.tcgdexId}/${tc.localId}`;
-  const head = await fetch(`${tcgdex}/low.webp`, { method: 'HEAD' });
-  if (head.ok) return { small: `${tcgdex}/low.webp`, large: `${tcgdex}/high.webp` };
-  const scrydex = `${SCRYDEX}/${def.setId}-${parseInt(tc.localId, 10)}`;
-  const hash = await sha1Of(`${scrydex}/small`);
-  if (hash && hash !== scrydexPlaceholder) return { small: `${scrydex}/small`, large: `${scrydex}/large` };
-  return null;
-}
+// cards-database files are TS modules whose body is a plain object literal. Parse that literal as
+// data (strings incl. "a" + "b", numbers, objects, arrays) rather than executing third-party
+// code; other bare identifiers (the `set: Set` import) become null.
+export function parseTcgdexModule(src) {
+  const decl = /^const \w+: \w+ = /m.exec(src);
+  if (!decl) throw new Error('no object literal found');
+  let i = decl.index + decl[0].length;
 
-async function mapLimit(items, limit, fn) {
-  const out = [];
-  let i = 0;
-  await Promise.all(Array.from({ length: limit }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      out[idx] = await fn(items[idx]);
+  const ws = () => { while (/\s/.test(src[i])) i++; };
+  const expect = ch => {
+    ws();
+    if (src[i] !== ch) throw new Error(`expected "${ch}" at ${i}, got "${src[i]}"`);
+    i++;
+  };
+  const string = () => {
+    const quote = src[i++];
+    let out = '';
+    while (src[i] !== quote) {
+      if (i >= src.length) throw new Error('unterminated string');
+      if (src[i] === '\\') {
+        const esc = src[++i];
+        out += { n: '\n', t: '\t', r: '\r' }[esc] ?? esc;
+      } else {
+        out += src[i];
+      }
+      i++;
     }
-  }));
-  return out;
+    i++;
+    return out;
+  };
+  const word = () => {
+    const m = /^[\w$-]+/.exec(src.slice(i));
+    if (!m) throw new Error(`unexpected "${src[i]}" at ${i}`);
+    i += m[0].length;
+    return m[0];
+  };
+  const value = () => {
+    ws();
+    const ch = src[i];
+    if (ch === '{') {
+      i++;
+      const obj = {};
+      for (ws(); src[i] !== '}'; ws()) {
+        const key = src[i] === '"' || src[i] === "'" ? string() : word();
+        expect(':');
+        obj[key] = value();
+        ws();
+        if (src[i] === ',') i++;
+      }
+      i++;
+      return obj;
+    }
+    if (ch === '[') {
+      i++;
+      const arr = [];
+      for (ws(); src[i] !== ']'; ws()) {
+        arr.push(value());
+        ws();
+        if (src[i] === ',') i++;
+      }
+      i++;
+      return arr;
+    }
+    if (ch === '"' || ch === "'") {
+      let out = string();
+      for (ws(); src[i] === '+'; ws()) {
+        i++;
+        ws();
+        if (src[i] !== '"' && src[i] !== "'") throw new Error(`expected string after "+" at ${i}`);
+        out += string();
+      }
+      return out;
+    }
+    const w = word();
+    if (/^-?\d/.test(w)) return Number(w);
+    return w in LITERALS ? LITERALS[w] : null;
+  };
+  return localize(value());
 }
 
 // Returns { cards: [...trimmed cards], codes: [[ptcgoCode, setId], ...] } for cards missing upstream.
-export async function fetchSupplement({ cardsById, setsById, byName, legalMarks }) {
+export function loadSupplement({ tmp, cardsById, setsById, byName, legalMarks }) {
+  console.log('Cloning tcgdex/cards-database (shallow, sparse)...');
+  execFileSync('git', ['clone', '--depth', '1', '--filter=blob:none', '--sparse', REPO_URL, tmp], { stdio: 'pipe' });
+  execFileSync('git', ['-C', tmp, 'sparse-checkout', 'set', ...SUPPLEMENT_SETS.map(d => d.dir)], { stdio: 'pipe' });
+
   const cards = [];
   const codes = [];
-  const scrydexPlaceholder = await sha1Of(`${SCRYDEX}/none-0/small`);
   for (const def of SUPPLEMENT_SETS) {
-    const tset = await getJson(`${TCGDEX_API}/sets/${def.tcgdexId}`);
+    const tset = parseTcgdexModule(readFileSync(join(tmp, `${def.dir}.ts`), 'utf8'));
+    const files = readdirSync(join(tmp, def.dir)).filter(f => /^\d+\.ts$/.test(f));
     const upstream = setsById[def.setId];
-    const missing = tset.cards.filter(c => {
-      const n = parseInt(c.localId, 10);
-      return !isNaN(n) && !cardsById[`${def.setId}-${n}`];
-    });
     const set = {
       id: def.setId,
       ptcgoCode: upstream?.ptcgoCode ?? def.ptcgoCode,
       name: upstream?.name ?? def.name,
       releaseDate: upstream?.releaseDate ?? tset.releaseDate.replaceAll('-', '/'),
-      printedTotal: upstream?.printedTotal ?? tset.cardCount.total,
+      printedTotal: upstream?.printedTotal ?? files.length,
     };
-    const fetched = await mapLimit(missing, 8, async brief => {
-      const tc = await getJson(`${TCGDEX_API}/cards/${brief.id}`);
-      if (!legalMarks.includes(tc.regulationMark)) return null;
-      const images = await findImages(tc, def, tset.serie.id, scrydexPlaceholder);
-      return tcgdexToCard(tc, set, images, findTwin(tc, byName));
-    });
-    const added = fetched.filter(Boolean);
-    cards.push(...added);
-    if (added.length && !upstream) codes.push([set.ptcgoCode, set.id]);
-    console.log(`  ${def.tcgdexId}: ${added.length} cards from TCGdex`);
+    let added = 0;
+    for (const file of files) {
+      const localId = file.replace('.ts', '');
+      if (cardsById[`${def.setId}-${parseInt(localId, 10)}`]) continue;
+      const tc = { ...parseTcgdexModule(readFileSync(join(tmp, def.dir, file), 'utf8')), localId };
+      if (!legalMarks.includes(tc.regulationMark)) continue;
+      cards.push(tcgdexToCard(tc, set, findTwin(tc, byName)));
+      added++;
+    }
+    if (added && !upstream) codes.push([set.ptcgoCode, set.id]);
+    console.log(`  ${def.setId}: ${added} cards from TCGdex`);
   }
   return { cards, codes };
 }
