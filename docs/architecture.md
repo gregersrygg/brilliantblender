@@ -59,6 +59,8 @@ public/                    Copied verbatim into dist/ at build time
 
 scripts/
   build-card-snapshot.mjs  Fetches Standard-legal cards from API, writes src/data/*.json
+  tcgdex-supplement.mjs    Fills promo sets missing/lagging upstream (MEP, SVP) from TCGdex
+  tcgdex-supplement.test.mjs  Node unit tests for the TCGdex → snapshot mapping
   og-image.html            Source template for og-image.png (render at 1200×630, screenshot to public/)
   prerender.mjs            Post-build: injects the SSR-rendered landing HTML into dist/index.html
   changelog.mjs            Builds CHANGELOG from changelog/ fragments, dated by git (used by vite.config.js)
@@ -80,6 +82,7 @@ tests/
   legality-warning.spec.js
   set-legality-warning.spec.js
   old-card-load.spec.js      Old Trainer prints resolve by name without exact-print fetch
+  promo-import.spec.js       MEP / recent SVP promos resolve from the snapshot (snapshot-enabled server)
 ```
 
 `playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can
@@ -306,6 +309,31 @@ The snapshot carries the fields the language needs: `trimCard` (in
 `convertedRetreatCost` in addition to `attacks`/`subtypes`/`hp`.
 
 ---
+
+## Promo supplement (TCGdex)
+
+pokemon-tcg-data (the snapshot's source) has **no Mega Evolution promo set** (PTCGL code
+`MEP`) and its SV promos (`svp`) stop well short of the real list, so deck lines like
+"Alakazam MEP 9" or "Teal Mask Ogerpon ex SVP 166" had no card to resolve to.
+`scripts/tcgdex-supplement.mjs` (called by `build-card-snapshot.mjs`) fills the gap from
+TCGdex for every set in `SUPPLEMENT_SETS`:
+
+- Only cards **missing upstream** are added (upstream wins once it catches up), and only
+  with a legal regulation mark. Card ids follow the upstream form (`mep-9`, unpadded).
+- A set unknown upstream gets its code from the def (`MEP → mep`) added to `sets.json`.
+- Gameplay fields are **borrowed from a functional upstream twin** (same name, HP, attack and
+  ability names — `findTwin`) so text/rules/subtypes match the rest of the snapshot; with no
+  twin they're mapped from TCGdex (`tcgdexToCard`: stage/suffix → `subtypes` incl. `MEGA`,
+  Trainer effect → `rules`, synthesized ex/Mega prize rule).
+- Images: TCGdex assets when they exist, else scrydex (pokemontcg.io's own host). Scrydex
+  returns a **card-back placeholder with HTTP 200** for unknown ids, so its image is used only
+  if its hash differs from the placeholder's.
+- If TCGdex is unreachable, the build logs a warning and **carries over** the previously
+  snapshotted supplement cards instead of dropping them.
+
+`SET_CODE_ALIASES` in `build-card-snapshot.mjs` adds extra codes other tools export
+(`SVP` for upstream's `PR-SV`); the upstream code is listed first, so reverse lookups
+(`getPtcgoCode`) still return it.
 
 ## Data pipelines
 

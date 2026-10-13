@@ -5,9 +5,12 @@ import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { tmpdir } from 'os';
+import { fetchSupplement, SUPPLEMENT_SETS } from './tcgdex-supplement.mjs';
 
 const LEGAL_MARKS = ['H', 'I', 'J'];
 const REPO_URL = 'https://github.com/PokemonTCG/pokemon-tcg-data.git';
+// Codes other tools (e.g. Limitless) export that differ from the upstream ptcgoCode.
+const SET_CODE_ALIASES = { SVP: 'svp' };
 
 // Upstream mislabels these chase printings; correct so search hides them by default.
 const RARITY_OVERRIDES = {
@@ -52,7 +55,7 @@ function trimCard(card, set) {
   };
 }
 
-function main() {
+async function main() {
   const tmp = mkdtempSync(join(tmpdir(), 'ptcg-data-'));
   console.log('Cloning pokemon-tcg-data (shallow)...');
   execSync(`git clone --depth 1 ${REPO_URL} ${tmp}`, { stdio: 'pipe' });
@@ -70,14 +73,14 @@ function main() {
       }
     }
   }
-  const setEntries = Object.entries(seen);
-  console.log(`  ${setEntries.length} sets with ptcgoCode`);
+  console.log(`  ${Object.keys(seen).length} sets with ptcgoCode`);
 
   console.log('Reading card files...');
   const cardsDir = join(tmp, 'cards/en');
   const files = readdirSync(cardsDir).filter(f => f.endsWith('.json'));
 
   const cardsById = {};
+  const byName = new Map();
   let legalCount = 0;
   let sveEnergyCount = 0;
 
@@ -87,6 +90,8 @@ function main() {
     if (!set) continue;
     const cards = JSON.parse(readFileSync(join(cardsDir, file), 'utf8'));
     for (const card of cards) {
+      if (!byName.has(card.name)) byName.set(card.name, []);
+      byName.get(card.name).push(trimCard(card, set));
       const isLegal = LEGAL_MARKS.includes(card.regulationMark);
       const isSveEnergy = setId === 'sve' && card.supertype === 'Energy';
       if (isLegal || isSveEnergy) {
@@ -100,9 +105,31 @@ function main() {
   console.log(`  ${legalCount} legal cards`);
   console.log(`  ${sveEnergyCount} SVE energy cards`);
 
+  console.log('Supplementing promos from TCGdex...');
+  try {
+    const { cards, codes } = await fetchSupplement({ cardsById, setsById, byName, legalMarks: LEGAL_MARKS });
+    for (const card of cards) cardsById[card.id] = card;
+    for (const [code, id] of codes) seen[code] = id;
+  } catch (err) {
+    // Keep the previously snapshotted supplement rather than dropping those cards.
+    console.log(`::warning::TCGdex supplement failed, carrying over previous cards: ${err.message}`);
+    const supplementIds = new Set(SUPPLEMENT_SETS.map(d => d.setId));
+    const prevCards = JSON.parse(readFileSync(resolve(dataDir, 'cards.json'), 'utf8'));
+    for (const card of Object.values(prevCards)) {
+      if (supplementIds.has(card.set?.id) && !cardsById[card.id]) {
+        cardsById[card.id] = card;
+        if (card.set.ptcgoCode && !seen[card.set.ptcgoCode]) seen[card.set.ptcgoCode] = card.set.id;
+      }
+    }
+  }
+  for (const [code, id] of Object.entries(SET_CODE_ALIASES)) {
+    if (!seen[code]) seen[code] = id;
+  }
+
   const cardCount = Object.keys(cardsById).length;
   console.log(`\nTotal unique cards: ${cardCount}`);
 
+  const setEntries = Object.entries(seen);
   writeFileSync(resolve(dataDir, 'sets.json'), JSON.stringify(setEntries));
   writeFileSync(resolve(dataDir, 'cards.json'), JSON.stringify(cardsById));
   writeFileSync(resolve(dataDir, 'snapshot-meta.json'), JSON.stringify({
@@ -119,4 +146,4 @@ function main() {
   console.log('Done.');
 }
 
-main();
+await main();
