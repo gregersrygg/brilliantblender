@@ -11,6 +11,7 @@ Pure-logic units use Node's built-in runner: `npm test` → `node --test scripts
 | `tests/m2-quantity-editing.spec.js` | +/− controls, deck total, section counts, warnings, export |
 | `tests/m3-print-substitution.spec.js` | Print Picker open/close, print list, current highlight, qty controls, >4 validation, export |
 | `tests/legality-warning.spec.js` | Cards with null regulation marks show "Not Standard-legal" warning; basic energy exempt |
+| `tests/duplicate-trainer-merge.spec.js` | Two prints of the same Trainer normalise to one print and merge into a single entry with the summed qty (#88) |
 | `tests/set-legality-warning.spec.js` | Not-yet-legal set shows amber "Legal from {date}" notice; reprint of an already-legal card is suppressed (§4.1.3); a red rule violation (>4 copies) takes precedence over the amber notice; uses `page.clock` to pin the date |
 | `tests/promo-import.spec.js` | MEP and SVP 166+ promos (TCGdex supplement) resolve with images on the snapshot-enabled server |
 | `scripts/tcgdex-supplement.test.mjs` | Unit tests for `tcgdexToCard` (subtypes incl. `MEGA`, Trainer effect → `rules`, weakness ×), `findTwin`, `localize`, and `buildSupplement` |

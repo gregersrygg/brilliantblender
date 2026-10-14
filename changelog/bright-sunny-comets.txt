@@ -1,0 +1,1 @@
+Importing a deck with several prints of the same Trainer (e.g. two Gwynn arts) now shows one entry with the combined count instead of duplicate cards
