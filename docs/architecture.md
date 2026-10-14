@@ -84,6 +84,7 @@ tests/
   set-legality-warning.spec.js
   old-card-load.spec.js      Old Trainer prints resolve by name without exact-print fetch
   promo-import.spec.js       MEP / recent SVP promos resolve from the snapshot (snapshot-enabled server)
+  duplicate-trainer-merge.spec.js  Same-name Trainer prints merge into one entry (#88)
 ```
 
 `playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can

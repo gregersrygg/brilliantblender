@@ -46,6 +46,11 @@ loadDeck(text)
 
 Cards render progressively as each fetch resolves (skeleton → image).
 
+After every card resolves, `mergeDuplicatePrints(deck)` folds lines in the same section
+that ended up on the same print (`name|setCode|number`) into one entry, summing `qty`.
+Normalisation makes this common for Trainers: `3 Gwynn PBL 119` + `1 Gwynn PBL 109` both
+resolve to the newest legal Gwynn and become one `×4` entry (#88). Error cards are never merged.
+
 ### `resolveDeckCard(card, section, setMap)`
 
 Trainers and special Energy are always normalised to the **newest legal print by
