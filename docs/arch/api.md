@@ -14,6 +14,14 @@ Snapshot access is via `src/lib/snapshot.js`. Set `VITE_DISABLE_SNAPSHOT=true` t
 
 Run `npm run snapshot` to regenerate `src/data/*.json` (pokemon-tcg-data plus the TCGdex promo supplement — see "Promo supplement (TCGdex)" in `docs/architecture.md`). Do this when new sets release or when `LEGAL_REGULATION_MARKS` changes. The snapshot files are checked into git so deploys include them.
 
+## Transient API errors
+
+Every live request goes through `apiFetch`, which retries 5xx/429 responses and network errors twice (300 ms, then 1 s) before giving up. pokemontcg.io fails intermittently (a large share of requests answer 500/502), and without retries an old card with no snapshot entry, such as `Super Rod PAL 188`, showed the red error tile instead of loading as rotated (#89). 404 is not retried.
+
+## Exact name matching
+
+The API's `name:"X"` query matches any card whose name *contains* X (`name:"Iono"` also returns `Iono's Kilowattrel`). Every name-based lookup (`searchCardByName`, `fetchNewestLegalPrint`, `fetchPrintsByName`, and the snapshot's `findSnapshotPrint` / `getSnapshotPrintsByName`) therefore keeps only results for which `sameCardName` from `src/lib/card-name.js` is true. It ignores case, accents, apostrophe and dash variants, and extra whitespace, and it never accepts a prefix or substring match (#89).
+
 ## Cache keys (sessionStorage)
 
 | Key pattern | Stores |
@@ -36,7 +44,7 @@ Checks snapshot, then sessionStorage, then `GET /v2/cards/{setId}-{number}`. Thr
 
 ### `searchCardByName(name) → Promise<cardObject>`
 
-`GET /v2/cards?q=name:"{name}"&pageSize=1`. Returns first result. Throws if no results. (No snapshot lookup — used as a last-resort fallback.)
+`GET /v2/cards?q=name:"{name}"&pageSize=30`. Returns the newest result with an exact name match (`sameCardName`). Throws if no results. (No snapshot lookup — used as a last-resort fallback.)
 
 ### `resolveCard(ptcgoCode, number, setMap, name) → Promise<cardObject>`
 

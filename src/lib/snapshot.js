@@ -1,6 +1,7 @@
 import cardsData from '../data/cards.json';
 import setsData from '../data/sets.json';
 import { matchesBasicEnergyName } from './energy.js';
+import { sameCardName } from './card-name.js';
 import { parseQuery, matchesQuery, hasQuery } from './card-query.js';
 
 const DISABLED = import.meta.env.VITE_DISABLE_SNAPSHOT === 'true';
@@ -39,7 +40,7 @@ export function findSnapshotPrint(name, legalMarks) {
   if (DISABLED) return null;
   const candidates = Object.values(cardsData)
     .filter(p => {
-      if (p.name !== name) return false;
+      if (!sameCardName(p.name, name)) return false;
       if (!legalMarks.includes(p.regulationMark)) return false;
       if (ALT_ART_RARITIES.has(p.rarity)) return false;
       const num = parseInt(p.number, 10);
@@ -52,7 +53,7 @@ export function findSnapshotPrint(name, legalMarks) {
 export function getSnapshotPrintsByName(name) {
   if (DISABLED) return [];
   return Object.values(cardsData)
-    .filter(p => p.name === name)
+    .filter(p => sameCardName(p.name, name))
     .sort((a, b) => (a.set?.releaseDate ?? '').localeCompare(b.set?.releaseDate ?? ''));
 }
 

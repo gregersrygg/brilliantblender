@@ -6,12 +6,26 @@ import {
   getSnapshotPrintsByName,
   searchSnapshot,
 } from './snapshot.js';
+import { sameCardName } from './card-name.js';
 
 const API_BASE = 'https://api.pokemontcg.io/v2';
 const API_KEY = import.meta.env.VITE_POKEMONTCG_API_KEY;
 
-function apiFetch(url) {
-  return fetch(url, API_KEY ? { headers: { 'X-Api-Key': API_KEY } } : undefined);
+const RETRY_DELAYS_MS = [300, 1000];
+
+// pokemontcg.io intermittently answers 5xx/429 (#89), so transient failures are retried.
+async function apiFetch(url) {
+  const init = API_KEY ? { headers: { 'X-Api-Key': API_KEY } } : undefined;
+  for (let attempt = 0; ; attempt++) {
+    const retryable = attempt < RETRY_DELAYS_MS.length;
+    try {
+      const res = await fetch(url, init);
+      if (!retryable || (res.status < 500 && res.status !== 429)) return res;
+    } catch (err) {
+      if (!retryable) throw err;
+    }
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+  }
 }
 
 function cacheGet(key) {
@@ -102,16 +116,17 @@ export async function searchCardByName(name) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  const res = await apiFetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=1`);
+  const res = await apiFetch(`${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=30`);
   if (!res.ok) throw new Error(`Failed to search for card "${name}": ${res.status}`);
 
   const json = await res.json();
-  if (!json.data || json.data.length === 0) {
+  const card = (json.data ?? []).find(p => sameCardName(p.name, name));
+  if (!card) {
     throw new Error(`No results found for card name: "${name}"`);
   }
 
-  cacheSet(cacheKey, json.data[0]);
-  return json.data[0];
+  cacheSet(cacheKey, card);
+  return card;
 }
 
 /**
@@ -157,7 +172,7 @@ export async function resolveCard(ptcgoCode, number, setMap, name) {
         const cacheKey = `bb:energy-sve:${name}`;
         const cached = cacheGet(cacheKey);
         if (cached) return cached;
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}" set.id:sve&orderBy=number&pageSize=1`
         );
         if (res.ok) {
@@ -208,13 +223,14 @@ export async function fetchNewestLegalPrint(name, legalMarks) {
     return snapshot;
   }
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=-set.releaseDate&pageSize=30`
   );
   if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
 
   const json = await res.json();
   const result = (json.data ?? []).find(p => {
+    if (!sameCardName(p.name, name)) return false;
     if (!legalMarks.includes(p.regulationMark)) return false;
     if (ALT_ART_RARITIES.has(p.rarity)) return false;
     const num = parseInt(p.number, 10);
@@ -301,13 +317,13 @@ export async function fetchPrintsByName(name) {
     return snapshotPrints;
   }
 
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE}/cards?q=name:"${encodeURIComponent(name)}"&orderBy=set.releaseDate&pageSize=250`
   );
   if (!res.ok) throw new Error(`Failed to fetch prints for "${name}": ${res.status}`);
 
   const json = await res.json();
-  const prints = (json.data ?? []).filter(p => p.name === name);
+  const prints = (json.data ?? []).filter(p => sameCardName(p.name, name));
   cacheSet(cacheKey, prints);
   return prints;
 }

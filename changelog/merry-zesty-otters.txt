@@ -1,0 +1,1 @@
+Old rotated cards like Super Rod now load and show as rotated instead of an error when the card database is briefly unavailable
