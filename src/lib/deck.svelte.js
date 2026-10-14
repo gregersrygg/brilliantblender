@@ -146,6 +146,25 @@ async function resolveDeckCard(card, section, setMap) {
   }
 }
 
+// Normalisation can resolve several deck lines to the same print (#88: Gwynn PBL 119 +
+// PBL 109 both become the newest legal Gwynn); fold them into one entry.
+function mergeDuplicatePrints(deck) {
+  for (const section of deck.sections) {
+    const byPrint = new Map();
+    section.cards = section.cards.filter((card) => {
+      if (card.error || card.cardError) return true;
+      const key = `${card.name}|${card.setCode}|${card.number}`;
+      const first = byPrint.get(key);
+      if (!first) {
+        byPrint.set(key, card);
+        return true;
+      }
+      first.qty += card.qty;
+      return false;
+    });
+  }
+}
+
 /**
  * Create a reactive deck state manager.
  * @returns {{ deck: object, loading: boolean, error: string|null, loadDeck: function, exportDeck: function, reset: function }}
@@ -220,6 +239,7 @@ export function createDeck() {
     }
 
     await Promise.all(promises);
+    mergeDuplicatePrints(deck);
     sortDeck(deck);
     loading = false;
   }
