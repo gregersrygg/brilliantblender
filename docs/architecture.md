@@ -31,6 +31,8 @@ src/
     legality.test.mjs      Node unit tests for legality.js
     upcoming.js            Pure helpers for upcoming-sets.json: legalToPlayDate, upcomingStatus, sortByReleaseDate, findSetByCode
     upcoming.test.mjs      Node unit tests for upcoming.js
+    card-name.js           Pure exact card-name matching (sameCardName: ignores case/accents/apostrophe variants)
+    card-name.test.mjs     Node unit tests for card-name.js
     reprint.js             Pure functional-reprint detection (shared: PrintPicker + deck legality)
     reprint.test.mjs       Node unit tests for reprint.js
     energy.js              Pure basic-energy helpers (name regex, letter→name map, SVE name match, basicEnergyApiName)
@@ -84,7 +86,8 @@ tests/
   set-legality-warning.spec.js
   old-card-load.spec.js      Old Trainer prints resolve by name without exact-print fetch
   promo-import.spec.js       MEP / recent SVP promos resolve from the snapshot (snapshot-enabled server)
-  duplicate-trainer-merge.spec.js  Same-name Trainer prints merge into one entry (#88)
+  rotated-import.spec.js     rotated Trainers keep their exact name and survive transient API 5xx
+  duplicate-trainer-merge.spec.js  Same-name Trainer prints merge into one entry
 ```
 
 `playwright.config.js` reads `PORT` (default `5173`) so concurrent git worktrees can

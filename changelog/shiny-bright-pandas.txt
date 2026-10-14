@@ -1,0 +1,1 @@
+Importing an old deck no longer swaps a rotated card for a different card whose name starts the same (e.g. Iono → Iono's Kilowattrel)

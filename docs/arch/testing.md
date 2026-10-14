@@ -15,9 +15,11 @@ Pure-logic units use Node's built-in runner: `npm test` → `node --test scripts
 | `tests/set-legality-warning.spec.js` | Not-yet-legal set shows amber "Legal from {date}" notice; reprint of an already-legal card is suppressed (§4.1.3); a red rule violation (>4 copies) takes precedence over the amber notice; uses `page.clock` to pin the date |
 | `tests/promo-import.spec.js` | MEP and SVP 166+ promos (TCGdex supplement) resolve with images on the snapshot-enabled server |
 | `scripts/tcgdex-supplement.test.mjs` | Unit tests for `tcgdexToCard` (subtypes incl. `MEGA`, Trainer effect → `rules`, weakness ×), `findTwin`, `localize`, and `buildSupplement` |
+| `tests/rotated-import.spec.js` | #89: rotated `Iono PAL 185` is not swapped for `Iono's Kilowattrel` (exact name match only); `Super Rod PAL 188` still loads and shows "Not Standard-legal" when every request for it first answers 502 (`apiFetch` retry) |
 | `scripts/changelog.test.mjs` | Unit tests for `buildChangelog` (Oslo-day grouping, ordering + same-commit ties, missing git date → now, history merge), single-line `parseFragment` validation, `.txt`-only `loadChangelog`, generator name format/collision retry/text validation (`new-changelog.mjs`), and `gitAddedTimes` against a throwaway git repo |
 | `src/lib/parser.test.mjs` | Unit tests for `parseDeck` set-code/line parsing, incl. digit-leading codes (`30C`), promo `PR-SV`, and names that could be mistaken for the code |
 | `src/lib/legality.test.mjs` | Unit tests (`node --test`) for `notLegalUntil` (incl. `{isReprint}`), `isSetLegalOn`, `todayIso`, `formatLegalDate` |
+| `src/lib/card-name.test.mjs` | Unit tests for `sameCardName`: apostrophe, case and accent variants match; prefixes and substrings never do |
 | `src/lib/reprint.test.mjs` | Unit tests for `isFunctionalReprint`, `normalizeAttacks`, `normalizeAbilities` |
 
 ## `tests/helpers.js`
